@@ -3,9 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AccountItem } from '../pojo/entities/account-item.entity';
 import { Category } from '../pojo/entities/category.entity';
-import { CreateAccountItemDto } from '../pojo/dto/account/create-account-item.dto';
-import { UpdateAccountItemDto } from '../pojo/dto/account/update-account-item.dto';
+import { CreateAccountItemDto } from '../pojo/dto/account-record/create-account-item.dto';
+import { UpdateAccountItemDto } from '../pojo/dto/account-record/update-account-item.dto';
 import * as shortid from 'shortid';
+import { AccountBook } from '../pojo/entities/account-book.entity';
+import { NotFoundException } from '@nestjs/common';
 
 @Injectable()
 export class AccountService {
@@ -14,6 +16,8 @@ export class AccountService {
     private accountItemRepository: Repository<AccountItem>,
     @InjectRepository(Category)
     private categoryRepository: Repository<Category>,
+    @InjectRepository(AccountBook)
+    private accountBookRepository: Repository<AccountBook>,
   ) {}
 
   /**
@@ -38,6 +42,16 @@ export class AccountService {
   }
 
   async create(createAccountItemDto: CreateAccountItemDto) {
+    // 校验账本是否存在
+    const accountBook = await this.accountBookRepository.findOneBy({
+      id: createAccountItemDto.accountBookId,
+    });
+    if (!accountBook) {
+      throw new NotFoundException(
+        `账本ID ${createAccountItemDto.accountBookId} 不存在`,
+      );
+    }
+
     // 处理分类
     const category = await this.getOrCreateCategory(
       createAccountItemDto.category,

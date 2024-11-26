@@ -26,4 +26,8 @@ export class CreateAccountItemDto {
   @IsOptional()
   @IsDateString()
   accountDate?: string;
+
+  @IsNotEmpty({ message: '账本不能为空' })
+  @IsString()
+  accountBookId: string;
 }
