@@ -52,17 +52,44 @@ export class AccountService {
     return this.accountItemRepository.save(accountItem);
   }
 
-  findAll() {
-    return this.accountItemRepository.find({
-      order: {
-        accountDate: 'DESC',
-        createdAt: 'DESC',
-      },
-    });
+  async findAll() {
+    // 使用leftJoin关联查询分类信息
+    const accountItems = await this.accountItemRepository
+      .createQueryBuilder('account')
+      .leftJoinAndSelect(
+        Category,
+        'category',
+        'account.categoryCode = category.code',
+      )
+      .select(['account.*', 'category.name as category'])
+      .orderBy('account.accountDate', 'DESC')
+      .addOrderBy('account.createdAt', 'DESC')
+      .getRawMany();
+
+    return accountItems.map((item) => ({
+      ...item,
+    }));
   }
 
-  findOne(id: string) {
-    return this.accountItemRepository.findOneBy({ id });
+  async findOne(id: string) {
+    const accountItem = await this.accountItemRepository
+      .createQueryBuilder('account')
+      .leftJoinAndSelect(
+        Category,
+        'category',
+        'account.categoryCode = category.code',
+      )
+      .select(['account.*', 'category.name as category'])
+      .where('account.id = :id', { id })
+      .getRawOne();
+
+    if (!accountItem) {
+      throw new Error('记账条目不存在');
+    }
+
+    return {
+      ...accountItem,
+    };
   }
 
   async update(id: string, updateAccountItemDto: UpdateAccountItemDto) {
