@@ -5,6 +5,7 @@ import { AccountBook } from '../pojo/entities/account-book.entity';
 import { CreateAccountBookDto } from '../pojo/dto/account-book/create-account-book.dto';
 import { UpdateAccountBookDto } from '../pojo/dto/account-book/update-account-book.dto';
 import { AccountItem } from '../pojo/entities/account-item.entity';
+import { Currency } from '../pojo/enums/currency.enum';
 
 @Injectable()
 export class AccountBookService {
@@ -16,8 +17,11 @@ export class AccountBookService {
   ) {}
 
   async create(createAccountBookDto: CreateAccountBookDto) {
-    const accountBook = this.accountBookRepository.create(createAccountBookDto);
-    return this.accountBookRepository.save(accountBook);
+    const accountBook = this.accountBookRepository.create({
+      ...createAccountBookDto,
+      currencySymbol: createAccountBookDto.currencySymbol || Currency.CNY,
+    });
+    return await this.accountBookRepository.save(accountBook);
   }
 
   async findAll() {

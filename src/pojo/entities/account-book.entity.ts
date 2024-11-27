@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Currency } from '../enums/currency.enum';
 
 @Entity()
 export class AccountBook {
@@ -22,4 +23,11 @@ export class AccountBook {
 
   @UpdateDateColumn({ comment: '更新时间' })
   updatedAt: Date;
+
+  @Column({
+    type: 'varchar',
+    default: Currency.CNY,
+    comment: '货币符号',
+  })
+  currencySymbol: Currency;
 }

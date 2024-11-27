@@ -17,6 +17,7 @@ export class AccountBookController {
 
   @Post()
   create(@Body() createAccountBookDto: CreateAccountBookDto) {
+    console.log(createAccountBookDto);
     return this.accountBookService.create(createAccountBookDto);
   }
 
