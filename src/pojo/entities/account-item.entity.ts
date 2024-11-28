@@ -39,4 +39,10 @@ export class AccountItem {
 
   @UpdateDateColumn({ comment: '更新时间' })
   updatedAt: Date;
+
+  @Column({ comment: '创建人ID' })
+  createdBy: string;
+
+  @Column({ comment: '更新人ID' })
+  updatedBy: string;
 }

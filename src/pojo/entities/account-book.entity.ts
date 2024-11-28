@@ -30,4 +30,10 @@ export class AccountBook {
     comment: '货币符号',
   })
   currencySymbol: Currency;
+
+  @Column({ comment: '创建人ID' })
+  createdBy: string;
+
+  @Column({ comment: '更新人ID' })
+  updatedBy: string;
 }

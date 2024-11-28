@@ -7,7 +7,7 @@ import {
   Param,
   Delete,
 } from '@nestjs/common';
-import { CategoryService } from '../service/category.service';
+import { CategoryService } from '../services/category.service';
 import { Category } from '../pojo/entities/category.entity';
 
 @Controller('account/category')

@@ -7,7 +7,7 @@ import {
   Param,
   Delete,
 } from '@nestjs/common';
-import { AccountBookService } from '../service/account-book.service';
+import { AccountBookService } from '../services/account-book.service';
 import { CreateAccountBookDto } from '../pojo/dto/account-book/create-account-book.dto';
 import { UpdateAccountBookDto } from '../pojo/dto/account-book/update-account-book.dto';
 
@@ -17,7 +17,6 @@ export class AccountBookController {
 
   @Post()
   create(@Body() createAccountBookDto: CreateAccountBookDto) {
-    console.log(createAccountBookDto);
     return this.accountBookService.create(createAccountBookDto);
   }
 

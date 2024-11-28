@@ -7,7 +7,7 @@ import {
   Param,
   Delete,
 } from '@nestjs/common';
-import { AccountService } from '../service/account-item.service';
+import { AccountService } from '../services/account-item.service';
 import { CreateAccountItemDto } from '../pojo/dto/account-record/create-account-item.dto';
 import { UpdateAccountItemDto } from '../pojo/dto/account-record/update-account-item.dto';
 
