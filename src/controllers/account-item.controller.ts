@@ -6,23 +6,26 @@ import {
   Patch,
   Param,
   Delete,
+  Request,
+  Query,
 } from '@nestjs/common';
 import { AccountService } from '../services/account-item.service';
 import { CreateAccountItemDto } from '../pojo/dto/account-record/create-account-item.dto';
 import { UpdateAccountItemDto } from '../pojo/dto/account-record/update-account-item.dto';
+import { QueryAccountItemDto } from '../pojo/dto/account-record/query-account-item.dto';
 
 @Controller('account/item')
 export class AccountController {
   constructor(private readonly accountService: AccountService) {}
 
   @Post()
-  create(@Body() createAccountItemDto: CreateAccountItemDto) {
-    return this.accountService.create(createAccountItemDto);
+  create(@Body() createAccountItemDto: CreateAccountItemDto, @Request() req) {
+    return this.accountService.create(createAccountItemDto, req.user.sub);
   }
 
   @Get()
-  findAll() {
-    return this.accountService.findAll();
+  findAll(@Query() queryAccountItemDto: QueryAccountItemDto) {
+    return this.accountService.findAll(queryAccountItemDto);
   }
 
   @Get(':id')
@@ -34,8 +37,9 @@ export class AccountController {
   update(
     @Param('id') id: string,
     @Body() updateAccountItemDto: UpdateAccountItemDto,
+    @Request() req,
   ) {
-    return this.accountService.update(id, updateAccountItemDto);
+    return this.accountService.update(id, updateAccountItemDto, req.user.sub);
   }
 
   @Delete(':id')

@@ -8,6 +8,7 @@ import { UpdateAccountItemDto } from '../pojo/dto/account-record/update-account-
 import * as shortid from 'shortid';
 import { AccountBook } from '../pojo/entities/account-book.entity';
 import { NotFoundException } from '@nestjs/common';
+import { QueryAccountItemDto } from '../pojo/dto/account-record/query-account-item.dto';
 
 @Injectable()
 export class AccountService {
@@ -23,25 +24,34 @@ export class AccountService {
   /**
    * 获取或创建分类
    * @param categoryName 分类名称
-   * @returns 分类对象和分类编码
+   * @param accountBookId 账本ID
+   * @param userId 用户ID
+   * @returns 分类对象
    */
-  private async getOrCreateCategory(categoryName: string): Promise<Category> {
+  private async getOrCreateCategory(
+    categoryName: string,
+    accountBookId: string,
+    userId: string,
+  ): Promise<Category> {
     let category = await this.categoryRepository.findOneBy({
       name: categoryName,
+      accountBookId,
     });
 
     if (!category) {
       category = this.categoryRepository.create({
         code: shortid.generate(),
         name: categoryName,
+        accountBookId,
+        createdBy: userId,
+        updatedBy: userId,
       });
       await this.categoryRepository.save(category);
     }
-
     return category;
   }
 
-  async create(createAccountItemDto: CreateAccountItemDto) {
+  async create(createAccountItemDto: CreateAccountItemDto, userId: string) {
     // 校验账本是否存在
     const accountBook = await this.accountBookRepository.findOneBy({
       id: createAccountItemDto.accountBookId,
@@ -52,33 +62,74 @@ export class AccountService {
       );
     }
 
-    // 处理分类
+    // 处理分类，传入账本ID和用户ID
     const category = await this.getOrCreateCategory(
       createAccountItemDto.category,
+      createAccountItemDto.accountBookId,
+      userId,
     );
 
     // 创建账目，并关联分类编码
     const accountItem = this.accountItemRepository.create({
       ...createAccountItemDto,
       categoryCode: category.code,
+      createdBy: userId,
+      updatedBy: userId,
     });
 
     return this.accountItemRepository.save(accountItem);
   }
 
-  async findAll() {
-    // 使用leftJoin关联查询分类信息
-    const accountItems = await this.accountItemRepository
+  async findAll(queryParams?: QueryAccountItemDto) {
+    // 使用 QueryBuilder 构建查询
+    const queryBuilder = this.accountItemRepository
       .createQueryBuilder('account')
       .leftJoinAndSelect(
         Category,
         'category',
         'account.categoryCode = category.code',
       )
-      .select(['account.*', 'category.name as category'])
+      .select(['account.*', 'category.name as category']);
+
+    // 添加筛选条件
+    if (queryParams) {
+      if (queryParams.accountBookId) {
+        queryBuilder.andWhere('account.accountBookId = :accountBookId', {
+          accountBookId: queryParams.accountBookId,
+        });
+      }
+
+      if (queryParams.category) {
+        queryBuilder.andWhere('category.name = :category', {
+          category: queryParams.category,
+        });
+      }
+
+      if (queryParams.startDate) {
+        queryBuilder.andWhere('account.accountDate >= :startDate', {
+          startDate: queryParams.startDate,
+        });
+      }
+
+      if (queryParams.endDate) {
+        queryBuilder.andWhere('account.accountDate <= :endDate', {
+          endDate: queryParams.endDate,
+        });
+      }
+
+      if (queryParams.type) {
+        queryBuilder.andWhere('account.type = :type', {
+          type: queryParams.type,
+        });
+      }
+    }
+
+    // 添加排序
+    queryBuilder
       .orderBy('account.accountDate', 'DESC')
-      .addOrderBy('account.createdAt', 'DESC')
-      .getRawMany();
+      .addOrderBy('account.createdAt', 'DESC');
+
+    const accountItems = await queryBuilder.getRawMany();
 
     return accountItems.map((item) => ({
       ...item,
@@ -106,7 +157,11 @@ export class AccountService {
     };
   }
 
-  async update(id: string, updateAccountItemDto: UpdateAccountItemDto) {
+  async update(
+    id: string,
+    updateAccountItemDto: UpdateAccountItemDto,
+    userId: string,
+  ) {
     const accountItem = await this.accountItemRepository.findOneBy({ id });
     if (!accountItem) {
       throw new Error('记账条目不存在');
@@ -116,11 +171,17 @@ export class AccountService {
     if (updateAccountItemDto.category) {
       const category = await this.getOrCreateCategory(
         updateAccountItemDto.category,
+        accountItem.accountBookId,
+        userId,
       );
       accountItem.categoryCode = category.code;
     }
 
-    Object.assign(accountItem, updateAccountItemDto);
+    Object.assign(accountItem, {
+      ...updateAccountItemDto,
+      updatedBy: userId,
+    });
+
     return this.accountItemRepository.save(accountItem);
   }
 
