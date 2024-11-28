@@ -32,11 +32,11 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     if (!token) {
       throw new UnauthorizedException('未提供token');
     }
-    console.log(token);
     try {
       const payload = await this.jwtService.verifyAsync(token, {
         secret: jwtConstants.secret,
       });
+      console.log(payload);
       request.user = payload;
       return true;
     } catch (error: any) {

@@ -13,10 +13,17 @@ import { User } from '../pojo/entities/user.entity';
 import { UserService } from '../services/user.service';
 import { UserController } from '../controllers/user.controller';
 import { APP_GUARD } from '@nestjs/core';
-import { JwtAuthGuard } from 'src/guards/auth.guard';
+import { JwtAuthGuard } from '../guards/auth.guard';
+import { AccountBookUsers } from '../pojo/entities/accountbook-user.entity';
 @Module({
   imports: [
-    TypeOrmModule.forFeature([AccountItem, AccountBook, Category, User]),
+    TypeOrmModule.forFeature([
+      AccountItem,
+      AccountBook,
+      Category,
+      User,
+      AccountBookUsers,
+    ]),
   ],
   controllers: [
     AccountController,

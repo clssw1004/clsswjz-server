@@ -5,7 +5,7 @@ import {
   IsDateString,
   IsOptional,
 } from 'class-validator';
-import { RecordType } from '../../enums/record-type.enum';
+import { ItemType } from '../../enums/item-type.enum';
 
 export class CreateAccountItemDto {
   @IsNotEmpty({ message: '金额不能为空' })
@@ -17,7 +17,7 @@ export class CreateAccountItemDto {
   description: string;
 
   @IsNotEmpty({ message: '类型不能为空' })
-  type: RecordType;
+  type: ItemType;
 
   @IsNotEmpty({ message: '分类不能为空' })
   @IsString()

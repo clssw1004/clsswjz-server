@@ -5,7 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { RecordType } from '../enums/record-type.enum';
+import { ItemType } from '../enums/item-type.enum';
 
 @Entity('account_items')
 export class AccountItem {
@@ -19,7 +19,7 @@ export class AccountItem {
   description: string;
 
   @Column({ length: 4, comment: '类型：EXPENSE-支出，INCOME-收入' })
-  type: RecordType;
+  type: ItemType;
 
   @Column({ length: 50, comment: '分类编码' })
   categoryCode: string;
