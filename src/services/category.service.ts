@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 import { Category } from '../pojo/entities/category.entity';
+import { QueryCategoryDto } from '../pojo/dto/category/query-category.dto';
 
 @Injectable()
 export class CategoryService {
@@ -17,9 +18,22 @@ export class CategoryService {
   }
 
   // 获取所有分类
-  async findAll(): Promise<Category[]> {
+  async findAll(query: QueryCategoryDto): Promise<Category[]> {
+    const whereCondition: any = {
+      isDeleted: false,
+      accountBookId: query.accountBookId,
+    };
+
+    // 如果提供了分类名称，添加模糊查询条件
+    if (query.name) {
+      whereCondition.name = Like(`%${query.name}%`);
+    }
+
     return await this.categoryRepository.find({
-      where: { isDeleted: false },
+      where: whereCondition,
+      order: {
+        name: 'ASC',  // 按分类名称排序
+      },
     });
   }
 

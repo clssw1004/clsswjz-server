@@ -6,9 +6,11 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { CategoryService } from '../services/category.service';
 import { Category } from '../pojo/entities/category.entity';
+import { QueryCategoryDto } from '../pojo/dto/category/query-category.dto';
 
 @Controller('account/category')
 export class CategoryController {
@@ -20,8 +22,8 @@ export class CategoryController {
   }
 
   @Get()
-  findAll() {
-    return this.categoryService.findAll();
+  findAll(@Query() query: QueryCategoryDto) {
+    return this.categoryService.findAll(query);
   }
 
   @Get(':id')
