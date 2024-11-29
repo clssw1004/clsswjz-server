@@ -89,6 +89,7 @@ export class AccountService {
   }
 
   async findAll(queryParams?: QueryAccountItemDto) {
+    console.log(queryParams);
     // 使用 QueryBuilder 构建查询
     const queryBuilder = this.accountItemRepository
       .createQueryBuilder('account')
@@ -107,6 +108,12 @@ export class AccountService {
         });
       }
 
+      // 修改这里以支持数组
+      if (Array.isArray(queryParams.categories)) {
+        queryBuilder.andWhere('category.name IN (:...categories)', {
+          categories: queryParams.categories,
+        });
+      }
       if (queryParams.category) {
         queryBuilder.andWhere('category.name = :category', {
           category: queryParams.category,
@@ -128,6 +135,19 @@ export class AccountService {
       if (queryParams.type) {
         queryBuilder.andWhere('account.type = :type', {
           type: queryParams.type,
+        });
+      }
+
+      // 添加金额范围查询
+      if (queryParams.minAmount !== undefined) {
+        queryBuilder.andWhere('account.amount >= :minAmount', {
+          minAmount: queryParams.minAmount,
+        });
+      }
+
+      if (queryParams.maxAmount !== undefined) {
+        queryBuilder.andWhere('account.amount <= :maxAmount', {
+          maxAmount: queryParams.maxAmount,
         });
       }
     }

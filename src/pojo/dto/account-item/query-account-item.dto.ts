@@ -1,4 +1,4 @@
-import { IsOptional, IsUUID, IsString, IsDateString } from 'class-validator';
+import { IsOptional, IsUUID, IsString, IsDateString, IsArray } from 'class-validator';
 import { ItemType } from '../../enums/item-type.enum';
 
 export class QueryAccountItemDto {
@@ -11,6 +11,10 @@ export class QueryAccountItemDto {
   category?: string;
 
   @IsOptional()
+  @IsArray()
+  categories?: string[];
+
+  @IsOptional()
   @IsDateString()
   startDate?: string;
 
@@ -20,4 +24,10 @@ export class QueryAccountItemDto {
 
   @IsOptional()
   type?: ItemType;
+
+  @IsOptional()
+  minAmount?: number;
+
+  @IsOptional()
+  maxAmount?: number;
 }

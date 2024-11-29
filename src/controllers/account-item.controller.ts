@@ -23,8 +23,8 @@ export class AccountController {
     return this.accountService.create(createAccountItemDto, req.user.sub);
   }
 
-  @Get()
-  findAll(@Query() queryAccountItemDto: QueryAccountItemDto) {
+  @Post('list')
+  findAll(@Body() queryAccountItemDto: QueryAccountItemDto) {
     return this.accountService.findAll(queryAccountItemDto);
   }
 
