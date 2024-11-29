@@ -3,12 +3,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AccountItem } from '../pojo/entities/account-item.entity';
 import { Category } from '../pojo/entities/category.entity';
-import { CreateAccountItemDto } from '../pojo/dto/account-record/create-account-item.dto';
-import { UpdateAccountItemDto } from '../pojo/dto/account-record/update-account-item.dto';
+import { CreateAccountItemDto } from '../pojo/dto/account-item/create-account-item.dto';
+import { UpdateAccountItemDto } from '../pojo/dto/account-item/update-account-item.dto';
 import * as shortid from 'shortid';
 import { AccountBook } from '../pojo/entities/account-book.entity';
 import { NotFoundException } from '@nestjs/common';
-import { QueryAccountItemDto } from '../pojo/dto/account-record/query-account-item.dto';
+import { QueryAccountItemDto } from '../pojo/dto/account-item/query-account-item.dto';
 
 @Injectable()
 export class AccountService {
@@ -19,7 +19,7 @@ export class AccountService {
     private categoryRepository: Repository<Category>,
     @InjectRepository(AccountBook)
     private accountBookRepository: Repository<AccountBook>,
-  ) {}
+  ) { }
 
   /**
    * 获取或创建分类
@@ -62,14 +62,14 @@ export class AccountService {
       );
     }
 
-    // 处理分类，传入账本ID和用户ID
+    // 处理分类
     const category = await this.getOrCreateCategory(
       createAccountItemDto.category,
       createAccountItemDto.accountBookId,
       userId,
     );
 
-    // 创建账目，并关联分类编码
+    // 创建账目
     const accountItem = this.accountItemRepository.create({
       ...createAccountItemDto,
       categoryCode: category.code,
@@ -77,7 +77,15 @@ export class AccountService {
       updatedBy: userId,
     });
 
-    return this.accountItemRepository.save(accountItem);
+    const savedAccountItem = await this.accountItemRepository.save(accountItem);
+
+    // 更新分类的最近账目时间
+    await this.categoryRepository.update(
+      { code: category.id },
+      { lastAccountItemAt: savedAccountItem.createdAt }
+    );
+
+    return savedAccountItem;
   }
 
   async findAll(queryParams?: QueryAccountItemDto) {

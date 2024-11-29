@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 
 @Entity('categories')
 export class Category {
@@ -22,4 +22,8 @@ export class Category {
 
   @Column({ default: false, comment: '是否已删除' })
   isDeleted: boolean;
+
+  @Column({ nullable: true, comment: '最近账目创建时间' })
+  lastAccountItemAt: Date;
+
 }

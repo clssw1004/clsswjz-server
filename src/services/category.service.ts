@@ -1,19 +1,47 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { Category } from '../pojo/entities/category.entity';
 import { QueryCategoryDto } from '../pojo/dto/category/query-category.dto';
+import * as shortid from 'shortid';
 
 @Injectable()
 export class CategoryService {
   constructor(
     @InjectRepository(Category)
     private categoryRepository: Repository<Category>,
-  ) {}
+  ) { }
+
+  // 检查分类名称是否存在
+  private async checkNameExists(name: string, accountBookId: string): Promise<boolean> {
+    const count = await this.categoryRepository.count({
+      where: {
+        name,
+        accountBookId,
+        isDeleted: false
+      }
+    });
+    return count > 0;
+  }
 
   // 创建分类
-  async create(category: Partial<Category>): Promise<Category> {
-    const newCategory = this.categoryRepository.create(category);
+  async create(category: Partial<Category>, userId: string): Promise<Category> {
+    // 检查名称是否重复
+    const nameExists = await this.checkNameExists(category.name, category.accountBookId);
+    if (nameExists) {
+      throw new ConflictException(`分类名称 "${category.name}" 在当前账本中已存在`);
+    }
+
+    // 如果没有提供 code，使用 shortid 生成
+    if (!category.code) {
+      category.code = shortid.generate();
+    }
+
+    const newCategory = this.categoryRepository.create({
+      ...category,
+      createdBy: userId,
+      updatedBy: userId
+    });
     return await this.categoryRepository.save(newCategory);
   }
 
@@ -32,7 +60,8 @@ export class CategoryService {
     return await this.categoryRepository.find({
       where: whereCondition,
       order: {
-        name: 'ASC',  // 按分类名称排序
+        lastAccountItemAt: 'desc',
+        name: "asc"  // 按分类名称排序
       },
     });
   }

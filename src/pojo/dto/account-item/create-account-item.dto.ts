@@ -12,8 +12,7 @@ export class CreateAccountItemDto {
   @IsNumber({}, { message: '金额必须是数字' })
   amount: number;
 
-  @IsNotEmpty({ message: '描述不能为空' })
-  @IsString()
+  @IsOptional()
   description: string;
 
   @IsNotEmpty({ message: '类型不能为空' })

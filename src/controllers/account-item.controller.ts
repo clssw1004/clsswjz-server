@@ -10,9 +10,9 @@ import {
   Query,
 } from '@nestjs/common';
 import { AccountService } from '../services/account-item.service';
-import { CreateAccountItemDto } from '../pojo/dto/account-record/create-account-item.dto';
-import { UpdateAccountItemDto } from '../pojo/dto/account-record/update-account-item.dto';
-import { QueryAccountItemDto } from '../pojo/dto/account-record/query-account-item.dto';
+import { CreateAccountItemDto } from '../pojo/dto/account-item/create-account-item.dto';
+import { UpdateAccountItemDto } from '../pojo/dto/account-item/update-account-item.dto';
+import { QueryAccountItemDto } from '../pojo/dto/account-item/query-account-item.dto';
 
 @Controller('account/item')
 export class AccountController {

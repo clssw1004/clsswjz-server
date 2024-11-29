@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   Query,
+  Request,
 } from '@nestjs/common';
 import { CategoryService } from '../services/category.service';
 import { Category } from '../pojo/entities/category.entity';
@@ -17,8 +18,8 @@ export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
   @Post()
-  create(@Body() category: Partial<Category>) {
-    return this.categoryService.create(category);
+  create(@Body() category: Partial<Category>, @Request() req) {
+    return this.categoryService.create(category, req.user.sub);
   }
 
   @Get()
