@@ -7,6 +7,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { AccountBook } from '../pojo/entities/account-book.entity';
 import { AccountBookUsers } from '../pojo/entities/accountbook-user.entity';
+import { Category } from '../pojo/entities/category.entity';
+import { DEFAULT_CATEGORIES } from '../config/default-categories.config';
+import * as shortid from 'shortid';
 
 @Injectable()
 export class AccountBookService {
@@ -15,7 +18,22 @@ export class AccountBookService {
     private accountBookRepository: Repository<AccountBook>,
     @InjectRepository(AccountBookUsers)
     private accountUserRepository: Repository<AccountBookUsers>,
+    @InjectRepository(Category)
+    private categoryRepository: Repository<Category>,
   ) {}
+
+  // 创建默认分类
+  private async createDefaultCategories(accountBookId: string, userId: string): Promise<void> {
+    const categories = DEFAULT_CATEGORIES.map(category => ({
+      name: category.name,
+      accountBookId: accountBookId,
+      code: shortid.generate(),
+      createdBy: userId,
+      updatedBy: userId,
+    }));
+
+    await this.categoryRepository.save(categories);
+  }
 
   async create(
     createAccountBookDto: Partial<AccountBook>,
@@ -29,7 +47,7 @@ export class AccountBookService {
     });
     const savedAccountBook = await this.accountBookRepository.save(accountBook);
 
-    // 创建账本用户关联，创建者拥有所有权限
+    // 创建账本用户关联
     await this.accountUserRepository.save({
       accountBookId: savedAccountBook.id,
       userId: userId,
@@ -40,6 +58,9 @@ export class AccountBookService {
       canEditItem: true,
       canDeleteItem: true,
     });
+
+    // 创建默认分类
+    await this.createDefaultCategories(savedAccountBook.id, userId);
 
     return savedAccountBook;
   }
