@@ -1,1 +1,4 @@
-export type ItemType = 'INCOME' | 'EXPENSE';
+export enum ItemType {
+  INCOME = 'INCOME',
+  EXPENSE = 'EXPENSE'
+}

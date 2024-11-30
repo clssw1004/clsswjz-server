@@ -1,10 +1,8 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateAccountItemDto } from './create-account-item.dto';
-import { IsDateString, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+
+import { IsDateString, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID } from 'class-validator';
 import { ItemType } from 'src/pojo/enums/item-type.enum';
 
 export class UpdateAccountItemDto {
-
 
     @IsOptional()
     @IsString()
@@ -31,4 +29,13 @@ export class UpdateAccountItemDto {
     @IsOptional()
     @IsDateString()
     accountDate?: string;
+
+    @IsOptional()
+    @IsUUID()
+    fundId?: string;
+
+    @IsOptional()
+    @IsString()
+    shop?: string;
+
 }

@@ -15,7 +15,7 @@ export class AccountItem {
   @Column({ type: 'decimal', precision: 10, scale: 2, comment: '金额' })
   amount: number;
 
-  @Column({ length: 100, comment: '描述' })
+  @Column({ length: 100, nullable: true, comment: '描述' })
   description: string;
 
   @Column({ length: 4, comment: '类型：EXPENSE-支出，INCOME-收入' })
@@ -45,4 +45,14 @@ export class AccountItem {
 
   @Column({ comment: '更新人ID' })
   updatedBy: string;
+
+  @Column({ comment: '账户ID' })
+  fundId: string;
+
+  @Column({
+    length: 20,
+    nullable: true,
+    comment: '商家编码'
+  })
+  shop: string;
 }

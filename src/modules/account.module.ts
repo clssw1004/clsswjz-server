@@ -14,7 +14,16 @@ import { UserService } from '../services/user.service';
 import { UserController } from '../controllers/user.controller';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from '../guards/auth.guard';
-import { AccountBookUsers } from '../pojo/entities/accountbook-user.entity';
+import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
+import { AccountFundController } from '../controllers/account-fund.controller';
+import { AccountFundService } from '../services/account-fund.service';
+import { AccountFund } from '../pojo/entities/account-fund.entity';
+import { AccountBookFund } from '../pojo/entities/account-book-fund.entity';
+import { UserDataInitService } from '../services/user-data-init.service';
+import { AccountShop } from '../pojo/entities/account-shop.entity';
+import { AccountShopController } from '../controllers/account-shop.controller';
+import { AccountShopService } from '../services/account-shop.service';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -22,7 +31,10 @@ import { AccountBookUsers } from '../pojo/entities/accountbook-user.entity';
       AccountBook,
       Category,
       User,
-      AccountBookUsers,
+      AccountBookUser,
+      AccountFund,
+      AccountBookFund,
+      AccountShop,
     ]),
   ],
   controllers: [
@@ -30,12 +42,17 @@ import { AccountBookUsers } from '../pojo/entities/accountbook-user.entity';
     AccountBookController,
     CategoryController,
     UserController,
+    AccountFundController,
+    AccountShopController,
   ],
   providers: [
     AccountService,
     AccountBookService,
     CategoryService,
     UserService,
+    UserDataInitService,
+    AccountFundService,
+    AccountShopService,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],
 })

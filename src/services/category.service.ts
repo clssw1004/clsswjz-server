@@ -1,8 +1,9 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository, Like, EntityManager } from 'typeorm';
 import { Category } from '../pojo/entities/category.entity';
 import { QueryCategoryDto } from '../pojo/dto/category/query-category.dto';
+import { DEFAULT_CATEGORIES } from '../config/default-categories.config';
 import * as shortid from 'shortid';
 
 @Injectable()
@@ -18,7 +19,6 @@ export class CategoryService {
       where: {
         name,
         accountBookId,
-        isDeleted: false
       }
     });
     return count > 0;
@@ -48,7 +48,6 @@ export class CategoryService {
   // 获取所有分类
   async findAll(query: QueryCategoryDto): Promise<Category[]> {
     const whereCondition: any = {
-      isDeleted: false,
       accountBookId: query.accountBookId,
     };
 
@@ -69,7 +68,7 @@ export class CategoryService {
   // 根据ID查找分类
   async findOne(id: string): Promise<Category> {
     return await this.categoryRepository.findOne({
-      where: { id, isDeleted: false },
+      where: { id, },
     });
   }
 
@@ -81,6 +80,27 @@ export class CategoryService {
 
   // 软删除分类
   async remove(id: string): Promise<void> {
-    await this.categoryRepository.update(id, { isDeleted: true });
+    await this.categoryRepository.update(id, {});
+  }
+
+  /**
+   * 批量创建默认分类
+   */
+  async createDefaultCategories(
+    manager: EntityManager,
+    accountBookId: string,
+    userId: string
+  ): Promise<void> {
+    const categories = DEFAULT_CATEGORIES.map(category =>
+      this.categoryRepository.create({
+        name: category.name,
+        code: shortid.generate(),
+        accountBookId,
+        createdBy: userId,
+        updatedBy: userId,
+      })
+    );
+
+    await manager.save(Category, categories);
   }
 }

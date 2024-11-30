@@ -15,6 +15,22 @@ export class QueryAccountItemDto {
   categories?: string[];
 
   @IsOptional()
+  @IsString()
+  fundId?: string;
+
+  @IsOptional()
+  @IsArray()
+  fundIds?: string[];
+
+  @IsOptional()
+  @IsString()
+  shopCode?: string;
+
+  @IsOptional()
+  @IsArray()
+  shopCodes?: string[];
+
+  @IsOptional()
   @IsDateString()
   startDate?: string;
 

@@ -4,18 +4,26 @@ import {
   IsString,
   IsDateString,
   IsOptional,
+  IsUUID,
+  IsEnum,
 } from 'class-validator';
 import { ItemType } from '../../enums/item-type.enum';
 
 export class CreateAccountItemDto {
+  @IsNotEmpty({ message: '账本ID不能为空' })
+  @IsUUID()
+  accountBookId: string;
+
+  @IsNotEmpty({ message: '账户不能为空' })
+  @IsUUID()
+  fundId: string;
+
   @IsNotEmpty({ message: '金额不能为空' })
-  @IsNumber({}, { message: '金额必须是数字' })
+  @IsNumber()
   amount: number;
 
-  @IsOptional()
-  description: string;
-
   @IsNotEmpty({ message: '类型不能为空' })
+  @IsEnum(ItemType)
   type: ItemType;
 
   @IsNotEmpty({ message: '分类不能为空' })
@@ -23,10 +31,13 @@ export class CreateAccountItemDto {
   category: string;
 
   @IsOptional()
-  @IsDateString()
-  accountDate?: string;
-
-  @IsNotEmpty({ message: '账本不能为空' })
   @IsString()
-  accountBookId: string;
+  shop?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsNotEmpty({ message: '记账日期不能为空' })
+  accountDate: Date;
 }

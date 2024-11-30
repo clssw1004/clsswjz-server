@@ -7,7 +7,7 @@ import {
 } from 'typeorm';
 import { Currency } from '../enums/currency.enum';
 
-@Entity()
+@Entity('account_books')
 export class AccountBook {
   @PrimaryGeneratedColumn('uuid')
   id: string;

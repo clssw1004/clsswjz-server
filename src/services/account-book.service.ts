@@ -6,7 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { AccountBook } from '../pojo/entities/account-book.entity';
-import { AccountBookUsers } from '../pojo/entities/accountbook-user.entity';
+import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
 import { Category } from '../pojo/entities/category.entity';
 import { DEFAULT_CATEGORIES } from '../config/default-categories.config';
 import * as shortid from 'shortid';
@@ -16,8 +16,8 @@ export class AccountBookService {
   constructor(
     @InjectRepository(AccountBook)
     private accountBookRepository: Repository<AccountBook>,
-    @InjectRepository(AccountBookUsers)
-    private accountUserRepository: Repository<AccountBookUsers>,
+    @InjectRepository(AccountBookUser)
+    private accountUserRepository: Repository<AccountBookUser>,
     @InjectRepository(Category)
     private categoryRepository: Repository<Category>,
   ) {}

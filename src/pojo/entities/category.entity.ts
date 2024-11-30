@@ -1,6 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 
-@Entity('categories')
+@Entity('account_categories')
 export class Category {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -19,9 +19,6 @@ export class Category {
 
   @Column({ comment: '更新人ID' })
   updatedBy: string;
-
-  @Column({ default: false, comment: '是否已删除' })
-  isDeleted: boolean;
 
   @Column({ nullable: true, comment: '最近账目创建时间' })
   lastAccountItemAt: Date;

@@ -4,10 +4,12 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  Unique,
 } from 'typeorm';
 
-@Entity('rel_accountbook_users')
-export class AccountBookUsers {
+@Entity('rel_accountbook_user')
+@Unique(['userId','accountBookId'])
+export class AccountBookUser {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
