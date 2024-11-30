@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
@@ -10,6 +11,8 @@ import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
 import { Category } from '../pojo/entities/category.entity';
 import { DEFAULT_CATEGORIES } from '../config/default-categories.config';
 import * as shortid from 'shortid';
+import { UpdateAccountBookDto } from '../pojo/dto/account-book/update-account-book.dto';
+import { User } from '../pojo/entities/user.entity';
 
 @Injectable()
 export class AccountBookService {
@@ -20,7 +23,9 @@ export class AccountBookService {
     private accountUserRepository: Repository<AccountBookUser>,
     @InjectRepository(Category)
     private categoryRepository: Repository<Category>,
-  ) {}
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+  ) { }
 
   // 创建默认分类
   private async createDefaultCategories(accountBookId: string, userId: string): Promise<void> {
@@ -35,10 +40,29 @@ export class AccountBookService {
     await this.categoryRepository.save(categories);
   }
 
+  /**
+   * 检查账本名称是否已存在
+   */
+  private async checkNameExists(name: string, userId: string): Promise<boolean> {
+    const count = await this.accountBookRepository.count({
+      where: {
+        name,
+        createdBy: userId
+      }
+    });
+    return count > 0;
+  }
+
   async create(
     createAccountBookDto: Partial<AccountBook>,
     userId: string,
   ): Promise<AccountBook> {
+    // 检查账本名称是否已存在
+    const nameExists = await this.checkNameExists(createAccountBookDto.name, userId);
+    if (nameExists) {
+      throw new ConflictException('账本名称已存在');
+    }
+
     // 创建账本
     const accountBook = this.accountBookRepository.create({
       ...createAccountBookDto,
@@ -65,27 +89,82 @@ export class AccountBookService {
     return savedAccountBook;
   }
 
-  async findAll(userId: string): Promise<AccountBook[]> {
-    // 先查询用户有权限的账本ID
-    const accountUsers = await this.accountUserRepository.find({
-      where: {
-        userId,
-        canViewBook: true,
-      },
-      select: ['accountBookId'],
-    });
+  /**
+   * 获取账本详细信息（包含权限和成员信息）
+   */
+  private async getAccountBookDetail(accountBook: any, userId: string) {
+    // 查询其他成员信息
+    const members = await this.accountUserRepository
+      .createQueryBuilder('abu')
+      .select([
+        'abu.userId as userId',
+        'abu.canViewBook as canViewBook',
+        'abu.canEditBook as canEditBook',
+        'abu.canDeleteBook as canDeleteBook',
+        'abu.canViewItem as canViewItem',
+        'abu.canEditItem as canEditItem',
+        'abu.canDeleteItem as canDeleteItem',
+        'u.nickname as nickname'
+      ])
+      .leftJoin('account_users', 'u', 'u.id = abu.userId')
+      .where('abu.accountBookId = :accountBookId', { accountBookId: accountBook.id })
+      .andWhere('abu.userId != :currentUserId', { currentUserId: userId })
+      .getRawMany();
 
-    const bookIds = accountUsers.map((au) => au.accountBookId);
-
-    // 再查询账本详情
-    return this.accountBookRepository.find({
-      where: {
-        id: In(bookIds),
-      },
-    });
+    return {
+      id: accountBook.id,
+      name: accountBook.name,
+      description: accountBook.description,
+      currencySymbol: accountBook.currencySymbol,
+      createdAt: accountBook.createdAt,
+      updatedAt: accountBook.updatedAt,
+      createdBy: accountBook.createdBy,
+      updatedBy: accountBook.updatedBy,
+      canViewBook: !!accountBook.canViewBook,
+      canEditBook: !!accountBook.canEditBook,
+      canDeleteBook: !!accountBook.canDeleteBook,
+      canViewItem: !!accountBook.canViewItem,
+      canEditItem: !!accountBook.canEditItem,
+      canDeleteItem: !!accountBook.canDeleteItem,
+      members: members.map(member => ({
+        userId: member.userId,
+        nickname: member.nickname,
+        canViewBook: !!member.canViewBook,
+        canEditBook: !!member.canEditBook,
+        canDeleteBook: !!member.canDeleteBook,
+        canViewItem: !!member.canViewItem,
+        canEditItem: !!member.canEditItem,
+        canDeleteItem: !!member.canDeleteItem
+      }))
+    };
   }
 
-  async findOne(id: string, userId: string): Promise<AccountBook> {
+  async findAll(userId: string): Promise<any[]> {
+    const queryBuilder = this.accountBookRepository
+      .createQueryBuilder('book')
+      .select([
+        'book.*',
+        'abu.canViewBook as canViewBook',
+        'abu.canEditBook as canEditBook',
+        'abu.canDeleteBook as canDeleteBook',
+        'abu.canViewItem as canViewItem',
+        'abu.canEditItem as canEditItem',
+        'abu.canDeleteItem as canDeleteItem'
+      ])
+      .innerJoin('rel_accountbook_user', 'abu', 'abu.accountBookId = book.id')
+      .where('abu.userId = :userId', { userId })
+      .andWhere('abu.canViewBook = :canView', { canView: true });
+
+    const results = await queryBuilder
+      .orderBy('book.createdAt', 'DESC')
+      .getRawMany();
+
+    return Promise.all(
+      results.map(item => this.getAccountBookDetail(item, userId))
+    );
+  }
+
+  async findOne(id: string, userId: string): Promise<any> {
     // 检查用户是否有权限查看该账本
     const accountUser = await this.accountUserRepository.findOne({
       where: {
@@ -99,26 +178,35 @@ export class AccountBookService {
       throw new ForbiddenException('没有权限查看该账本');
     }
 
-    const accountBook = await this.accountBookRepository.findOne({
-      where: { id },
-    });
+    // 查询账本基本信息和当前用户权限
+    const accountBook = await this.accountBookRepository
+      .createQueryBuilder('book')
+      .select([
+        'book.*',
+        'abu.canViewBook as canViewBook',
+        'abu.canEditBook as canEditBook',
+        'abu.canDeleteBook as canDeleteBook',
+        'abu.canViewItem as canViewItem',
+        'abu.canEditItem as canEditItem',
+        'abu.canDeleteItem as canDeleteItem'
+      ])
+      .innerJoin('rel_accountbook_user', 'abu', 'abu.accountBookId = book.id')
+      .where('book.id = :id', { id })
+      .andWhere('abu.userId = :userId', { userId })
+      .getRawOne();
 
     if (!accountBook) {
       throw new NotFoundException('账本不存在');
     }
 
-    return accountBook;
+    return this.getAccountBookDetail(accountBook, userId);
   }
 
-  async update(
-    id: string,
-    updateAccountBookDto: Partial<AccountBook>,
-    userId: string,
-  ): Promise<AccountBook> {
+  async update(updateDto: UpdateAccountBookDto, userId: string): Promise<any> {
     // 检查用户是否有编辑权限
     const accountUser = await this.accountUserRepository.findOne({
       where: {
-        accountBookId: id,
+        accountBookId: updateDto.id,
         userId: userId,
         canEditBook: true,
       },
@@ -128,12 +216,93 @@ export class AccountBookService {
       throw new ForbiddenException('没有权限编辑该账本');
     }
 
-    await this.accountBookRepository.update(id, {
-      ...updateAccountBookDto,
-      updatedBy: userId,
+    // 检查账本是否存在
+    const accountBook = await this.accountBookRepository.findOne({
+      where: { id: updateDto.id }
     });
 
-    return this.findOne(id, userId);
+    if (!accountBook) {
+      throw new NotFoundException('账本不存在');
+    }
+
+    // 获取当前账本所有的成员关联信息
+    const existingMembers = await this.accountUserRepository.find({
+      where: { accountBookId: updateDto.id }
+    });
+
+    // 更新账本基本信息
+    await this.accountBookRepository.update(updateDto.id, {
+      name: updateDto.name,
+      description: updateDto.description,
+      currencySymbol: updateDto.currencySymbol,
+      updatedBy: userId
+    });
+
+    // 处理成员信息
+    const memberOperations = [];
+
+    for (const existingMember of existingMembers) {
+      // 跳过账本所有者的成员信息
+      if (existingMember.userId === accountBook.createdBy) {
+        continue;
+      }
+
+      const newMember = updateDto.members.find(
+        m => m.userId === existingMember.userId
+      );
+
+      if (newMember) {
+        // 情况1：更新已存在的成员信息
+        memberOperations.push(
+          this.accountUserRepository.update(
+            { accountBookId: updateDto.id, userId: existingMember.userId },
+            {
+              canViewBook: newMember.canViewBook,
+              canEditBook: newMember.canEditBook,
+              canDeleteBook: newMember.canDeleteBook,
+              canViewItem: newMember.canViewItem,
+              canEditItem: newMember.canEditItem,
+              canDeleteItem: newMember.canDeleteItem
+            }
+          )
+        );
+      } else {
+        // 情况2：删除不再存在的成员信息
+        memberOperations.push(
+          this.accountUserRepository.delete({
+            accountBookId: updateDto.id,
+            userId: existingMember.userId
+          })
+        );
+      }
+    }
+
+    // 情况3：添加新成员
+    const existingUserIds = existingMembers.map(m => m.userId);
+    const newMembers = updateDto.members.filter(
+      m => !existingUserIds.includes(m.userId) && m.userId !== accountBook.createdBy
+    );
+
+    for (const newMember of newMembers) {
+      memberOperations.push(
+        this.accountUserRepository.save({
+          accountBookId: updateDto.id,
+          userId: newMember.userId,
+          canViewBook: newMember.canViewBook,
+          canEditBook: newMember.canEditBook,
+          canDeleteBook: newMember.canDeleteBook,
+          canViewItem: newMember.canViewItem,
+          canEditItem: newMember.canEditItem,
+          canDeleteItem: newMember.canDeleteItem
+        })
+      );
+    }
+
+    // 执行所有成员操作
+    await Promise.all(memberOperations);
+
+    // 返回更新后的账本信息
+    return this.findOne(updateDto.id, userId);
   }
 
   async remove(id: string, userId: string): Promise<void> {

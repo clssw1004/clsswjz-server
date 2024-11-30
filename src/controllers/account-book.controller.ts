@@ -10,10 +10,11 @@ import {
 } from '@nestjs/common';
 import { AccountBookService } from '../services/account-book.service';
 import { AccountBook } from '../pojo/entities/account-book.entity';
+import { UpdateAccountBookDto } from 'src/pojo/dto/account-book/update-account-book.dto';
 
 @Controller('account/book')
 export class AccountBookController {
-  constructor(private readonly accountBookService: AccountBookService) {}
+  constructor(private readonly accountBookService: AccountBookService) { }
 
   @Post()
   create(@Body() createAccountBookDto: Partial<AccountBook>, @Request() req) {
@@ -33,11 +34,11 @@ export class AccountBookController {
   @Patch(':id')
   update(
     @Param('id') id: string,
-    @Body() updateAccountBookDto: Partial<AccountBook>,
+    @Body() updateAccountBookDto: UpdateAccountBookDto,
     @Request() req,
   ) {
+    updateAccountBookDto.id = id;
     return this.accountBookService.update(
-      id,
       updateAccountBookDto,
       req.user.sub,
     );

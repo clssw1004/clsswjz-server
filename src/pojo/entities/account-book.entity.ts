@@ -4,10 +4,12 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  Unique,
 } from 'typeorm';
 import { Currency } from '../enums/currency.enum';
 
 @Entity('account_books')
+@Unique(['createdBy', 'name'])
 export class AccountBook {
   @PrimaryGeneratedColumn('uuid')
   id: string;
