@@ -13,6 +13,7 @@ import { DEFAULT_CATEGORIES } from '../config/default-categories.config';
 import * as shortid from 'shortid';
 import { UpdateAccountBookDto } from '../pojo/dto/account-book/update-account-book.dto';
 import { User } from '../pojo/entities/user.entity';
+import { CreateAccountBookDto } from '../pojo/dto/account-book/create-account-book.dto';
 
 @Injectable()
 export class AccountBookService {
@@ -54,7 +55,7 @@ export class AccountBookService {
   }
 
   async create(
-    createAccountBookDto: Partial<AccountBook>,
+    createAccountBookDto: CreateAccountBookDto,
     userId: string,
   ): Promise<AccountBook> {
     // 检查账本名称是否已存在
@@ -116,16 +117,19 @@ export class AccountBookService {
       name: accountBook.name,
       description: accountBook.description,
       currencySymbol: accountBook.currencySymbol,
+      icon: accountBook.icon,
       createdAt: accountBook.createdAt,
       updatedAt: accountBook.updatedAt,
       createdBy: accountBook.createdBy,
       updatedBy: accountBook.updatedBy,
-      canViewBook: !!accountBook.canViewBook,
-      canEditBook: !!accountBook.canEditBook,
-      canDeleteBook: !!accountBook.canDeleteBook,
-      canViewItem: !!accountBook.canViewItem,
-      canEditItem: !!accountBook.canEditItem,
-      canDeleteItem: !!accountBook.canDeleteItem,
+      permissions: {
+        canViewBook: !!accountBook.canViewBook,
+        canEditBook: !!accountBook.canEditBook,
+        canDeleteBook: !!accountBook.canDeleteBook,
+        canViewItem: !!accountBook.canViewItem,
+        canEditItem: !!accountBook.canEditItem,
+        canDeleteItem: !!accountBook.canDeleteItem
+      },
       members: members.map(member => ({
         userId: member.userId,
         nickname: member.nickname,
@@ -235,6 +239,7 @@ export class AccountBookService {
       name: updateDto.name,
       description: updateDto.description,
       currencySymbol: updateDto.currencySymbol,
+      icon: updateDto.icon,
       updatedBy: userId
     });
 

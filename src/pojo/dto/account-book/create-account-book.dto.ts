@@ -2,7 +2,7 @@ import { IsNotEmpty, IsString, IsOptional, IsEnum } from 'class-validator';
 import { Currency } from '../../enums/currency.enum';
 
 export class CreateAccountBookDto {
-  @IsNotEmpty({ message: '名称不能为空' })
+  @IsNotEmpty()
   @IsString()
   name: string;
 
@@ -10,7 +10,11 @@ export class CreateAccountBookDto {
   @IsString()
   description?: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsEnum(Currency)
-  currencySymbol?: Currency;
+  currencySymbol: Currency;
+
+  @IsOptional()
+  @IsString()
+  icon?: string;
 }

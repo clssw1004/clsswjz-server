@@ -38,4 +38,10 @@ export class AccountBook {
 
   @Column({ comment: '更新人ID' })
   updatedBy: string;
+
+  @Column({ 
+    nullable: true, 
+    comment: '账本图标' 
+  })
+  icon?: string;
 }

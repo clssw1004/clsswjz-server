@@ -27,8 +27,8 @@ export class UpdateAccountBookMemberDto {
 }
 
 export class UpdateAccountBookDto {
+    @IsNotEmpty()
     @IsUUID()
-    @IsOptional()
     id: string;
 
     @IsNotEmpty()
@@ -42,6 +42,10 @@ export class UpdateAccountBookDto {
     @IsNotEmpty()
     @IsEnum(Currency)
     currencySymbol: Currency;
+
+    @IsOptional()
+    @IsString()
+    icon?: string;
 
     @IsArray()
     @ValidateNested({ each: true })
