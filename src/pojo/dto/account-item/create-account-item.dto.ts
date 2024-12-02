@@ -2,20 +2,16 @@ import {
   IsNotEmpty,
   IsNumber,
   IsString,
-  IsDateString,
   IsOptional,
-  IsUUID,
   IsEnum,
 } from 'class-validator';
 import { ItemType } from '../../enums/item-type.enum';
 
 export class CreateAccountItemDto {
   @IsNotEmpty({ message: '账本ID不能为空' })
-  @IsUUID()
   accountBookId: string;
 
   @IsNotEmpty({ message: '账户不能为空' })
-  @IsUUID()
   fundId: string;
 
   @IsNotEmpty({ message: '金额不能为空' })

@@ -5,4 +5,4 @@ export function EntityId() {
     name: 'id',
     comment: '主键ID',
   });
-} 
+}

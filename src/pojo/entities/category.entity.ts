@@ -1,8 +1,8 @@
 import { Entity, Column } from 'typeorm';
-import { BaseEntity } from './base.entity';
+import { BaseBusinessEntity } from './base.entity';
 
 @Entity('account_categories')
-export class Category extends BaseEntity {
+export class Category extends BaseBusinessEntity {
   @Column({ length: 128, comment: '分类名称' })
   name: string;
 

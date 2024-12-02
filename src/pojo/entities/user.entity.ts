@@ -4,7 +4,7 @@ import { generateUid } from '../../utils/id.util';
 import { BaseEntity } from './base.entity';
 import { EntityId } from '../../decorators/entity-id';
 
-@Entity('account_users')
+@Entity('users')
 export class User extends BaseEntity {
   @Index('IDX_USER_USERNAME', { unique: true })
   @Column({
@@ -45,6 +45,6 @@ export class User extends BaseEntity {
   async beforeInsert() {
     // 合并原有的 hashPassword 和新的 inviteCode 生成
     this.password = await bcrypt.hash(this.password, 10);
-    this.inviteCode = generateUid();
+    this.inviteCode = `cljz_${generateUid(12)}`;
   }
 }

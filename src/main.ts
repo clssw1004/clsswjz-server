@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import * as dotenv from 'dotenv';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
+import { generateApiDocs } from './utils/doc.util';
 dotenv.config();
 
 async function bootstrap() {
@@ -17,6 +18,11 @@ async function bootstrap() {
       forbidNonWhitelisted: true, // 当出现未定义的属性时抛出错误
     }),
   );
+
+  // 生成API文档
+  if (process.env.NODE_ENV === 'development') {
+    generateApiDocs();
+  }
 
   await app.listen(process.env.PORT ?? 3000);
 }

@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../pojo/entities/user.entity';
@@ -27,22 +31,26 @@ export class UserService {
     }
 
     // 使用事务确保用户创建和数据初始化是原子操作
-    return await this.userRepository.manager.transaction(async (transactionalEntityManager) => {
-      // 创建用户
-      const user = this.userRepository.create(userData);
-      const savedUser = await transactionalEntityManager.save(user);
+    return await this.userRepository.manager.transaction(
+      async (transactionalEntityManager) => {
+        // 创建用户
+        const user = this.userRepository.create(userData);
+        const savedUser = await transactionalEntityManager.save(user);
 
-      // 初始化用户数据
-      await this.userDataInitService.initializeUserData(savedUser.id);
+        // 初始化用户数据
+        await this.userDataInitService.initializeUserData(savedUser.id);
 
-      return savedUser;
-    });
+        return savedUser;
+      },
+    );
   }
 
-  async findByInviteCode(inviteCode: string): Promise<Pick<User, 'id' | 'nickname'>> {
+  async findByInviteCode(
+    inviteCode: string,
+  ): Promise<Pick<User, 'id' | 'nickname'>> {
     const user = await this.userRepository.findOne({
       where: { inviteCode },
-      select: ['id', 'nickname']
+      select: ['id', 'nickname'],
     });
 
     if (!user) {
@@ -54,7 +62,7 @@ export class UserService {
 
   async resetInviteCode(userId: string): Promise<{ inviteCode: string }> {
     const user = await this.userRepository.findOne({
-      where: { id: userId }
+      where: { id: userId },
     });
 
     if (!user) {
@@ -62,10 +70,10 @@ export class UserService {
     }
 
     const newInviteCode = generateUid();
-    
+
     await this.userRepository.update(
       { id: userId },
-      { inviteCode: newInviteCode }
+      { inviteCode: newInviteCode },
     );
 
     return { inviteCode: newInviteCode };

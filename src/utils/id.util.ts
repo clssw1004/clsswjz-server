@@ -15,11 +15,11 @@ export const generateUid = (length: number = 8): string => {
 };
 
 /**
- * 生成不带连字符的UUID
- * 用于替代默认的UUID生成
- * @returns 32位的UUID字符串（不含连字符）
+ * 生成主键ID
+ * 生成32位的字符串，模拟UUID但不包含连字符
+ * @returns 32位的随机字符串
  */
-export const generateId = (): string => {
+export const generatePrimaryKey = (): string => {
   const nanoid = customAlphabet(alphabet, 32);
   return nanoid();
 };

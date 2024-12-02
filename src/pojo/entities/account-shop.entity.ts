@@ -1,8 +1,8 @@
 import { Entity, Column } from 'typeorm';
-import { BaseEntity } from './base.entity';
+import { BaseBusinessEntity } from './base.entity';
 
 @Entity('account_shops')
-export class AccountShop extends BaseEntity {
+export class AccountShop extends BaseBusinessEntity {
   @Column({
     length: 100,
     comment: '商家名称',

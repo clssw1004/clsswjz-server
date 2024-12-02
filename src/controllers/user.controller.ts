@@ -1,4 +1,12 @@
-import { Controller, Post, Body, Get, Param, Put, Request } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Param,
+  Put,
+  Request,
+} from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import { User } from '../pojo/entities/user.entity';
 import { Public } from '../decorators/public';

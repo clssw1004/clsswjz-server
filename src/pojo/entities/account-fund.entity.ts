@@ -1,5 +1,5 @@
 import { Entity, Column } from 'typeorm';
-import { BaseEntity } from './base.entity';
+import { BaseBusinessEntity } from './base.entity';
 
 export enum FundType {
   CASH = 'CASH', // 现金
@@ -11,7 +11,7 @@ export enum FundType {
 }
 
 @Entity('account_funds')
-export class AccountFund extends BaseEntity {
+export class AccountFund extends BaseBusinessEntity {
   @Column({
     length: 50,
     comment: '资金来源名称',

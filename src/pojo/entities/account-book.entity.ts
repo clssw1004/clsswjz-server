@@ -1,10 +1,10 @@
 import { Entity, Column, Unique } from 'typeorm';
 import { Currency } from '../enums/currency.enum';
-import { BaseEntity } from './base.entity';
+import { BaseBusinessEntity } from './base.entity';
 
 @Entity('account_books')
 @Unique(['createdBy', 'name'])
-export class AccountBook extends BaseEntity {
+export class AccountBook extends BaseBusinessEntity {
   @Column({ length: 50, comment: '账本名称' })
   name: string;
 

@@ -1,9 +1,9 @@
 import { Entity, Column } from 'typeorm';
 import { ItemType } from '../enums/item-type.enum';
-import { BaseEntity } from './base.entity';
+import { BaseBusinessEntity } from './base.entity';
 
 @Entity('account_items')
-export class AccountItem extends BaseEntity {
+export class AccountItem extends BaseBusinessEntity {
   @Column({ type: 'decimal', precision: 10, scale: 2, comment: '金额' })
   amount: number;
 

@@ -1,9 +1,8 @@
-import { IsOptional, IsUUID, IsString, IsDateString, IsArray } from 'class-validator';
+import { IsOptional, IsString, IsDateString, IsArray } from 'class-validator';
 import { ItemType } from '../../enums/item-type.enum';
 
 export class QueryAccountItemDto {
   @IsOptional()
-  @IsUUID()
   accountBookId?: string;
 
   @IsOptional()

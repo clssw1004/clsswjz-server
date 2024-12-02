@@ -82,7 +82,7 @@ export class AccountBookService {
     const savedAccountBook = await this.accountBookRepository.save(accountBook);
 
     // 创建账本用户关联
-    await this.accountUserRepository.save({
+    const accountBookUser = this.accountUserRepository.create({
       accountBookId: savedAccountBook.id,
       userId: userId,
       canViewBook: true,
@@ -92,6 +92,7 @@ export class AccountBookService {
       canEditItem: true,
       canDeleteItem: true,
     });
+    await this.accountUserRepository.save(accountBookUser);
 
     // 创建默认分类
     await this.createDefaultCategories(savedAccountBook.id, userId);
@@ -116,7 +117,7 @@ export class AccountBookService {
         'abu.canDeleteItem as canDeleteItem',
         'u.nickname as nickname',
       ])
-      .leftJoin('account_users', 'u', 'u.id = abu.userId')
+      .leftJoin('users', 'u', 'u.id = abu.userId')
       .where('abu.accountBookId = :accountBookId', {
         accountBookId: accountBook.id,
       })
@@ -165,8 +166,11 @@ export class AccountBookService {
         'abu.canViewItem as canViewItem',
         'abu.canEditItem as canEditItem',
         'abu.canDeleteItem as canDeleteItem',
+        'creator.id as fromId',
+        'creator.nickname as fromName',
       ])
       .innerJoin('rel_accountbook_user', 'abu', 'abu.accountBookId = book.id')
+      .innerJoin('users', 'creator', 'creator.id = book.createdBy')
       .where('abu.userId = :userId', { userId })
       .andWhere('abu.canViewBook = :canView', { canView: true });
 
@@ -204,8 +208,11 @@ export class AccountBookService {
         'abu.canViewItem as canViewItem',
         'abu.canEditItem as canEditItem',
         'abu.canDeleteItem as canDeleteItem',
+        'creator.id as fromId',
+        'creator.nickname as fromName',
       ])
       .innerJoin('rel_accountbook_user', 'abu', 'abu.accountBookId = book.id')
+      .innerJoin('users', 'creator', 'creator.id = book.createdBy')
       .where('book.id = :id', { id })
       .andWhere('abu.userId = :userId', { userId })
       .getRawOne();
@@ -218,6 +225,7 @@ export class AccountBookService {
   }
 
   async update(updateDto: UpdateAccountBookDto, userId: string): Promise<any> {
+    console.log(updateDto);
     // 检查用户是否有编辑权限
     const accountUser = await this.accountUserRepository.findOne({
       where: {
