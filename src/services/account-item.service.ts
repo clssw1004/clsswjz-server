@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AccountItem } from '../pojo/entities/account-item.entity';
@@ -8,10 +12,10 @@ import { AccountBookFund } from '../pojo/entities/account-book-fund.entity';
 import { CreateAccountItemDto } from '../pojo/dto/account-item/create-account-item.dto';
 import { UpdateAccountItemDto } from '../pojo/dto/account-item/update-account-item.dto';
 import { ItemType } from '../pojo/enums/item-type.enum';
-import * as shortid from 'shortid';
 import { QueryAccountItemDto } from '../pojo/dto/account-item/query-account-item.dto';
 import { CategoryService } from './category.service';
 import { AccountShopService } from './account-shop.service';
+import { generateUid } from '../utils/id.util';
 
 @Injectable()
 export class AccountService {
@@ -26,7 +30,7 @@ export class AccountService {
     private accountBookRepository: Repository<AccountBook>,
     @InjectRepository(AccountBookFund)
     private accountBookFundRepository: Repository<AccountBookFund>,
-  ) { }
+  ) {}
 
   /**
    * 获取或创建分类
@@ -47,7 +51,7 @@ export class AccountService {
 
     if (!category) {
       category = this.categoryRepository.create({
-        code: shortid.generate(),
+        code: generateUid(),
         name: categoryName,
         accountBookId,
         createdBy: userId,
@@ -136,7 +140,7 @@ export class AccountService {
     // 更新分类的最近账目时间
     await this.categoryRepository.update(
       { code: category.code },
-      { lastAccountItemAt: savedAccountItem.createdAt }
+      { lastAccountItemAt: savedAccountItem.createdAt },
     );
 
     return savedAccountItem;

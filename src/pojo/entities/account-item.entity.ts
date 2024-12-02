@@ -1,17 +1,9 @@
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Entity, Column } from 'typeorm';
 import { ItemType } from '../enums/item-type.enum';
+import { BaseEntity } from './base.entity';
 
 @Entity('account_items')
-export class AccountItem {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
+export class AccountItem extends BaseEntity {
   @Column({ type: 'decimal', precision: 10, scale: 2, comment: '金额' })
   amount: number;
 
@@ -34,25 +26,13 @@ export class AccountItem {
   @Column({ comment: '账本ID' })
   accountBookId: string;
 
-  @CreateDateColumn({ comment: '创建时间' })
-  createdAt: Date;
-
-  @UpdateDateColumn({ comment: '更新时间' })
-  updatedAt: Date;
-
-  @Column({ comment: '创建人ID' })
-  createdBy: string;
-
-  @Column({ comment: '更新人ID' })
-  updatedBy: string;
-
   @Column({ comment: '账户ID' })
   fundId: string;
 
   @Column({
     length: 20,
     nullable: true,
-    comment: '商家编码'
+    comment: '商家编码',
   })
   shop: string;
 }

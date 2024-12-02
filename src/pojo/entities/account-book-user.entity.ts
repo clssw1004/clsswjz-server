@@ -1,18 +1,9 @@
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-  Unique,
-} from 'typeorm';
+import { Entity, Column, Unique } from 'typeorm';
+import { BaseEntity } from './base.entity';
 
 @Entity('rel_accountbook_user')
-@Unique(['userId','accountBookId'])
-export class AccountBookUser {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
+@Unique(['userId', 'accountBookId'])
+export class AccountBookUser extends BaseEntity {
   @Column({ comment: '用户ID' })
   userId: string;
 
@@ -38,10 +29,4 @@ export class AccountBookUser {
 
   @Column({ comment: '删除账目权限', default: false })
   canDeleteItem: boolean;
-
-  @CreateDateColumn({ comment: '创建时间' })
-  createdAt: Date;
-
-  @UpdateDateColumn({ comment: '更新时间' })
-  updatedAt: Date;
 }

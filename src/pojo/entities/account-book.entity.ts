@@ -1,30 +1,15 @@
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-  Unique,
-} from 'typeorm';
+import { Entity, Column, Unique } from 'typeorm';
 import { Currency } from '../enums/currency.enum';
+import { BaseEntity } from './base.entity';
 
 @Entity('account_books')
 @Unique(['createdBy', 'name'])
-export class AccountBook {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
+export class AccountBook extends BaseEntity {
   @Column({ length: 50, comment: '账本名称' })
   name: string;
 
   @Column({ length: 200, nullable: true, comment: '账本描述' })
   description: string;
-
-  @CreateDateColumn({ comment: '创建时间' })
-  createdAt: Date;
-
-  @UpdateDateColumn({ comment: '更新时间' })
-  updatedAt: Date;
 
   @Column({
     type: 'varchar',
@@ -33,15 +18,9 @@ export class AccountBook {
   })
   currencySymbol: Currency;
 
-  @Column({ comment: '创建人ID' })
-  createdBy: string;
-
-  @Column({ comment: '更新人ID' })
-  updatedBy: string;
-
-  @Column({ 
-    nullable: true, 
-    comment: '账本图标' 
+  @Column({
+    nullable: true,
+    comment: '账本图标',
   })
   icon?: string;
 }

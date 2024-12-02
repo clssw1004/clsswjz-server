@@ -1,10 +1,8 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { Entity, Column } from 'typeorm';
+import { BaseEntity } from './base.entity';
 
 @Entity('account_categories')
-export class Category {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
+export class Category extends BaseEntity {
   @Column({ length: 128, comment: '分类名称' })
   name: string;
 
@@ -14,13 +12,6 @@ export class Category {
   @Column({ length: 16, unique: true, comment: '分类编码' })
   code: string;
 
-  @Column({ comment: '创建人ID' })
-  createdBy: string;
-
-  @Column({ comment: '更新人ID' })
-  updatedBy: string;
-
   @Column({ nullable: true, comment: '最近账目创建时间' })
   lastAccountItemAt: Date;
-
 }

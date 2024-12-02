@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AccountShop } from '../pojo/entities/account-shop.entity';
-import * as shortid from 'shortid';
+import { generateUid } from '../utils/id.util';
 
 @Injectable()
 export class AccountShopService {
@@ -29,7 +29,7 @@ export class AccountShopService {
     if (!shop) {
       shop = this.accountShopRepository.create({
         name,
-        shopCode: shortid.generate(),
+        shopCode: generateUid(),
         accountBookId,
         createdBy: userId,
         updatedBy: userId,
@@ -56,4 +56,4 @@ export class AccountShopService {
       await this.accountShopRepository.remove(shop);
     }
   }
-} 
+}

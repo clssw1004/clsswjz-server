@@ -5,15 +5,15 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository } from 'typeorm';
 import { AccountBook } from '../pojo/entities/account-book.entity';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
 import { Category } from '../pojo/entities/category.entity';
 import { DEFAULT_CATEGORIES } from '../config/default-categories.config';
-import * as shortid from 'shortid';
 import { UpdateAccountBookDto } from '../pojo/dto/account-book/update-account-book.dto';
 import { User } from '../pojo/entities/user.entity';
 import { CreateAccountBookDto } from '../pojo/dto/account-book/create-account-book.dto';
+import { generateUid } from '../utils/id.util';
 
 @Injectable()
 export class AccountBookService {
@@ -26,14 +26,17 @@ export class AccountBookService {
     private categoryRepository: Repository<Category>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
-  ) { }
+  ) {}
 
   // 创建默认分类
-  private async createDefaultCategories(accountBookId: string, userId: string): Promise<void> {
-    const categories = DEFAULT_CATEGORIES.map(category => ({
+  private async createDefaultCategories(
+    accountBookId: string,
+    userId: string,
+  ): Promise<void> {
+    const categories = DEFAULT_CATEGORIES.map((category) => ({
       name: category.name,
       accountBookId: accountBookId,
-      code: shortid.generate(),
+      code: generateUid(),
       createdBy: userId,
       updatedBy: userId,
     }));
@@ -44,12 +47,15 @@ export class AccountBookService {
   /**
    * 检查账本名称是否已存在
    */
-  private async checkNameExists(name: string, userId: string): Promise<boolean> {
+  private async checkNameExists(
+    name: string,
+    userId: string,
+  ): Promise<boolean> {
     const count = await this.accountBookRepository.count({
       where: {
         name,
-        createdBy: userId
-      }
+        createdBy: userId,
+      },
     });
     return count > 0;
   }
@@ -59,7 +65,10 @@ export class AccountBookService {
     userId: string,
   ): Promise<AccountBook> {
     // 检查账本名称是否已存在
-    const nameExists = await this.checkNameExists(createAccountBookDto.name, userId);
+    const nameExists = await this.checkNameExists(
+      createAccountBookDto.name,
+      userId,
+    );
     if (nameExists) {
       throw new ConflictException('账本名称已存在');
     }
@@ -105,10 +114,12 @@ export class AccountBookService {
         'abu.canViewItem as canViewItem',
         'abu.canEditItem as canEditItem',
         'abu.canDeleteItem as canDeleteItem',
-        'u.nickname as nickname'
+        'u.nickname as nickname',
       ])
       .leftJoin('account_users', 'u', 'u.id = abu.userId')
-      .where('abu.accountBookId = :accountBookId', { accountBookId: accountBook.id })
+      .where('abu.accountBookId = :accountBookId', {
+        accountBookId: accountBook.id,
+      })
       .andWhere('abu.userId != :currentUserId', { currentUserId: userId })
       .getRawMany();
 
@@ -128,9 +139,9 @@ export class AccountBookService {
         canDeleteBook: !!accountBook.canDeleteBook,
         canViewItem: !!accountBook.canViewItem,
         canEditItem: !!accountBook.canEditItem,
-        canDeleteItem: !!accountBook.canDeleteItem
+        canDeleteItem: !!accountBook.canDeleteItem,
       },
-      members: members.map(member => ({
+      members: members.map((member) => ({
         userId: member.userId,
         nickname: member.nickname,
         canViewBook: !!member.canViewBook,
@@ -138,8 +149,8 @@ export class AccountBookService {
         canDeleteBook: !!member.canDeleteBook,
         canViewItem: !!member.canViewItem,
         canEditItem: !!member.canEditItem,
-        canDeleteItem: !!member.canDeleteItem
-      }))
+        canDeleteItem: !!member.canDeleteItem,
+      })),
     };
   }
 
@@ -153,7 +164,7 @@ export class AccountBookService {
         'abu.canDeleteBook as canDeleteBook',
         'abu.canViewItem as canViewItem',
         'abu.canEditItem as canEditItem',
-        'abu.canDeleteItem as canDeleteItem'
+        'abu.canDeleteItem as canDeleteItem',
       ])
       .innerJoin('rel_accountbook_user', 'abu', 'abu.accountBookId = book.id')
       .where('abu.userId = :userId', { userId })
@@ -164,7 +175,7 @@ export class AccountBookService {
       .getRawMany();
 
     return Promise.all(
-      results.map(item => this.getAccountBookDetail(item, userId))
+      results.map((item) => this.getAccountBookDetail(item, userId)),
     );
   }
 
@@ -192,7 +203,7 @@ export class AccountBookService {
         'abu.canDeleteBook as canDeleteBook',
         'abu.canViewItem as canViewItem',
         'abu.canEditItem as canEditItem',
-        'abu.canDeleteItem as canDeleteItem'
+        'abu.canDeleteItem as canDeleteItem',
       ])
       .innerJoin('rel_accountbook_user', 'abu', 'abu.accountBookId = book.id')
       .where('book.id = :id', { id })
@@ -222,7 +233,7 @@ export class AccountBookService {
 
     // 检查账本是否存在
     const accountBook = await this.accountBookRepository.findOne({
-      where: { id: updateDto.id }
+      where: { id: updateDto.id },
     });
 
     if (!accountBook) {
@@ -231,7 +242,7 @@ export class AccountBookService {
 
     // 获取当前账本所有的成员关联信息
     const existingMembers = await this.accountUserRepository.find({
-      where: { accountBookId: updateDto.id }
+      where: { accountBookId: updateDto.id },
     });
 
     // 更新账本基本信息
@@ -240,7 +251,7 @@ export class AccountBookService {
       description: updateDto.description,
       currencySymbol: updateDto.currencySymbol,
       icon: updateDto.icon,
-      updatedBy: userId
+      updatedBy: userId,
     });
 
     // 处理成员信息
@@ -253,7 +264,7 @@ export class AccountBookService {
       }
 
       const newMember = updateDto.members.find(
-        m => m.userId === existingMember.userId
+        (m) => m.userId === existingMember.userId,
       );
 
       if (newMember) {
@@ -267,25 +278,27 @@ export class AccountBookService {
               canDeleteBook: newMember.canDeleteBook,
               canViewItem: newMember.canViewItem,
               canEditItem: newMember.canEditItem,
-              canDeleteItem: newMember.canDeleteItem
-            }
-          )
+              canDeleteItem: newMember.canDeleteItem,
+            },
+          ),
         );
       } else {
         // 情况2：删除不再存在的成员信息
         memberOperations.push(
           this.accountUserRepository.delete({
             accountBookId: updateDto.id,
-            userId: existingMember.userId
-          })
+            userId: existingMember.userId,
+          }),
         );
       }
     }
 
     // 情况3：添加新成员
-    const existingUserIds = existingMembers.map(m => m.userId);
+    const existingUserIds = existingMembers.map((m) => m.userId);
     const newMembers = updateDto.members.filter(
-      m => !existingUserIds.includes(m.userId) && m.userId !== accountBook.createdBy
+      (m) =>
+        !existingUserIds.includes(m.userId) &&
+        m.userId !== accountBook.createdBy,
     );
 
     for (const newMember of newMembers) {
@@ -298,8 +311,8 @@ export class AccountBookService {
           canDeleteBook: newMember.canDeleteBook,
           canViewItem: newMember.canViewItem,
           canEditItem: newMember.canEditItem,
-          canDeleteItem: newMember.canDeleteItem
-        })
+          canDeleteItem: newMember.canDeleteItem,
+        }),
       );
     }
 
@@ -346,17 +359,29 @@ export class AccountBookService {
   }
 
   // 在账目相关操作前调用权限检查，例如：
-  async createItem(accountBookId: string, userId: string, ...other): Promise<any> {
+  async createItem(
+    accountBookId: string,
+    userId: string,
+    ...other
+  ): Promise<any> {
     await this.checkPermission(accountBookId, userId, 'canEditItem');
     // 继续处理创建账目的逻辑
   }
 
-  async updateItem(accountBookId: string, userId: string, ...other): Promise<any> {
+  async updateItem(
+    accountBookId: string,
+    userId: string,
+    ...other
+  ): Promise<any> {
     await this.checkPermission(accountBookId, userId, 'canEditItem');
     // 继续处理更新账目的逻辑
   }
 
-  async deleteItem(accountBookId: string, userId: string, ...other): Promise<any> {
+  async deleteItem(
+    accountBookId: string,
+    userId: string,
+    ...other
+  ): Promise<any> {
     await this.checkPermission(accountBookId, userId, 'canDeleteItem');
     // 继续处理删除账目的逻辑
   }

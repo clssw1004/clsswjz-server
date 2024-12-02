@@ -1,33 +1,30 @@
 import {
   Entity,
   Column,
-  PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
   Unique,
 } from 'typeorm';
+import { BaseEntity } from './base.entity';
 
 @Entity('rel_accountbook_funds')
 @Unique(['accountBookId', 'fundId'])
-export class AccountBookFund {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
+export class AccountBookFund extends BaseEntity {
   @Column({ comment: '账本ID' })
   accountBookId: string;
 
   @Column({ comment: '资产ID' })
   fundId: string;
 
-  @Column({ 
-    default: true, 
-    comment: '是否可入账' 
+  @Column({
+    default: true,
+    comment: '是否可入账',
   })
   fundIn: boolean;
 
-  @Column({ 
-    default: true, 
-    comment: '是否可出账' 
+  @Column({
+    default: true,
+    comment: '是否可出账',
   })
   fundOut: boolean;
 
@@ -36,4 +33,4 @@ export class AccountBookFund {
 
   @UpdateDateColumn({ comment: '更新时间' })
   updatedAt: Date;
-} 
+}
