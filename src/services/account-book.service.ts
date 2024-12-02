@@ -11,7 +11,6 @@ import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
 import { Category } from '../pojo/entities/category.entity';
 import { DEFAULT_CATEGORIES } from '../config/default-categories.config';
 import { UpdateAccountBookDto } from '../pojo/dto/account-book/update-account-book.dto';
-import { User } from '../pojo/entities/user.entity';
 import { CreateAccountBookDto } from '../pojo/dto/account-book/create-account-book.dto';
 import { generateUid } from '../utils/id.util';
 
@@ -24,8 +23,6 @@ export class AccountBookService {
     private accountUserRepository: Repository<AccountBookUser>,
     @InjectRepository(Category)
     private categoryRepository: Repository<Category>,
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
   ) {}
 
   // 创建默认分类
@@ -134,6 +131,8 @@ export class AccountBookService {
       updatedAt: accountBook.updatedAt,
       createdBy: accountBook.createdBy,
       updatedBy: accountBook.updatedBy,
+      fromId: accountBook.fromId,
+      fromName: accountBook.fromName,
       permissions: {
         canViewBook: !!accountBook.canViewBook,
         canEditBook: !!accountBook.canEditBook,
@@ -266,7 +265,6 @@ export class AccountBookService {
     const memberOperations = [];
 
     for (const existingMember of existingMembers) {
-      // 跳过账本所有者的成员信息
       if (existingMember.userId === accountBook.createdBy) {
         continue;
       }
@@ -310,17 +308,18 @@ export class AccountBookService {
     );
 
     for (const newMember of newMembers) {
+      const newAccountBookUser = this.accountUserRepository.create({
+        accountBookId: updateDto.id,
+        userId: newMember.userId,
+        canViewBook: newMember.canViewBook,
+        canEditBook: newMember.canEditBook,
+        canDeleteBook: newMember.canDeleteBook,
+        canViewItem: newMember.canViewItem,
+        canEditItem: newMember.canEditItem,
+        canDeleteItem: newMember.canDeleteItem,
+      });
       memberOperations.push(
-        this.accountUserRepository.save({
-          accountBookId: updateDto.id,
-          userId: newMember.userId,
-          canViewBook: newMember.canViewBook,
-          canEditBook: newMember.canEditBook,
-          canDeleteBook: newMember.canDeleteBook,
-          canViewItem: newMember.canViewItem,
-          canEditItem: newMember.canEditItem,
-          canDeleteItem: newMember.canDeleteItem,
-        }),
+        this.accountUserRepository.save(newAccountBookUser),
       );
     }
 
@@ -367,29 +366,17 @@ export class AccountBookService {
   }
 
   // 在账目相关操作前调用权限检查，例如：
-  async createItem(
-    accountBookId: string,
-    userId: string,
-    ...other
-  ): Promise<any> {
+  async createItem(accountBookId: string, userId: string): Promise<any> {
     await this.checkPermission(accountBookId, userId, 'canEditItem');
     // 继续处理创建账目的逻辑
   }
 
-  async updateItem(
-    accountBookId: string,
-    userId: string,
-    ...other
-  ): Promise<any> {
+  async updateItem(accountBookId: string, userId: string): Promise<any> {
     await this.checkPermission(accountBookId, userId, 'canEditItem');
     // 继续处理更新账目的逻辑
   }
 
-  async deleteItem(
-    accountBookId: string,
-    userId: string,
-    ...other
-  ): Promise<any> {
+  async deleteItem(accountBookId: string, userId: string): Promise<any> {
     await this.checkPermission(accountBookId, userId, 'canDeleteItem');
     // 继续处理删除账目的逻辑
   }

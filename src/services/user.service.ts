@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { User } from '../pojo/entities/user.entity';
 import { UserDataInitService } from './user-data-init.service';
 import { generateUid } from '../utils/id.util';
+import { UpdateUserDto } from '../pojo/dto/user/update-user.dto';
 
 @Injectable()
 export class UserService {
@@ -77,5 +78,60 @@ export class UserService {
     );
 
     return { inviteCode: newInviteCode };
+  }
+
+  /**
+   * 获取当前用户信息
+   */
+  async getCurrentUser(userId: string): Promise<Omit<User, 'password'>> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'username', 'nickname', 'email', 'phone', 'inviteCode', 'createdAt', 'updatedAt'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('用户不存在');
+    }
+
+    return user;
+  }
+
+  /**
+   * 更新用户信息
+   */
+  async updateUser(userId: string, updateUserDto: UpdateUserDto): Promise<Omit<User, 'password'>> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('用户不存在');
+    }
+
+    // 如果要更新邮箱，检查邮箱是否已被使用
+    if (updateUserDto.email) {
+      const existingUser = await this.userRepository.findOne({
+        where: { email: updateUserDto.email },
+      });
+      if (existingUser && existingUser.id !== userId) {
+        throw new ConflictException('该邮箱已被使用');
+      }
+    }
+
+    // 如果要更新手机号，检查手机号是否已被使用
+    if (updateUserDto.phone) {
+      const existingUser = await this.userRepository.findOne({
+        where: { phone: updateUserDto.phone },
+      });
+      if (existingUser && existingUser.id !== userId) {
+        throw new ConflictException('该手机号已被使用');
+      }
+    }
+
+    // 更新用户信息
+    await this.userRepository.update(userId, updateUserDto);
+
+    // 返回更新后的用户信息
+    return this.getCurrentUser(userId);
   }
 }

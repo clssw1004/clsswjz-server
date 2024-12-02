@@ -83,6 +83,47 @@ Response:
 }
 \`\`\`
 
+### 获取当前用户信息
+\`\`\`
+GET /api/users/current
+
+Response:
+{
+  "id": string,
+  "username": string,
+  "nickname": string,
+  "email": string?,
+  "phone": string?,
+  "inviteCode": string,
+  "createdAt": string,
+  "updatedAt": string
+}
+\`\`\`
+
+### 更新当前用户信息
+\`\`\`
+PUT /api/users/current
+
+Request Body:
+{
+  "nickname": string?,    // 昵称（可选）
+  "email": string?,      // 邮箱（可选）
+  "phone": string?       // 手机号（可选）
+}
+
+Response:
+{
+  "id": string,
+  "username": string,
+  "nickname": string,
+  "email": string?,
+  "phone": string?,
+  "inviteCode": string,
+  "createdAt": string,
+  "updatedAt": string
+}
+\`\`\`
+
 ## 账本相关
 
 ### 创建账本
