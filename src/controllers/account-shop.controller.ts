@@ -1,9 +1,15 @@
-import { Controller, Get, Delete, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Query, Request } from '@nestjs/common';
 import { AccountShopService } from '../services/account-shop.service';
+import { CreateAccountShopDto } from '../pojo/dto/account-shop/create-account-shop.dto';
 
 @Controller('account/shop')
 export class AccountShopController {
   constructor(private readonly accountShopService: AccountShopService) {}
+
+  @Post()
+  async create(@Body() createDto: CreateAccountShopDto, @Request() req) {
+    return await this.accountShopService.create(createDto, req.user.sub);
+  }
 
   /**
    * 获取账本下的所有商家
@@ -28,4 +34,4 @@ export class AccountShopController {
   remove(@Param('id') id: string) {
     return this.accountShopService.remove(id);
   }
-} 
+}

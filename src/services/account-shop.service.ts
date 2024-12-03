@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AccountShop } from '../pojo/entities/account-shop.entity';
 import { generateUid } from '../utils/id.util';
+import { CreateAccountShopDto } from '../pojo/dto/account-shop/create-account-shop.dto';
 
 @Injectable()
 export class AccountShopService {
@@ -37,6 +38,36 @@ export class AccountShopService {
       await this.accountShopRepository.save(shop);
     }
     return shop;
+  }
+
+  /**
+   * 创建商家
+   */
+  async create(
+    createDto: CreateAccountShopDto,
+    userId: string,
+  ): Promise<AccountShop> {
+    // 检查同一账本下是否存在同名商家
+    const existingShop = await this.accountShopRepository.findOne({
+      where: {
+        name: createDto.name,
+        accountBookId: createDto.accountBookId,
+      },
+    });
+
+    if (existingShop) {
+      throw new ConflictException('该账本下已存在同名商家');
+    }
+
+    const shop = this.accountShopRepository.create({
+      name: createDto.name,
+      accountBookId: createDto.accountBookId,
+      shopCode: generateUid(),
+      createdBy: userId,
+      updatedBy: userId,
+    });
+
+    return await this.accountShopRepository.save(shop);
   }
 
   async findAll(accountBookId: string) {

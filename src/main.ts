@@ -8,6 +8,14 @@ dotenv.config();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // 添加 CORS 配置
+  app.enableCors({
+    origin: true, // 允许所有来源，生产环境建议设置具体的域名
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+  });
+
   const configService = app.get(ConfigService);
   app.setGlobalPrefix(configService.get<string>('API_PREFIX', 'api'));
   // 添加全局验证管道

@@ -129,7 +129,7 @@ export class AccountService {
     // 创建账目
     const accountItem = this.accountItemRepository.create({
       ...createAccountItemDto,
-      shop: shopCode,
+      shopCode,
       categoryCode: category.code,
       createdBy: userId,
       updatedBy: userId,
@@ -155,7 +155,12 @@ export class AccountService {
         'category',
         'account.categoryCode = category.code',
       )
-      .select(['account.*', 'category.name as category']);
+      .leftJoinAndSelect(
+        'account_shops',
+        'shops',
+        'account.shopCode = shops.shopCode',
+      )
+      .select(['account.*', 'category.name as category', 'shops.name as shop']);
 
     // 添加筛选条件
     if (queryParams) {
@@ -255,7 +260,17 @@ export class AccountService {
         'category',
         'account.categoryCode = category.code',
       )
-      .select(['account.*', 'category.name as category'])
+      .leftJoinAndSelect(
+        'account_shops',
+        'shop',
+        'account.shopCode = shop.shopCode',
+      )
+      .select([
+        'account.*',
+        'category.name as category',
+        'shop.name as shop',
+        'shop.shopCode as shopCode',
+      ])
       .where('account.id = :id', { id })
       .getRawOne();
 
@@ -273,6 +288,7 @@ export class AccountService {
     updateAccountItemDto: UpdateAccountItemDto,
     userId: string,
   ) {
+    console.log('updateAccountItemDto', updateAccountItemDto);
     const accountItem = await this.accountItemRepository.findOneBy({ id });
     if (!accountItem) {
       throw new NotFoundException('记账条目不存在');
@@ -298,17 +314,22 @@ export class AccountService {
     }
 
     // 处理商家信息
-    if (updateAccountItemDto.shop) {
-      const shop = await this.accountShopService.getOrCreateShop(
-        updateAccountItemDto.shop,
-        accountItem.accountBookId,
-        userId,
-      );
-      accountItem.shop = shop.shopCode;
+    if (updateAccountItemDto.shop !== undefined) {
+      if (updateAccountItemDto.shop) {
+        const shop = await this.accountShopService.getOrCreateShop(
+          updateAccountItemDto.shop,
+          accountItem.accountBookId,
+          userId,
+        );
+        accountItem.shopCode = shop.shopCode;
+      } else {
+        accountItem.shopCode = null;
+      }
     }
 
     Object.assign(accountItem, {
       ...updateAccountItemDto,
+      shopCode: accountItem.shopCode,
       updatedBy: userId,
     });
 

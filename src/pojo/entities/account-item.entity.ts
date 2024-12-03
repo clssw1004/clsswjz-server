@@ -34,5 +34,5 @@ export class AccountItem extends BaseBusinessEntity {
     nullable: true,
     comment: '商家编码',
   })
-  shop: string;
+  shopCode: string;
 }

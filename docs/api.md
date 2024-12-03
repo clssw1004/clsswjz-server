@@ -391,6 +391,29 @@ DELETE /api/account/shop/:id
 Response: void
 ```
 
+### 创建商家
+```
+POST /api/account/shop
+
+Request Body:
+{
+  "name": string,           // 商家名称
+  "accountBookId": string   // 所属账本ID
+}
+
+Response:
+{
+  "id": string,
+  "name": string,
+  "shopCode": string,
+  "accountBookId": string,
+  "createdBy": string,
+  "updatedBy": string,
+  "createdAt": string,
+  "updatedAt": string
+}
+```
+
 ## 数据结构
 
 ### Currency 枚举

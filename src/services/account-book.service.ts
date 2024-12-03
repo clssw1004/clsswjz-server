@@ -101,7 +101,38 @@ export class AccountBookService {
    * 获取账本详细信息（包含权限和成员信息）
    */
   private async getAccountBookDetail(accountBook: any, userId: string) {
-    // 查询其他成员信息
+    // 查询当前用户的权限信息（如果不是创建者）
+    let currentUserPermissions = {
+      canViewBook: true,
+      canEditBook: true,
+      canDeleteBook: true,
+      canViewItem: true,
+      canEditItem: true,
+      canDeleteItem: true,
+    };
+
+    if (accountBook.createdBy !== userId) {
+      const currentUserMember = await this.accountUserRepository
+        .createQueryBuilder('abu')
+        .where('abu.accountBookId = :accountBookId', {
+          accountBookId: accountBook.id,
+        })
+        .andWhere('abu.userId = :userId', { userId })
+        .getOne();
+
+      if (currentUserMember) {
+        currentUserPermissions = {
+          canViewBook: currentUserMember.canViewBook,
+          canEditBook: currentUserMember.canEditBook,
+          canDeleteBook: currentUserMember.canDeleteBook,
+          canViewItem: currentUserMember.canViewItem,
+          canEditItem: currentUserMember.canEditItem,
+          canDeleteItem: currentUserMember.canDeleteItem,
+        };
+      }
+    }
+
+    // 查询其他成员信息（不包括创建者）
     const members = await this.accountUserRepository
       .createQueryBuilder('abu')
       .select([
@@ -118,7 +149,7 @@ export class AccountBookService {
       .where('abu.accountBookId = :accountBookId', {
         accountBookId: accountBook.id,
       })
-      .andWhere('abu.userId != :currentUserId', { currentUserId: userId })
+      .andWhere('abu.userId != :createdBy', { createdBy: accountBook.createdBy })
       .getRawMany();
 
     return {
@@ -133,14 +164,7 @@ export class AccountBookService {
       updatedBy: accountBook.updatedBy,
       fromId: accountBook.fromId,
       fromName: accountBook.fromName,
-      permissions: {
-        canViewBook: !!accountBook.canViewBook,
-        canEditBook: !!accountBook.canEditBook,
-        canDeleteBook: !!accountBook.canDeleteBook,
-        canViewItem: !!accountBook.canViewItem,
-        canEditItem: !!accountBook.canEditItem,
-        canDeleteItem: !!accountBook.canDeleteItem,
-      },
+      permissions: currentUserPermissions,
       members: members.map((member) => ({
         userId: member.userId,
         nickname: member.nickname,
@@ -224,7 +248,6 @@ export class AccountBookService {
   }
 
   async update(updateDto: UpdateAccountBookDto, userId: string): Promise<any> {
-    console.log(updateDto);
     // 检查用户是否有编辑权限
     const accountUser = await this.accountUserRepository.findOne({
       where: {
@@ -265,6 +288,7 @@ export class AccountBookService {
     const memberOperations = [];
 
     for (const existingMember of existingMembers) {
+      // 跳过创建者的权限更新
       if (existingMember.userId === accountBook.createdBy) {
         continue;
       }
@@ -274,7 +298,7 @@ export class AccountBookService {
       );
 
       if (newMember) {
-        // 情况1：更新已存在的成员信息
+        // 更新已存在的成员信息
         memberOperations.push(
           this.accountUserRepository.update(
             { accountBookId: updateDto.id, userId: existingMember.userId },
@@ -289,7 +313,7 @@ export class AccountBookService {
           ),
         );
       } else {
-        // 情况2：删除不再存在的成员信息
+        // 删除不再存在的成员信息
         memberOperations.push(
           this.accountUserRepository.delete({
             accountBookId: updateDto.id,
@@ -299,12 +323,10 @@ export class AccountBookService {
       }
     }
 
-    // 情况3：添加新成员
+    // 添加新成员
     const existingUserIds = existingMembers.map((m) => m.userId);
     const newMembers = updateDto.members.filter(
-      (m) =>
-        !existingUserIds.includes(m.userId) &&
-        m.userId !== accountBook.createdBy,
+      (m) => !existingUserIds.includes(m.userId) && m.userId !== accountBook.createdBy,
     );
 
     for (const newMember of newMembers) {
