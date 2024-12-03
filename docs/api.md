@@ -414,6 +414,28 @@ Response:
 }
 ```
 
+### 更新商家
+```
+PUT /api/account/shop/:id
+
+Request Body:
+{
+  "name": string           // 商家名称
+}
+
+Response:
+{
+  "id": string,
+  "name": string,
+  "shopCode": string,
+  "accountBookId": string,
+  "createdBy": string,
+  "updatedBy": string,
+  "createdAt": string,
+  "updatedAt": string
+}
+```
+
 ## 数据结构
 
 ### Currency 枚举

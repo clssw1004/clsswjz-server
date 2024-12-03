@@ -1,9 +1,14 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not } from 'typeorm';
 import { AccountShop } from '../pojo/entities/account-shop.entity';
 import { generateUid } from '../utils/id.util';
 import { CreateAccountShopDto } from '../pojo/dto/account-shop/create-account-shop.dto';
+import { UpdateAccountShopDto } from '../pojo/dto/account-shop/update-account-shop.dto';
 
 @Injectable()
 export class AccountShopService {
@@ -86,5 +91,41 @@ export class AccountShopService {
     if (shop) {
       await this.accountShopRepository.remove(shop);
     }
+  }
+
+  /**
+   * 更新商家信息
+   */
+  async update(
+    id: string,
+    updateDto: UpdateAccountShopDto,
+    userId: string,
+  ): Promise<AccountShop> {
+    const shop = await this.accountShopRepository.findOne({
+      where: { id },
+    });
+
+    if (!shop) {
+      throw new NotFoundException('商家不存在');
+    }
+
+    // 检查同一账本下是否存在同名商家
+    const existingShop = await this.accountShopRepository.findOne({
+      where: {
+        name: updateDto.name,
+        accountBookId: shop.accountBookId,
+        id: Not(id), // 排除当前商家
+      },
+    });
+
+    if (existingShop) {
+      throw new ConflictException('该账本下已存在同名商家');
+    }
+
+    // 更新商家信息
+    shop.name = updateDto.name;
+    shop.updatedBy = userId;
+
+    return await this.accountShopRepository.save(shop);
   }
 }

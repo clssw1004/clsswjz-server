@@ -149,7 +149,9 @@ export class AccountBookService {
       .where('abu.accountBookId = :accountBookId', {
         accountBookId: accountBook.id,
       })
-      .andWhere('abu.userId != :createdBy', { createdBy: accountBook.createdBy })
+      .andWhere('abu.userId != :createdBy', {
+        createdBy: accountBook.createdBy,
+      })
       .getRawMany();
 
     return {
@@ -326,7 +328,9 @@ export class AccountBookService {
     // 添加新成员
     const existingUserIds = existingMembers.map((m) => m.userId);
     const newMembers = updateDto.members.filter(
-      (m) => !existingUserIds.includes(m.userId) && m.userId !== accountBook.createdBy,
+      (m) =>
+        !existingUserIds.includes(m.userId) &&
+        m.userId !== accountBook.createdBy,
     );
 
     for (const newMember of newMembers) {

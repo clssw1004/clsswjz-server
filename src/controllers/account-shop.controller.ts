@@ -1,6 +1,18 @@
-import { Controller, Get, Post, Body, Param, Delete, Query, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Body,
+  Param,
+  Delete,
+  Query,
+  Request,
+  Patch,
+} from '@nestjs/common';
 import { AccountShopService } from '../services/account-shop.service';
 import { CreateAccountShopDto } from '../pojo/dto/account-shop/create-account-shop.dto';
+import { UpdateAccountShopDto } from '../pojo/dto/account-shop/update-account-shop.dto';
 
 @Controller('account/shop')
 export class AccountShopController {
@@ -33,5 +45,17 @@ export class AccountShopController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.accountShopService.remove(id);
+  }
+
+  /**
+   * 更新商家信息
+   */
+  @Patch(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() updateDto: UpdateAccountShopDto,
+    @Request() req,
+  ) {
+    return await this.accountShopService.update(id, updateDto, req.user.sub);
   }
 }

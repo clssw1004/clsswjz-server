@@ -1,7 +1,8 @@
-import { Entity, Column } from 'typeorm';
+import { Entity, Column, Unique } from 'typeorm';
 import { BaseBusinessEntity } from './base.entity';
 
 @Entity('account_shops')
+@Unique(['accountBookId', 'name'])
 export class AccountShop extends BaseBusinessEntity {
   @Column({
     length: 100,
