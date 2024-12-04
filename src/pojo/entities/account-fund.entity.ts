@@ -6,8 +6,12 @@ export enum FundType {
   DEBIT_CARD = 'DEBIT', // 储蓄卡
   CREDIT_CARD = 'CREDIT', // 信用卡
   PREPAID_CARD = 'PREPAID', // 充值卡
+  ALIPAY = 'ALIPAY', // 支付宝
+  WECHAT = 'WECHAT', // 微信
   DEBT = 'DEBT', // 欠款
+  INVESTMENT = 'INVESTMENT', //
   E_WALLET = 'E_WALLET', // 网络钱包
+  OTHER = 'OTHER', // 其他
 }
 
 @Entity('account_funds')

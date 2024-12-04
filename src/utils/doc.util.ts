@@ -544,6 +544,35 @@ Response: Array<{
 const generateAccountItemDocs = () => {
   const docs = `# 记账相关接口
 
+## 数据结构
+
+### AccountItem 记账记录
+\`\`\`typescript
+{
+  id: string;              // 主键ID
+  amount: number;          // 金额
+  description: string;     // 描述
+  type: ItemType;         // 类型：EXPENSE-支出，INCOME-收入
+  categoryCode: string;    // 分类编码
+  accountDate: Date;      // 记账日期
+  accountBookId: string;  // 账本ID
+  fundId: string;         // 账户ID
+  shopCode: string;       // 商家编码
+  createdBy: string;      // 创建人ID
+  updatedBy: string;      // 更新人ID
+  createdAt: Date;        // 创建时间
+  updatedAt: Date;        // 更新时间
+}
+\`\`\`
+
+### ItemType 记账类型
+\`\`\`typescript
+enum ItemType {
+  EXPENSE = 'EXPENSE',   // 支出
+  INCOME = 'INCOME'      // 收入
+}
+\`\`\`
+
 ## 创建记账记录
 \`\`\`
 POST /api/account/item
@@ -561,11 +590,30 @@ Request Body:
 }
 
 Response: {
-  ...AccountItem,          // 继承 AccountItem 所有字段
-  category: string,        // 分类名称
-  shop: string?,          // 商家名称
-  shopCode: string?       // 商家编码
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": string,              // 主键ID
+    "amount": number,          // 金额
+    "description": string,     // 描述
+    "type": ItemType,         // 类型：EXPENSE-支出，INCOME-收入
+    "categoryCode": string,    // 分类编码
+    "category": string,        // 分类名称
+    "accountDate": Date,      // 记账日期
+    "accountBookId": string,  // 账本ID
+    "fundId": string,         // 账户ID
+    "shopCode": string?,      // 商家编码
+    "shop": string?,          // 商家名称
+    "createdBy": string,      // 创建人ID
+    "updatedBy": string,      // 更新人ID
+    "createdAt": Date,        // 创建时间
+    "updatedAt": Date         // 更新时间
+  }
 }
+
+Errors:
+- 404 账本不存在
+- 403 该账户在当前账本中不允许支出/收入
 \`\`\`
 
 ## 查询记账记录
@@ -588,12 +636,35 @@ Query Parameters:
   "maxAmount": number?        // 最大金额（可选）
 }
 
-Response: Array<{
-  ...AccountItem,          // 继承 AccountItem 所有字段
-  category: string,        // 分类名称
-  shop: string?,          // 商家名称
-  shopCode: string?       // 商家编码
-}>
+Response: {
+  "code": 200,
+  "message": "success",
+  "data": {
+    "items": Array<{
+      "id": string,              // 主键ID
+      "amount": number,          // 金额
+      "description": string,     // 描述
+      "type": ItemType,         // 类型：EXPENSE-支出，INCOME-收入
+      "categoryCode": string,    // 分类编码
+      "category": string,        // 分类名称
+      "accountDate": Date,      // 记账日期
+      "accountBookId": string,  // 账本ID
+      "fundId": string,         // 账户ID
+      "fundName": string,       // 账户名称
+      "shopCode": string?,      // 商家编码
+      "shop": string?,          // 商家名称
+      "createdBy": string,      // 创建人ID
+      "updatedBy": string,      // 更新人ID
+      "createdAt": Date,        // 创建时间
+      "updatedAt": Date         // 更新时间
+    }>,
+    "summary": {
+      "allIn": number,        // 总收入
+      "allOut": number,       // 总支出
+      "allBalance": number    // 结余（总收入-总支出）
+    }
+  }
+}
 \`\`\`
 
 ## 获取记账记录详情
@@ -601,11 +672,29 @@ Response: Array<{
 GET /api/account/item/:id
 
 Response: {
-  ...AccountItem,          // 继承 AccountItem 所有字段
-  category: string,        // 分类名称
-  shop: string?,          // 商家名称
-  shopCode: string?       // 商家编码
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": string,              // 主键ID
+    "amount": number,          // 金额
+    "description": string,     // 描述
+    "type": ItemType,         // 类型：EXPENSE-支出，INCOME-收入
+    "categoryCode": string,    // 分类编码
+    "category": string,        // 分类名称
+    "accountDate": Date,      // 记账日期
+    "accountBookId": string,  // 账本ID
+    "fundId": string,         // 账户ID
+    "shopCode": string?,      // 商家编码
+    "shop": string?,          // 商家名称
+    "createdBy": string,      // 创建人ID
+    "updatedBy": string,      // 更新人ID
+    "createdAt": Date,        // 创建时间
+    "updatedAt": Date         // 更新时间
+  }
 }
+
+Errors:
+- 404 记账记录不存在
 \`\`\`
 
 ## 更新记账记录
@@ -623,14 +712,45 @@ Request Body:
   "fundId": string?        // 资金账户ID（可选）
 }
 
-Response: 同"获取记账记录详情"
+Response: {
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": string,              // 主键ID
+    "amount": number,          // 金额
+    "description": string,     // 描述
+    "type": ItemType,         // 类型：EXPENSE-支出，INCOME-收入
+    "categoryCode": string,    // 分类编码
+    "category": string,        // 分类名称
+    "accountDate": Date,      // 记账日期
+    "accountBookId": string,  // 账本ID
+    "fundId": string,         // 账户ID
+    "shopCode": string?,      // 商家编码
+    "shop": string?,          // 商家名称
+    "createdBy": string,      // 创建人ID
+    "updatedBy": string,      // 更新人ID
+    "createdAt": Date,        // 创建时间
+    "updatedAt": Date         // 更新时间
+  }
+}
+
+Errors:
+- 404 记账记录不存在
+- 403 该账户在当前账本中不允许支出/收入
 \`\`\`
 
 ## 删除记账记录
 \`\`\`
 DELETE /api/account/item/:id
 
-Response: {}               // 返回空对象
+Response: {
+  "code": 200,
+  "message": "success",
+  "data": {}
+}
+
+Errors:
+- 404 记账记录不存在
 \`\`\`
 `;
 

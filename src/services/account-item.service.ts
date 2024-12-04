@@ -160,7 +160,17 @@ export class AccountService {
         'shops',
         'account.shopCode = shops.shopCode',
       )
-      .select(['account.*', 'category.name as category', 'shops.name as shop']);
+      .leftJoinAndSelect(
+        'account_funds',
+        'fund',
+        'account.fundId = fund.id',
+      )
+      .select([
+        'account.*',
+        'category.name as category',
+        'shops.name as shop',
+        'fund.name as fundName',
+      ]);
 
     // 添加筛选条件
     if (queryParams) {
@@ -256,9 +266,33 @@ export class AccountService {
 
     const accountItems = await queryBuilder.getRawMany();
 
-    return accountItems.map((item) => ({
-      ...item,
-    }));
+    // 计算总收入和总支出
+    const summary = accountItems.reduce(
+      (acc, item) => {
+        const amount = Number(item.amount);
+        if (item.type === ItemType.INCOME) {
+          acc.allIn += amount;
+        } else if (item.type === ItemType.EXPENSE) {
+          acc.allOut += amount;
+        }
+        return acc;
+      },
+      { allIn: 0, allOut: 0 },
+    );
+
+    // 计算结余
+    const allBalance = summary.allIn - summary.allOut;
+
+    return {
+      items: accountItems.map((item) => ({
+        ...item,
+      })),
+      summary: {
+        allIn: Number(summary.allIn.toFixed(2)),
+        allOut: Number(summary.allOut.toFixed(2)),
+        allBalance: Number(allBalance.toFixed(2)),
+      },
+    };
   }
 
   async findOne(id: string) {
