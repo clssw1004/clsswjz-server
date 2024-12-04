@@ -2,23 +2,40 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 /**
- * 生成API文档并写入文件
+ * 生成API文档
  */
 export const generateApiDocs = () => {
-  const docs = `# API 文档
+  const docsDir = path.join(process.cwd(), 'docs');
+  const apiDir = path.join(docsDir, 'api');
 
-## 目录
-- [认证相关](#认证相关)
-- [用户相关](#用户相关)
-- [账本相关](#账本相关)
-- [资金账户相关](#资金账户相关)
-- [记账相关](#记账相关)
-- [分类相关](#分类相关)
-- [商家相关](#商家相关)
+  // 确保目录存在
+  if (!fs.existsSync(docsDir)) {
+    fs.mkdirSync(docsDir);
+  }
+  if (!fs.existsSync(apiDir)) {
+    fs.mkdirSync(apiDir);
+  }
 
-## 认证相关
+  // 生成各模块文档
+  generateAuthDocs();
+  generateUserDocs();
+  generateAccountBookDocs();
+  generateAccountFundDocs();
+  generateAccountItemDocs();
+  generateCategoryDocs();
+  generateShopDocs();
+  generateHealthDocs();
+  generateEntitiesDocs();
+  generateMainDocs();
+};
 
-### 登录
+/**
+ * 生成认证相关接口文档
+ */
+const generateAuthDocs = () => {
+  const docs = `# 认证相关接口
+
+## 登录
 \`\`\`
 POST /api/auth/login
 
@@ -30,13 +47,24 @@ Request Body:
 
 Response:
 {
-  "access_token": string  // JWT令牌
+  "access_token": string,  // JWT令牌
+  "userId": string,       // 用户ID
+  "username": string,     // 用户名
+  "nickname": string      // 用户昵称
 }
 \`\`\`
+`;
 
-## 用户相关
+  fs.writeFileSync(path.join(process.cwd(), 'docs/api/auth.md'), docs);
+};
 
-### 注册用户
+/**
+ * 生成用户相关接口文档
+ */
+const generateUserDocs = () => {
+  const docs = `# 用户相关接口
+
+## 注册用户
 \`\`\`
 POST /api/users/register
 
@@ -51,58 +79,37 @@ Request Body:
 
 Response:
 {
-  "id": string,
-  "username": string,
-  "nickname": string,
-  "email": string?,
-  "phone": string?,
-  "inviteCode": string,
-  "createdAt": string,
-  "updatedAt": string
+  "id": string,          // 用户ID
+  "username": string,    // 用户名
+  "nickname": string,    // 昵称
+  "email": string?,      // 邮箱
+  "phone": string?,      // 手机号
+  "inviteCode": string,  // 邀请码
+  "createdAt": string,   // 创建时间
+  "updatedAt": string    // 更新时间
 }
 \`\`\`
 
-### 通过邀请码查询用户
-\`\`\`
-GET /api/users/invite/:code
-
-Response:
-{
-  "id": string,
-  "nickname": string
-}
-\`\`\`
-
-### 重置邀请码
-\`\`\`
-PUT /api/users/invite/reset
-
-Response:
-{
-  "inviteCode": string
-}
-\`\`\`
-
-### 获取当前用户信息
+## 获取当前用户信息
 \`\`\`
 GET /api/users/current
 
 Response:
 {
-  "id": string,
-  "username": string,
-  "nickname": string,
-  "email": string?,
-  "phone": string?,
-  "inviteCode": string,
-  "createdAt": string,
-  "updatedAt": string
+  "id": string,          // 用户ID
+  "username": string,    // 用户名
+  "nickname": string,    // 昵称
+  "email": string?,      // 邮箱
+  "phone": string?,      // 手机号
+  "inviteCode": string,  // 邀请码
+  "createdAt": string,   // 创建时间
+  "updatedAt": string    // 更新时间
 }
 \`\`\`
 
-### 更新当前用户信息
+## 更新用户信息
 \`\`\`
-PUT /api/users/current
+PATCH /api/users/current
 
 Request Body:
 {
@@ -111,22 +118,369 @@ Request Body:
   "phone": string?       // 手机号（可选）
 }
 
+Response: 同"获取当前用户信息"
+\`\`\`
+
+## 通过邀请码查询用户
+\`\`\`
+GET /api/users/invite/:code
+
 Response:
 {
-  "id": string,
-  "username": string,
-  "nickname": string,
-  "email": string?,
-  "phone": string?,
-  "inviteCode": string,
-  "createdAt": string,
-  "updatedAt": string
+  "id": string,          // 用户ID
+  "nickname": string     // 用户昵称
 }
 \`\`\`
 
-## 账本相关
+## 重置邀请码
+\`\`\`
+PUT /api/users/invite/reset
 
-### 创建账本
+Response:
+{
+  "inviteCode": string   // 新的邀请码
+}
+\`\`\`
+`;
+
+  fs.writeFileSync(path.join(process.cwd(), 'docs/api/user.md'), docs);
+};
+
+/**
+ * 生成健康检查接口文档
+ */
+const generateHealthDocs = () => {
+  const docs = `# 健康检查接口
+
+## 获取服务状态
+\`\`\`
+GET /api/health
+
+Response:
+{
+  "status": "ok",        // 服务状态
+  "timestamp": string,   // 当前时间戳
+  "uptime": number,      // 服务运行时间（秒）
+  "memory": {
+    "heapUsed": string,  // 已用堆内存
+    "heapTotal": string, // 总堆内存
+    "rss": string        // 常驻内存
+  },
+  "database": {
+    "status": string     // 数据库连接状态
+  }
+}
+\`\`\`
+`;
+
+  fs.writeFileSync(path.join(process.cwd(), 'docs/api/health.md'), docs);
+};
+
+/**
+ * 生成数据结构文档
+ */
+const generateEntitiesDocs = () => {
+  const docs = `# 数据结构说明
+
+## AccountFund 资金账户
+\`\`\`typescript
+{
+  id: string;              // 主键ID
+  name: string;        // 资金账户名称
+  fundType: FundType;      // 资金类型
+  fundRemark: string;      // 备注
+  fundBalance: number;     // 余额
+  isDefault: boolean;      // 是否默认账户
+  createdBy: string;       // 创建人ID
+  updatedBy: string;       // 更新人ID
+  createdAt: Date;         // 创建时间
+  updatedAt: Date;         // 更新时间
+}
+\`\`\`
+
+// ... 其他实体的结构说明
+`;
+
+  fs.writeFileSync(path.join(process.cwd(), 'docs/entities.md'), docs);
+};
+
+/**
+ * 生成主文档（包含目录和通用说明）
+ */
+const generateMainDocs = () => {
+  const docs = `# API 文档
+
+## 目录
+- [认证相关](api/auth.md)
+- [用户相关](api/user.md)
+- [账本相关](api/account-book.md)
+- [资金账户相关](api/account-fund.md)
+- [记账相关](api/account-item.md)
+- [分类相关](api/category.md)
+- [商家相关](api/shop.md)
+- [健康检查](api/health.md)
+
+## 通用说明
+
+### 认证方式
+所有需要认证的接口都需要在请求头中携带 JWT Token：
+\`\`\`
+Authorization: Bearer <token>
+\`\`\`
+
+### 响应格式
+所有接口响应格式统一为：
+\`\`\`typescript
+{
+  code: number;    // HTTP状态码
+  message: string; // 响应消息
+  data: any;      // 响应数据
+}
+\`\`\`
+
+### 数据结构
+详细的数据结构说明请参考 [entities.md](entities.md)
+`;
+
+  fs.writeFileSync(path.join(process.cwd(), 'docs/api.md'), docs);
+};
+
+/**
+ * 生成资金账户相关接口文档
+ */
+const generateAccountFundDocs = () => {
+  const docs = `# 资金账户相关接口
+
+## 数据结构
+
+### FundType 资金账户类型
+\`\`\`typescript
+enum FundType {
+  CASH = 'CASH',            // 现金
+  DEBIT_CARD = 'DEBIT',     // 储蓄卡
+  CREDIT_CARD = 'CREDIT',   // 信用卡
+  PREPAID_CARD = 'PREPAID', // 充值卡
+  DEBT = 'DEBT',            // 欠款
+  E_WALLET = 'E_WALLET'     // 网络钱包
+}
+\`\`\`
+
+## 获取用户所有资金账户
+\`\`\`
+GET /api/account/fund/list
+
+Response: {
+  "code": 200,
+  "message": "success",
+  "data": Array<{
+    id: string,              // 主键ID
+    name: string,            // 账户名称
+    fundType: FundType,      // 账户类型
+    fundRemark: string,      // 备注
+    fundBalance: number,     // 余额
+    createdBy: string,       // 创建人ID
+    creatorName: string,     // 创建人名称
+    updatedBy: string,       // 更新人ID
+    createdAt: string,       // 创建时间
+    updatedAt: string,       // 更新时间
+    fundBooks: Array<{       // 关联的账本信息（包含用户有权限的所有账本）
+      accountBookId: string, // 账本ID
+      accountBookName: string,// 账本名称
+      accountBookIcon: string,// 账本图标
+      fundIn: boolean,       // 是否可收入（未关联账本时为false）
+      fundOut: boolean,      // 是否可支出（未关联账本时为false）
+      isDefault: boolean     // 是否为账本默认账户（未关联账本时为false）
+    }>                       // 按isDefault降序排序，默认账户排在最前面
+  }>
+}
+\`\`\`
+
+## 创建资金账户
+\`\`\`
+POST /api/account/fund
+
+Request Body:
+{
+  "name": string,           // 账户名称（同一用户下唯一）
+  "fundType": FundType,     // 账户类型，参考 FundType 枚举
+  "fundRemark": string?,    // 备注（可选）
+  "fundBalance": number     // 余额
+}
+
+Response: {
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": string,              // 主键ID
+    "name": string,            // 账户名称
+    "fundType": FundType,      // 账户类型
+    "fundRemark": string,      // 备注
+    "fundBalance": number,     // 余额
+    "createdBy": string,       // 创建人ID
+    "updatedBy": string,       // 更新人ID
+    "createdAt": string,       // 创建时间
+    "updatedAt": string        // 更新时间
+  }
+}
+
+Errors:
+- 400 账户名称已存在
+\`\`\`
+
+## 查询账本下的资金账户
+\`\`\`
+POST /api/account/fund/bookfunds
+
+Request Body:
+{
+  "accountBookId": string,   // 账本ID
+  "name": string?           // 账户名称（可选，用于搜索）
+}
+
+Response: {
+  "code": 200,
+  "message": "success",
+  "data": Array<{
+    id: string,              // 主键ID
+    name: string,            // 账户名称
+    fundType: FundType,      // 账户类型
+    fundRemark: string,      // 备注
+    fundBalance: number,     // 余额
+    createdBy: string,       // 创建人ID
+    updatedBy: string,       // 更新人ID
+    createdAt: string,       // 创建时间
+    updatedAt: string,       // 更新时间
+    fundIn: boolean,         // 是否可收入
+    fundOut: boolean,        // 是否可支出
+    isDefault: boolean,      // 是否为账本默认账户
+    accountBookName: string  // 账本名称
+  }>
+}
+\`\`\`
+
+## 获取资金账户详情
+\`\`\`
+GET /api/account/fund/:id
+
+Response: {
+  "code": 200,
+  "message": "success",
+  "data": {
+    id: string,              // 主键ID
+    name: string,            // 账户名称
+    fundType: FundType,      // 账户类型
+    fundRemark: string,      // 备注
+    fundBalance: number,     // 余额
+    createdBy: string,       // 创建人ID
+    updatedBy: string,       // 更新人ID
+    createdAt: string,       // 创建时间
+    updatedAt: string,       // 更新时间
+    fundBooks: Array<{       // 关联的账本信息
+      accountBookId: string, // 账本ID
+      accountBookName: string,// 账本名称
+      accountBookIcon: string,// 账本图标
+      fundIn: boolean,       // 是否可收入
+      fundOut: boolean,      // 是否可支出
+      isDefault: boolean     // 是否为账本默认账户
+    }>
+  }
+}
+\`\`\`
+
+## 更新资金账户
+\`\`\`
+PATCH /api/account/fund/:id
+
+Request Body:
+{
+  "name": string?,          // 账户名称（可选）
+  "fundType": FundType?,    // 账户类型（可选）
+  "fundRemark": string?,    // 备注（可选）
+  "fundBalance": number?,   // 余额（可选）
+  "fundBooks": [           // 账本关联（可选）
+    {
+      "accountBookId": string,  // 账本ID
+      "fundIn": boolean,        // 是否可记录收入
+      "fundOut": boolean,       // 是否可记录支出
+      "isDefault": boolean      // 是否为账本默认账户
+    }
+  ]
+}
+
+Response: {
+  "code": 200,
+  "message": "success",
+  "data": {
+    ...AccountFund,           // 继承 AccountFund 所有字段
+    fundBooks: Array<{       // 关联的账本信息
+      accountBookId: string, // 账本ID
+      accountBookName: string,// 账本名称
+      accountBookIcon: string,// 账本图标
+      fundIn: boolean,       // 是否可收入
+      fundOut: boolean,      // 是否可支出
+      isDefault: boolean     // 是否为账本默认账户
+    }>
+  }
+}
+
+Errors:
+- 400 账户名称已存在
+- 404 资金账户不存在
+\`\`\`
+
+## 删除资金账户
+\`\`\`
+DELETE /api/account/fund/:id
+
+Response: {
+  "code": 200,
+  "message": "success",
+  "data": {}
+}
+
+Errors:
+- 400 该资金账户已关联账本，无法删除
+- 404 资金账户不存在
+\`\`\`
+
+## 更新资金账户余额
+\`\`\`
+PATCH /api/account/fund/:id/balance
+
+Request Body:
+{
+  "amount": number         // 新的余额
+}
+
+Response: {
+  "code": 200,
+  "message": "success",
+  "data": AccountFund      // 参考 AccountFund 数据结构
+}
+
+Errors:
+- 404 资金账户不存在
+\`\`\`
+
+## 注意事项
+1. 每个账本只能有一个默认账户
+2. 创建账本的第一个账户会自动设为默认账户
+3. 设置新的默认账户时会自动取消原有默认账户的状态
+4. 账户可以关联多个账本，每个关联关系都可以独立设置权限和默认状态
+5. 账户名称在同一用户下必须唯一
+6. 已关联账本的账户不能删除
+`;
+
+  fs.writeFileSync(path.join(process.cwd(), 'docs/api/account-fund.md'), docs);
+};
+
+/**
+ * 生成账本相关接口文档
+ */
+const generateAccountBookDocs = () => {
+  const docs = `# 账本相关接口
+
+## 创建账本
 \`\`\`
 POST /api/account/book
 
@@ -138,127 +492,59 @@ Request Body:
   "icon": string?               // 账本图标（可选）
 }
 
-Response: AccountBook
+Response: {
+  "id": string,              // 主键ID
+  "name": string,            // 账本名称
+  "description": string,     // 账本描述
+  "currencySymbol": Currency,// 货币符号
+  "icon": string,           // 账本图标
+  "createdAt": Date,        // 创建时间
+  "updatedAt": Date,        // 更新时间
+  "createdBy": string,      // 创建人ID
+  "updatedBy": string       // 更新人ID
+}
 \`\`\`
 
-### 获取账本列表
+## 获取账本列表
 \`\`\`
 GET /api/account/book
 
-Response: AccountBook[]
+Response: Array<{
+  id: string,              // 主键ID
+  name: string,            // 账本名称
+  description: string,     // 账本描述
+  currencySymbol: Currency,// 货币符号
+  icon: string,           // 账本图标
+  createdAt: Date,        // 创建时间
+  updatedAt: Date,        // 更新时间
+  createdBy: string,      // 创建人ID
+  updatedBy: string,      // 更新人ID
+  fromId: string,         // 创建人ID
+  fromName: string,       // 创建人昵称
+  permissions: {          // 当前用户权限
+    canViewBook: boolean,   // 查看账本权限
+    canEditBook: boolean,   // 编辑账本权限
+    canDeleteBook: boolean, // 删除账本权限
+    canViewItem: boolean,   // 查看账目权限
+    canEditItem: boolean,   // 编辑账目权限
+    canDeleteItem: boolean  // 删除账目权限
+  }
+}>
 \`\`\`
 
-### 获取账本详情
-\`\`\`
-GET /api/account/book/:id
+// ... 其他账本相关接口
+`;
 
-Response: AccountBook
-\`\`\`
+  fs.writeFileSync(path.join(process.cwd(), 'docs/api/account-book.md'), docs);
+};
 
-### 更新账本
-\`\`\`
-PATCH /api/account/book/:id
+/**
+ * 生成记账相关接口文档
+ */
+const generateAccountItemDocs = () => {
+  const docs = `# 记账相关接口
 
-Request Body:
-{
-  "id": string,
-  "name": string,
-  "description": string?,
-  "currencySymbol": Currency,
-  "icon": string?,
-  "members": [
-    {
-      "userId": string,
-      "canViewBook": boolean,
-      "canEditBook": boolean,
-      "canDeleteBook": boolean,
-      "canViewItem": boolean,
-      "canEditItem": boolean,
-      "canDeleteItem": boolean
-    }
-  ]
-}
-
-Response: AccountBook
-\`\`\`
-
-### 删除账本
-\`\`\`
-DELETE /api/account/book/:id
-
-Response: void
-\`\`\`
-
-## 资金账户相关
-
-### 创建资金账户
-\`\`\`
-POST /api/account/fund
-
-Request Body:
-{
-  "accountBookId": string,      // 账本ID
-  "fundName": string,           // 账户名称
-  "fundType": FundType,         // 账户类型
-  "fundRemark": string?,        // 备注（可选）
-  "fundBalance": number,        // 余额
-  "isDefault": boolean         // 是否默认账户
-}
-
-Response: AccountFund
-\`\`\`
-
-### 查询账本下的资金账户
-\`\`\`
-POST /api/account/fund/listByAccountBookId
-
-Request Body:
-{
-  "accountBookId": string,   // 账本ID
-  "fundName": string?       // 账户名称（可选，用于搜索）
-}
-
-Response: AccountFund[]
-\`\`\`
-
-### 获取资金账户详情
-\`\`\`
-GET /api/account/fund/:id
-
-Response: AccountFund
-\`\`\`
-
-### 更新资金账户
-\`\`\`
-PATCH /api/account/fund/:id
-
-Request Body: Partial<AccountFund>
-
-Response: AccountFund
-\`\`\`
-
-### 删除资金账户
-\`\`\`
-DELETE /api/account/fund/:id
-
-Response: void
-\`\`\`
-
-### 更新资金账户余额
-\`\`\`
-PATCH /api/account/fund/:id/balance
-
-Request Body:
-{
-  "amount": number    // 新的余额
-}
-
-Response: AccountFund
-\`\`\`
-
-## 记账相关
-
-### 创建记账记录
+## 创建记账记录
 \`\`\`
 POST /api/account/item
 
@@ -274,14 +560,19 @@ Request Body:
   "accountDate": Date      // 记账日期
 }
 
-Response: AccountItem
+Response: {
+  ...AccountItem,          // 继承 AccountItem 所有字段
+  category: string,        // 分类名称
+  shop: string?,          // 商家名称
+  shopCode: string?       // 商家编码
+}
 \`\`\`
 
-### 查询记账记录
+## 查询记账记录
 \`\`\`
-POST /api/account/item/list
+GET /api/account/item/list
 
-Request Body:
+Query Parameters:
 {
   "accountBookId": string?,    // 账本ID（可选）
   "category": string?,         // 分类（可选）
@@ -297,35 +588,62 @@ Request Body:
   "maxAmount": number?        // 最大金额（可选）
 }
 
-Response: AccountItem[]
+Response: Array<{
+  ...AccountItem,          // 继承 AccountItem 所有字段
+  category: string,        // 分类名称
+  shop: string?,          // 商家名称
+  shopCode: string?       // 商家编码
+}>
 \`\`\`
 
-### 获取记账记录详情
+## 获取记账记录详情
 \`\`\`
 GET /api/account/item/:id
 
-Response: AccountItem
+Response: {
+  ...AccountItem,          // 继承 AccountItem 所有字段
+  category: string,        // 分类名称
+  shop: string?,          // 商家名称
+  shopCode: string?       // 商家编码
+}
 \`\`\`
 
-### 更新记账记录
+## 更新记账记录
 \`\`\`
 PATCH /api/account/item/:id
 
-Request Body: UpdateAccountItemDto
+Request Body:
+{
+  "amount": number?,         // 金额（可选）
+  "type": ItemType?,        // 类型（可选）
+  "category": string?,      // 分类（可选）
+  "shop": string?,         // 商家（可选）
+  "description": string?,   // 描述（可选）
+  "accountDate": Date?,    // 记账日期（可选）
+  "fundId": string?        // 资金账户ID（可选）
+}
 
-Response: AccountItem
+Response: 同"获取记账记录详情"
 \`\`\`
 
-### 删除记账记录
+## 删除记账记录
 \`\`\`
 DELETE /api/account/item/:id
 
-Response: void
+Response: {}               // 返回空对象
 \`\`\`
+`;
 
-## 分类相关
+  fs.writeFileSync(path.join(process.cwd(), 'docs/api/account-item.md'), docs);
+};
 
-### 创建分类
+/**
+ * 生成分类相关接口文档
+ */
+const generateCategoryDocs = () => {
+  const docs = `# 分类相关接口
+
+## 创建分类
 \`\`\`
 POST /api/account/category
 
@@ -336,10 +654,10 @@ Request Body:
   "code": string           // 分类编码
 }
 
-Response: Category
+Response: Category         // 参考 Category 数据结构
 \`\`\`
 
-### 查询分类列表
+## 查询分类列表
 \`\`\`
 GET /api/account/category
 
@@ -349,56 +667,47 @@ Query Parameters:
   "name": string?           // 分类名称（可选，用于搜索）
 }
 
-Response: Category[]
+Response: Category[]       // 参考 Category 数据结构
 \`\`\`
 
-### 获取分类详情
+## 获取分类详情
 \`\`\`
 GET /api/account/category/:id
 
-Response: Category
+Response: Category        // 参考 Category 数据结构
 \`\`\`
 
-### 更新分类
+## 更新分类
 \`\`\`
 PATCH /api/account/category/:id
 
-Request Body: Partial<Category>
+Request Body:
+{
+  "name": string?,        // 分类名称（可选）
+  "code": string?        // 分类编码（可选）
+}
 
-Response: Category
+Response: Category       // 参考 Category 数据结构
 \`\`\`
 
-### 删除分类
+## 删除分类
 \`\`\`
 DELETE /api/account/category/:id
 
-Response: void
+Response: {}            // 返回空对象
 \`\`\`
+`;
 
-## 商家相关
+  fs.writeFileSync(path.join(process.cwd(), 'docs/api/category.md'), docs);
+};
 
-### 获取账本下的商家列表
-\`\`\`
-GET /api/account/shop?accountBookId=:accountBookId
+/**
+ * 生成商家相关接口文档
+ */
+const generateShopDocs = () => {
+  const docs = `# 商家相关接口
 
-Response: AccountShop[]
-\`\`\`
-
-### 获取商家详情
-\`\`\`
-GET /api/account/shop/:id
-
-Response: AccountShop
-\`\`\`
-
-### 删除商家
-\`\`\`
-DELETE /api/account/shop/:id
-
-Response: void
-\`\`\`
-
-### 创建商家
+## 创建商家
 \`\`\`
 POST /api/account/shop
 
@@ -408,80 +717,51 @@ Request Body:
   "accountBookId": string   // 所属账本ID
 }
 
-Response:
-{
-  "id": string,
-  "name": string,
-  "shopCode": string,
-  "accountBookId": string,
-  "createdBy": string,
-  "updatedBy": string,
-  "createdAt": string,
-  "updatedAt": string
+Response: {
+  "id": string,            // 主键ID
+  "name": string,          //商家名称
+  "shopCode": string,      // 商家编码
+  "accountBookId": string, // 所属账本ID
+  "createdBy": string,     // 创建人ID
+  "updatedBy": string,     // 更新人ID
+  "createdAt": string,     // 创建时间
+  "updatedAt": string      // 更新时间
 }
 \`\`\`
 
-### 更新商家
+## 获取账本下的商家列表
 \`\`\`
-PUT /api/account/shop/:id
+GET /api/account/shop?accountBookId=:accountBookId
+
+Response: AccountShop[]   // 参考 AccountShop 数据结构
+\`\`\`
+
+## 获取商家详情
+\`\`\`
+GET /api/account/shop/:id
+
+Response: AccountShop    // 参考 AccountShop 数据结构
+\`\`\`
+
+## 更新商家
+\`\`\`
+PATCH /api/account/shop/:id
 
 Request Body:
 {
-  "name": string           // 商家名称
+  "name": string        // 商家名称
 }
 
-Response:
-{
-  "id": string,
-  "name": string,
-  "shopCode": string,
-  "accountBookId": string,
-  "createdBy": string,
-  "updatedBy": string,
-  "createdAt": string,
-  "updatedAt": string
-}
+Response: AccountShop   // 参考 AccountShop 数据结构
 \`\`\`
 
-## 数据结构
-
-### Currency 枚举
-\`\`\`typescript
-enum Currency {
-  CNY = 'CNY',    // 人民币
-  USD = 'USD',    // 美元
-  EUR = 'EUR',    // 欧元
-  GBP = 'GBP',    // 英镑
-  JPY = 'JPY'     // 日元
-}
+## 删除商家
 \`\`\`
+DELETE /api/account/shop/:id
 
-### ItemType 枚举
-\`\`\`typescript
-enum ItemType {
-  EXPENSE = 'EXPENSE',   // 支出
-  INCOME = 'INCOME'      // 收入
-}
-\`\`\`
-
-### FundType 枚举
-\`\`\`typescript
-enum FundType {
-  CASH = 'CASH',            // 现金
-  DEBIT_CARD = 'DEBIT',     // 储蓄卡
-  CREDIT_CARD = 'CREDIT',   // 信用卡
-  PREPAID_CARD = 'PREPAID', // 充值卡
-  DEBT = 'DEBT',            // 欠款
-  E_WALLET = 'E_WALLET'     // 网络钱包
-}
-\`\`\`
-
-注意：所有需要认证的接口都需要在请求头中携带 JWT Token：
-\`\`\`
-Authorization: Bearer <token>
+Response: {}           // 返回空对象
 \`\`\`
 `;
 
-  const docsPath = path.join(process.cwd(), 'docs', 'api.md');
-  fs.writeFileSync(docsPath, docs, 'utf8');
+  fs.writeFileSync(path.join(process.cwd(), 'docs/api/shop.md'), docs);
 };

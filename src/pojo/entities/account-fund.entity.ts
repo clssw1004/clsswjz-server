@@ -1,4 +1,4 @@
-import { Entity, Column } from 'typeorm';
+import { Entity, Column, Unique } from 'typeorm';
 import { BaseBusinessEntity } from './base.entity';
 
 export enum FundType {
@@ -11,6 +11,7 @@ export enum FundType {
 }
 
 @Entity('account_funds')
+@Unique(['createdBy', 'name'])
 export class AccountFund extends BaseBusinessEntity {
   @Column({
     length: 50,
@@ -40,10 +41,4 @@ export class AccountFund extends BaseBusinessEntity {
     comment: '余额',
   })
   fundBalance: number;
-
-  @Column({
-    default: false,
-    comment: '是否默认资产',
-  })
-  isDefault: boolean;
 }

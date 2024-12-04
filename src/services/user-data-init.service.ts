@@ -34,7 +34,6 @@ export class UserDataInitService {
       fundType: FundType.CASH,
       fundBalance: 0,
       fundRemark: '默认账户',
-      isDefault: true,
       createdBy: userId,
       updatedBy: userId,
     });
@@ -93,6 +92,7 @@ export class UserDataInitService {
       fundId: fundId,
       fundIn: true,
       fundOut: true,
+      isDefault: true,
     });
     await manager.save(bookFundRelation);
   }

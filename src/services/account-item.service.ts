@@ -143,7 +143,7 @@ export class AccountService {
       { lastAccountItemAt: savedAccountItem.createdAt },
     );
 
-    return savedAccountItem;
+    return this.findOne(savedAccountItem.id);
   }
 
   async findAll(queryParams?: QueryAccountItemDto) {

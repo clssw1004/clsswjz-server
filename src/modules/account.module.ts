@@ -23,6 +23,8 @@ import { UserDataInitService } from '../services/user-data-init.service';
 import { AccountShop } from '../pojo/entities/account-shop.entity';
 import { AccountShopController } from '../controllers/account-shop.controller';
 import { AccountShopService } from '../services/account-shop.service';
+import { HealthController } from '../controllers/health.controller';
+import { HealthService } from '../services/health.service';
 
 @Module({
   imports: [
@@ -44,6 +46,7 @@ import { AccountShopService } from '../services/account-shop.service';
     UserController,
     AccountFundController,
     AccountShopController,
+    HealthController,
   ],
   providers: [
     AccountService,
@@ -54,6 +57,7 @@ import { AccountShopService } from '../services/account-shop.service';
     AccountFundService,
     AccountShopService,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    HealthService,
   ],
 })
 export class AccountModule {}

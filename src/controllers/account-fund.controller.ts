@@ -9,9 +9,9 @@ import {
   Request,
 } from '@nestjs/common';
 import { AccountFundService } from '../services/account-fund.service';
-import { AccountFund } from '../pojo/entities/account-fund.entity';
 import { CreateAccountFundDto } from '../pojo/dto/account-fund/create-account-fund.dto';
 import { QueryAccountFundDto } from '../pojo/dto/account-fund/query-account-fund.dto';
+import { UpdateAccountFundDto } from '../pojo/dto/account-fund/update-account-fund.dto';
 
 @Controller('account/fund')
 export class AccountFundController {
@@ -22,7 +22,12 @@ export class AccountFundController {
     return this.accountFundService.create(createFundDto, req.user.sub);
   }
 
-  @Post('list')
+  @Get('list')
+  findAll(@Request() req) {
+    return this.accountFundService.findAll(req.user.sub);
+  }
+
+  @Post('bookfunds')
   findByAccountBookId(@Body() query: QueryAccountFundDto, @Request() req) {
     return this.accountFundService.findByAccountBookId(req.user.sub, query);
   }
@@ -35,10 +40,10 @@ export class AccountFundController {
   @Patch(':id')
   update(
     @Param('id') id: string,
-    @Body() updateFundDto: Partial<AccountFund>,
+    @Body() updateDto: UpdateAccountFundDto,
     @Request() req,
   ) {
-    return this.accountFundService.update(id, updateFundDto, req.user.sub);
+    return this.accountFundService.update(id, updateDto, req.user.sub);
   }
 
   @Delete(':id')

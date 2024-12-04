@@ -28,6 +28,12 @@ export class AccountBookFund extends BaseEntity {
   })
   fundOut: boolean;
 
+  @Column({
+    default: false,
+    comment: '是否默认账户',
+  })
+  isDefault: boolean;
+
   @CreateDateColumn({ comment: '创建时间' })
   createdAt: Date;
 
