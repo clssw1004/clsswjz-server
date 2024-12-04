@@ -6,5 +6,5 @@ export class QueryAccountFundDto {
 
   @IsOptional()
   @IsString()
-  fundName?: string;
+  name?: string;
 }

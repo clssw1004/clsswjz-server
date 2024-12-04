@@ -6,6 +6,7 @@ import {
   Param,
   Put,
   Request,
+  Patch,
 } from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import { User } from '../pojo/entities/user.entity';
@@ -44,7 +45,7 @@ export class UserController {
   /**
    * 更新用户信息
    */
-  @Put('current')
+  @Patch('current')
   async updateUser(@Request() req, @Body() updateUserDto: UpdateUserDto) {
     return await this.userService.updateUser(req.user.sub, updateUserDto);
   }

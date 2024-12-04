@@ -16,7 +16,7 @@ export class AccountFund extends BaseBusinessEntity {
     length: 50,
     comment: '资金来源名称',
   })
-  fundName: string;
+  name: string;
 
   @Column({
     type: 'varchar',

@@ -86,7 +86,16 @@ export class UserService {
   async getCurrentUser(userId: string): Promise<Omit<User, 'password'>> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      select: ['id', 'username', 'nickname', 'email', 'phone', 'inviteCode', 'createdAt', 'updatedAt'],
+      select: [
+        'id',
+        'username',
+        'nickname',
+        'email',
+        'phone',
+        'inviteCode',
+        'createdAt',
+        'updatedAt',
+      ],
     });
 
     if (!user) {
@@ -99,7 +108,10 @@ export class UserService {
   /**
    * 更新用户信息
    */
-  async updateUser(userId: string, updateUserDto: UpdateUserDto): Promise<Omit<User, 'password'>> {
+  async updateUser(
+    userId: string,
+    updateUserDto: UpdateUserDto,
+  ): Promise<Omit<User, 'password'>> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
     });

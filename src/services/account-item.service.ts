@@ -171,7 +171,10 @@ export class AccountService {
       }
 
       // 分类筛选
-      if (Array.isArray(queryParams.categories)) {
+      if (
+        Array.isArray(queryParams.categories) &&
+        queryParams.categories.length > 0
+      ) {
         queryBuilder.andWhere('category.name IN (:...categories)', {
           categories: queryParams.categories,
         });
@@ -183,7 +186,10 @@ export class AccountService {
       }
 
       // 资产筛选
-      if (Array.isArray(queryParams.fundIds)) {
+      if (
+        Array.isArray(queryParams.fundIds) &&
+        queryParams.fundIds.length > 0
+      ) {
         queryBuilder.andWhere('account.fundId IN (:...fundIds)', {
           fundIds: queryParams.fundIds,
         });
@@ -195,7 +201,10 @@ export class AccountService {
       }
 
       // 商家筛选
-      if (Array.isArray(queryParams.shopCodes)) {
+      if (
+        Array.isArray(queryParams.shopCodes) &&
+        queryParams.shopCodes.length > 0
+      ) {
         queryBuilder.andWhere('account.shop IN (:...shopCodes)', {
           shopCodes: queryParams.shopCodes,
         });

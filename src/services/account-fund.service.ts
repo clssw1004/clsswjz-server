@@ -17,14 +17,14 @@ export class AccountFundService {
   ) {}
 
   async create(
-    createFundDto: CreateAccountFundDto, 
-    userId: string
+    createFundDto: CreateAccountFundDto,
+    userId: string,
   ): Promise<AccountFund> {
     const { accountBookId, ...fundData } = createFundDto;
 
     // 检查该账本下是否已有资产关联
     const existingBookFund = await this.accountBookFundRepository.findOne({
-      where: { accountBookId }
+      where: { accountBookId },
     });
 
     const fund = this.accountFundRepository.create({
@@ -48,22 +48,21 @@ export class AccountFundService {
     return savedFund;
   }
 
-  async findByAccountBookId(userId: string, query: QueryAccountFundDto): Promise<AccountFund[]> {
+  async findByAccountBookId(
+    userId: string,
+    query: QueryAccountFundDto,
+  ): Promise<AccountFund[]> {
     const queryBuilder = this.accountFundRepository
       .createQueryBuilder('fund')
-      .select([
-        'fund.*',
-        'abf.fundIn as fundIn',
-        'abf.fundOut as fundOut'
-      ])
+      .select(['fund.*', 'abf.fundIn as fundIn', 'abf.fundOut as fundOut'])
       .innerJoin('rel_accountbook_funds', 'abf', 'abf.fundId = fund.id')
-      .where('abf.accountBookId = :accountBookId', { 
-        accountBookId: query.accountBookId 
+      .where('abf.accountBookId = :accountBookId', {
+        accountBookId: query.accountBookId,
       });
 
-    if (query.fundName) {
-      queryBuilder.andWhere('fund.fundName LIKE :fundName', { 
-        fundName: `%${query.fundName}%` 
+    if (query.name) {
+      queryBuilder.andWhere('fund.name LIKE :name', {
+        name: `%${query.name}%`,
       });
     }
 
@@ -72,10 +71,10 @@ export class AccountFundService {
       .addOrderBy('fund.createdAt', 'DESC')
       .getRawMany();
 
-    return results.map(item => ({
+    return results.map((item) => ({
       ...item,
       fundIn: !!item.fundIn,
-      fundOut: !!item.fundOut
+      fundOut: !!item.fundOut,
     }));
   }
 
@@ -124,4 +123,4 @@ export class AccountFundService {
     fund.updatedBy = userId;
     return await this.accountFundRepository.save(fund);
   }
-} 
+}
