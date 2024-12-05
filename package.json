@@ -21,7 +21,8 @@
     "docker:build": "docker build -t clsswjz-server .",
     "docker:run": "docker run -p 3000:3000 clsswjz-server",
     "docker:compose": "docker-compose up -d",
-    "docker:compose:build": "docker-compose up -d --build"
+    "docker:compose:build": "docker-compose up -d --build",
+    "mock:data": "ts-node src/scripts/mock-data.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.9",
@@ -58,6 +59,7 @@
     "@types/supertest": "^6.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
+    "axios": "^1.7.9",
     "eslint": "^8.0.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
