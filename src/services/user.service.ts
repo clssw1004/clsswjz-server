@@ -34,7 +34,7 @@ export class UserService {
     // 使用事务确保用户创建和数据初始化是原子操作
     return await this.userRepository.manager.transaction(
       async (transactionalEntityManager) => {
-        // 创建用户
+        // ���建用户
         const user = this.userRepository.create(userData);
         const savedUser = await transactionalEntityManager.save(user);
 
@@ -70,7 +70,7 @@ export class UserService {
       throw new NotFoundException('用户不存在');
     }
 
-    const newInviteCode = generateUid();
+    const newInviteCode = `cljz_${generateUid(12)}`;
 
     await this.userRepository.update(
       { id: userId },
@@ -93,6 +93,8 @@ export class UserService {
         'email',
         'phone',
         'inviteCode',
+        'language',
+        'timezone',
         'createdAt',
         'updatedAt',
       ],

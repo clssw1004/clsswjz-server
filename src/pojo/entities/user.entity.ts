@@ -3,6 +3,7 @@ import * as bcrypt from 'bcrypt';
 import { generateUid } from '../../utils/id.util';
 import { BaseEntity } from './base.entity';
 import { EntityId } from '../../decorators/entity-id';
+import { Language } from '../enums/language.enum';
 
 @Entity('users')
 export class User extends BaseEntity {
@@ -34,12 +35,24 @@ export class User extends BaseEntity {
   @Column({
     length: 50,
     comment: '邀请码',
-    update: false, // 防止更新时修改该字段
   })
   inviteCode: string;
 
   @EntityId()
   id: string;
+
+  @Column({
+    type: 'varchar',
+    default: Language.ZH_CN,
+    comment: '语言设置',
+  })
+  language: Language;
+
+  @Column({
+    default: 'Asia/Shanghai',
+    comment: '时区设置',
+  })
+  timezone: string;
 
   @BeforeInsert()
   async beforeInsert() {

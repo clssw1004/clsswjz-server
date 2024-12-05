@@ -1,4 +1,5 @@
-import { IsOptional, IsString, IsEmail, Length, Matches } from 'class-validator';
+import { IsOptional, IsString, Length, Matches, IsEnum } from 'class-validator';
+import { Language } from '../../enums/language.enum';
 
 export class UpdateUserDto {
   @IsOptional()
@@ -7,11 +8,17 @@ export class UpdateUserDto {
   nickname?: string;
 
   @IsOptional()
-  @IsEmail({}, { message: '邮箱格式不正确' })
   email?: string;
 
   @IsOptional()
   @IsString()
-  @Matches(/^1[3-9]\d{9}$/, { message: '手机号格式不正确' })
   phone?: string;
-} 
+
+  @IsOptional()
+  @IsEnum(Language, { message: '语言设置不正确' })
+  language?: Language;
+
+  @IsOptional()
+  @IsString()
+  timezone?: string;
+}

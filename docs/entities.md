@@ -11,7 +11,7 @@
   isDefault: boolean;      // 是否默认账户
   createdBy: string;       // 创建人ID
   updatedBy: string;       // 更新人ID
-  createdAt: Date;         // 创建时间
+  createdAt: Date;         // ���时间
   updatedAt: Date;         // 更新时间
 }
 ```

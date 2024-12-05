@@ -9,7 +9,7 @@ Request Body:
   "name": string,                // 账本名称
   "description": string?,        // 账本描述（可选）
   "currencySymbol": Currency,    // 货币符号
-  "icon": string?               // 账本图标（可选）
+  "icon": string?               // 账本图标（选）
 }
 
 Response: {
@@ -46,7 +46,7 @@ Response: Array<{
     canEditBook: boolean,   // 编辑账本权限
     canDeleteBook: boolean, // 删除账本权限
     canViewItem: boolean,   // 查看账目权限
-    canEditItem: boolean,   // 编辑账目权限
+    canEditItem: boolean,   // 编辑��目权限
     canDeleteItem: boolean  // 删除账目权限
   }
 }>

@@ -12,6 +12,7 @@ import { UserService } from '../services/user.service';
 import { User } from '../pojo/entities/user.entity';
 import { Public } from '../decorators/public';
 import { UpdateUserDto } from '../pojo/dto/user/update-user.dto';
+import { CreateUserDto } from '../pojo/dto/user/create-user.dto';
 
 @Controller('users')
 export class UserController {
@@ -19,11 +20,10 @@ export class UserController {
 
   @Public()
   @Post('register')
-  async register(@Body() userData: Partial<User>) {
-    return await this.userService.create(userData);
+  async register(@Body() createUserDto: CreateUserDto) {
+    return await this.userService.create(createUserDto);
   }
 
-  @Public()
   @Get('invite/:code')
   async findByInviteCode(@Param('code') inviteCode: string) {
     return await this.userService.findByInviteCode(inviteCode);
