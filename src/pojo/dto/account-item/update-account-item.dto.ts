@@ -1,5 +1,5 @@
 import { IsDateString, IsNumber, IsOptional, IsString } from 'class-validator';
-import { ItemType } from 'src/pojo/enums/item-type.enum';
+import { ItemType } from '../../enums/item-type.enum';
 
 export class UpdateAccountItemDto {
   @IsOptional()

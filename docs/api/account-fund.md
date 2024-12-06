@@ -38,7 +38,7 @@ Response: {
       accountBookIcon: string,// 账本图标
       fundIn: boolean,       // 是否可收入（未关联账本时为false）
       fundOut: boolean,      // 是否可支出（未关联账本时为false）
-      isDefault: boolean     // 是否为账本默认账户（未关联账本时为false）
+      isDefault: boolean     // 是否为账本默认账户（未关联账本���为false）
     }>                       // 按isDefault降序排序，默认账户排在最前面
   }>
 }

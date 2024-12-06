@@ -9,12 +9,12 @@ import {
   Request,
 } from '@nestjs/common';
 import { AccountBookService } from '../services/account-book.service';
-import { UpdateAccountBookDto } from 'src/pojo/dto/account-book/update-account-book.dto';
-import { CreateAccountBookDto } from 'src/pojo/dto/account-book/create-account-book.dto';
+import { UpdateAccountBookDto } from '../pojo/dto/account-book/update-account-book.dto';
+import { CreateAccountBookDto } from '../pojo/dto/account-book/create-account-book.dto';
 
 @Controller('account/book')
 export class AccountBookController {
-  constructor(private readonly accountBookService: AccountBookService) {}
+  constructor(private readonly accountBookService: AccountBookService) { }
 
   @Post()
   create(@Body() createAccountBookDto: CreateAccountBookDto, @Request() req) {

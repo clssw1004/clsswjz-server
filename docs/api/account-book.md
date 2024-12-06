@@ -46,7 +46,7 @@ Response: Array<{
     canEditBook: boolean,   // 编辑账本权限
     canDeleteBook: boolean, // 删除账本权限
     canViewItem: boolean,   // 查看账目权限
-    canEditItem: boolean,   // 编辑��目权限
+    canEditItem: boolean,   // 编辑目权限
     canDeleteItem: boolean  // 删除账目权限
   }
 }>

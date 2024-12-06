@@ -60,7 +60,7 @@ function generateRandomItems(count: number) {
     医疗: ['看病', '买药', '体检'],
     教育: ['书籍', '课程', '培训'],
     工资: ['月薪', '年终奖'],
-    奖金: ['项目奖金', '季度奖金', '绩���奖金'],
+    奖金: ['项目奖金', '季度奖金', '绩奖金'],
     理财: ['基金收益', '股票收益', '利息收入'],
     兼职: ['兼职收入', '私活收入'],
     报销: ['交通报销', '餐费报销', '办公用品报销'],
@@ -69,7 +69,7 @@ function generateRandomItems(count: number) {
   const items = [];
   const endDate = new Date();
   const startDate = new Date();
-  startDate.setMonth(endDate.getMonth() - 3); // 生成最近3个月的数据
+  startDate.setMonth(endDate.getMonth() - 12); // 生成最近3个月的数据
 
   for (let i = 0; i < count; i++) {
     const isExpense = Math.random() > 0.2; // 80%概率是支出
@@ -151,7 +151,7 @@ const mockData = {
   ],
 
   // 生成120条随机账目数据
-  items: generateRandomItems(120),
+  items: generateRandomItems(5000),
 };
 
 // API 调用函数
@@ -180,13 +180,45 @@ const api = {
     return data;
   },
 
-  async createItem(accountBookId: string, fundId: string, item: any) {
-    const { data } = await axios.post(`${API_URL}/account/item`, {
-      ...item,
-      accountBookId,
-      fundId,
-    });
-    return data;
+  async createItems(accountBookId: string, fundId: string, items: any[]) {
+    // 将items数组分成多个小批次，每批100条
+    const batchSize = 500;
+    const batches = [];
+    for (let i = 0; i < items.length; i += batchSize) {
+      batches.push(items.slice(i, i + batchSize));
+    }
+
+    let totalSuccess = 0;
+    const errors = [];
+
+    // 逐批发送请求
+    for (const batch of batches) {
+      const itemsToCreate = batch.map(item => ({
+        ...item,
+        accountBookId,
+        fundId,
+      }));
+
+      try {
+        const { data } = await axios.post(
+          `${API_URL}/account/item/batch`,
+          itemsToCreate,
+        );
+        totalSuccess += data.data.successCount;
+        if (data.data.errors) {
+          errors.push(...data.data.errors);
+        }
+        console.log(`成功创建 ${data.data.successCount} 条账目记录`);
+      } catch (error) {
+        console.error('批量创建账目失败:', error.response?.data || error);
+        errors.push(error.message);
+      }
+    }
+
+    return {
+      successCount: totalSuccess,
+      errors: errors.length > 0 ? errors : undefined,
+    };
   },
 
   async linkFundToBook(accountBookId: string, fundId: string) {
@@ -241,11 +273,19 @@ async function main() {
 
     // 6. 创建账目
     console.log('创建账目...');
-    await Promise.all(
-      mockData.items.map((item) =>
-        api.createItem(defaultBook.id, defaultFund.id, item),
-      ),
+    const result = await api.createItems(
+      defaultBook.id,
+      defaultFund.id,
+      mockData.items,
     );
+    console.log(
+      `账目创建完成！成功: ${result.successCount} 条${
+        result.errors ? '，失���: ' + result.errors.length + ' 条' : ''
+      }`,
+    );
+    if (result.errors) {
+      console.log('错误信息:', result.errors);
+    }
 
     console.log('数据初始化完成！');
   } catch (error) {

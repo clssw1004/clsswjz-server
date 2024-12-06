@@ -45,4 +45,9 @@ export class AccountController {
   remove(@Param('id') id: string) {
     return this.accountService.remove(id);
   }
+
+  @Post('batch')
+  createBatch(@Body() createAccountItemDtos: CreateAccountItemDto[], @Request() req) {
+    return this.accountService.createBatch(createAccountItemDtos, req.user.sub);
+  }
 }

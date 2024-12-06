@@ -260,7 +260,7 @@ const generateEntitiesDocs = () => {
   isDefault: boolean;      // 是否默认账户
   createdBy: string;       // 创建人ID
   updatedBy: string;       // 更新人ID
-  createdAt: Date;         // ���时间
+  createdAt: Date;         // 时间
   updatedAt: Date;         // 更新时间
 }
 \`\`\`
@@ -356,7 +356,7 @@ Response: {
       accountBookIcon: string,// 账本图标
       fundIn: boolean,       // 是否可收入（未关联账本时为false）
       fundOut: boolean,      // 是否可支出（未关联账本时为false）
-      isDefault: boolean     // 是否为账本默认账户（未关联账本时为false）
+      isDefault: boolean     // 是否为账本默认账户（未关联账本���为false）
     }>                       // 按isDefault降序排序，默认账户排在最前面
   }>
 }
@@ -593,7 +593,7 @@ Response: Array<{
     canEditBook: boolean,   // 编辑账本权限
     canDeleteBook: boolean, // 删除账本权限
     canViewItem: boolean,   // 查看账目权限
-    canEditItem: boolean,   // 编辑��目权限
+    canEditItem: boolean,   // 编辑目权限
     canDeleteItem: boolean  // 删除账目权限
   }
 }>
@@ -719,7 +719,7 @@ Response: {
       "fundId": string,         // 账户ID
       "fundName": string,       // 账户名称
       "shopCode": string?,      // 商家编码
-      "shop": string?,          // 商家名称
+      "shop": string?,          // 商家名��
       "createdBy": string,      // 创建人ID
       "updatedBy": string,      // 更新人ID
       "createdAt": Date,        // 创建时间
@@ -764,7 +764,7 @@ Errors:
 - 404 记账记录不存在
 \`\`\`
 
-## 更新记账记录
+## 更新���账记录
 \`\`\`
 PATCH /api/account/item/:id
 
@@ -803,7 +803,7 @@ Response: {
 
 Errors:
 - 404 记账记录不存在
-- 403 该账户在当前账本中不允许支出/收入
+- 403 该账户在当前账本中不允许支出/收���
 \`\`\`
 
 ## 删除记账记录
@@ -818,6 +818,35 @@ Response: {
 
 Errors:
 - 404 记账记录不存在
+\`\`\`
+
+## 批量创建记账记录
+\`\`\`
+POST /api/account/item/batch
+
+Request Body: Array<{
+  "accountBookId": string,   // 账本ID
+  "fundId": string,         // 资金账户ID
+  "amount": number,         // 金额
+  "type": ItemType,         // 类型：EXPENSE-支出，INCOME-收入
+  "category": string,       // 分类
+  "shop": string?,         // 商家（可选）
+  "description": string?,   // 描述（可选）
+  "accountDate": Date      // 记账日期
+}>
+
+Response: {
+  "code": 200,
+  "message": "success", 
+  "data": {
+    "successCount": number,   // 成功创建的记录数
+    "errors": string[]?      // 错误信息列表（如果有）
+  }
+}
+
+Errors:
+- 404 账本不存在
+- 403 该账户在当前账本中不允许支出/收入
 \`\`\`
 `;
 
@@ -946,7 +975,7 @@ Response: AccountShop   // 参考 AccountShop 数据结构
 \`\`\`
 DELETE /api/account/shop/:id
 
-Response: {}           // 返回空对象
+Response: {}           // 返回���对象
 \`\`\`
 `;
 

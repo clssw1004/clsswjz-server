@@ -6,6 +6,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { generateApiDocs } from './utils/doc.util';
 import { TransformInterceptor } from './interceptors/transform.interceptor';
 import { HttpExceptionFilter } from './filters/http-exception.filter';
+import { json } from 'express';
 dotenv.config();
 
 async function bootstrap() {
@@ -35,6 +36,9 @@ async function bootstrap() {
 
   // 添加全局异常过滤器
   app.useGlobalFilters(new HttpExceptionFilter());
+
+  // 增加请求体大小限制为10MB
+  app.use(json({ limit: '50mb' }));
 
   // 生成API文档
   if (process.env.NODE_ENV === 'development') {
