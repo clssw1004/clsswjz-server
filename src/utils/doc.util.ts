@@ -53,6 +53,34 @@ Response:
   "nickname": string      // 用户昵称
 }
 \`\`\`
+
+## 检查Token有效性
+\`\`\`
+GET /api/auth/check
+
+Headers:
+{
+  "Authorization": "Bearer <token>"  // JWT令牌
+}
+
+Response:
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "valid": boolean,        // token是否有效
+    "user": {
+      "sub": string,        // 用户ID
+      "username": string,   // 用户名
+      "iat": number,       // token签发时间
+      "exp": number        // token过期时间
+    }
+  }
+}
+
+Errors:
+- 401 Unauthorized - token无效或已过期
+\`\`\`
 `;
 
   fs.writeFileSync(path.join(process.cwd(), 'docs/api/auth.md'), docs);
@@ -226,7 +254,7 @@ GET /api/health
 Response:
 {
   "status": "ok",        // 服务状态
-  "timestamp": string,   // 当前时间戳
+  "timestamp": string,   // ���前时间戳
   "uptime": number,      // 服务运行时间（秒）
   "memory": {
     "heapUsed": string,  // 已用堆内存
@@ -356,7 +384,7 @@ Response: {
       accountBookIcon: string,// 账本图标
       fundIn: boolean,       // 是否可收入（未关联账本时为false）
       fundOut: boolean,      // 是否可支出（未关联账本时为false）
-      isDefault: boolean     // 是否为账本默认账户（未关联账本���为false）
+      isDefault: boolean     // 是否为账本默认账户（未关联账本时为false）
     }>                       // 按isDefault降序排序，默认账户排在最前面
   }>
 }
@@ -553,7 +581,7 @@ POST /api/account/book
 
 Request Body:
 {
-  "name": string,                // 账本名称
+  "name": string,                // 账本���称
   "description": string?,        // 账本描述（可选）
   "currencySymbol": Currency,    // 货币符号
   "icon": string?               // 账本图标（选）
@@ -591,7 +619,7 @@ Response: Array<{
   permissions: {          // 当前用户权限
     canViewBook: boolean,   // 查看账本权限
     canEditBook: boolean,   // 编辑账本权限
-    canDeleteBook: boolean, // 删除账本权限
+    canDeleteBook: boolean, // 删除���本权限
     canViewItem: boolean,   // 查看账目权限
     canEditItem: boolean,   // 编辑目权限
     canDeleteItem: boolean  // 删除账目权限
@@ -719,7 +747,7 @@ Response: {
       "fundId": string,         // 账户ID
       "fundName": string,       // 账户名称
       "shopCode": string?,      // 商家编码
-      "shop": string?,          // 商家名��
+      "shop": string?,          // 商家名称
       "createdBy": string,      // 创建人ID
       "updatedBy": string,      // 更新人ID
       "createdAt": Date,        // 创建时间
@@ -764,7 +792,7 @@ Errors:
 - 404 记账记录不存在
 \`\`\`
 
-## 更新���账记录
+## 更新记账记录
 \`\`\`
 PATCH /api/account/item/:id
 
@@ -803,11 +831,11 @@ Response: {
 
 Errors:
 - 404 记账记录不存在
-- 403 该账户在当前账本中不允许支出/收���
+- 403 该账户在当前账本中不允许支出/收入
 \`\`\`
 
 ## 删除记账记录
-\`\`\`
+\`\`
 DELETE /api/account/item/:id
 
 Response: {
@@ -975,7 +1003,7 @@ Response: AccountShop   // 参考 AccountShop 数据结构
 \`\`\`
 DELETE /api/account/shop/:id
 
-Response: {}           // 返回���对象
+Response: {}           // 返回\`空对象
 \`\`\`
 `;
 
