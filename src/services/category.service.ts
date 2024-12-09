@@ -1,10 +1,11 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, EntityManager } from 'typeorm';
 import { Category } from '../pojo/entities/category.entity';
 import { QueryCategoryDto } from '../pojo/dto/category/query-category.dto';
 import { DEFAULT_CATEGORIES } from '../config/default-categories.config';
 import { generateUid } from '../utils/id.util';
+import { CreateCategoryDto } from '../pojo/dto/category/create-category.dto';
 
 @Injectable()
 export class CategoryService {
@@ -28,7 +29,7 @@ export class CategoryService {
   }
 
   // 创建分类
-  async create(category: Partial<Category>, userId: string): Promise<Category> {
+  async create(category: CreateCategoryDto, userId: string): Promise<Category> {
     // 检查名称是否重复
     const nameExists = await this.checkNameExists(
       category.name,
@@ -41,12 +42,9 @@ export class CategoryService {
     }
 
     // 如果没有提供 code，使用 shortid 生成
-    if (!category.code) {
-      category.code = generateUid();
-    }
-
     const newCategory = this.categoryRepository.create({
       ...category,
+      code: generateUid(),
       createdBy: userId,
       updatedBy: userId,
     });
@@ -82,6 +80,16 @@ export class CategoryService {
 
   // 更新分类
   async update(id: string, category: Partial<Category>): Promise<Category> {
+    const existingCategory = await this.findOne(id);
+    if (!existingCategory) {
+      throw new NotFoundException('分类不存在');
+    }
+
+    // 不允许更改分类类型
+    if (category.categoryType && category.categoryType !== existingCategory.categoryType) {
+      throw new Error('分类类型不允许修改');
+    }
+
     await this.categoryRepository.update(id, category);
     return await this.findOne(id);
   }
@@ -104,6 +112,7 @@ export class CategoryService {
         name: category.name,
         code: generateUid(),
         accountBookId,
+        categoryType: category.type, // 添加分类类型
         createdBy: userId,
         updatedBy: userId,
       }),

@@ -16,6 +16,7 @@ import { QueryAccountItemDto } from '../pojo/dto/account-item/query-account-item
 import { CategoryService } from './category.service';
 import { AccountShopService } from './account-shop.service';
 import { generateUid } from '../utils/id.util';
+import { DEFAULT_FUND } from 'src/config/default-fund.config';
 
 @Injectable()
 export class AccountService {
@@ -30,7 +31,7 @@ export class AccountService {
     private accountBookRepository: Repository<AccountBook>,
     @InjectRepository(AccountBookFund)
     private accountBookFundRepository: Repository<AccountBookFund>,
-  ) { }
+  ) {}
 
   /**
    * 获取或创建分类
@@ -70,6 +71,9 @@ export class AccountService {
     fundId: string,
     type: ItemType,
   ): Promise<void> {
+    if (fundId === DEFAULT_FUND) {
+      return;
+    }
     const bookFund = await this.accountBookFundRepository.findOne({
       where: {
         accountBookId,
@@ -160,11 +164,7 @@ export class AccountService {
         'shops',
         'account.shopCode = shops.shopCode',
       )
-      .leftJoinAndSelect(
-        'account_funds',
-        'fund',
-        'account.fundId = fund.id',
-      )
+      .leftJoinAndSelect('account_funds', 'fund', 'account.fundId = fund.id')
       .select([
         'account.*',
         'category.name as category',
@@ -387,72 +387,80 @@ export class AccountService {
     return this.accountItemRepository.remove(accountItem);
   }
 
-  async createBatch(createAccountItemDtos: CreateAccountItemDto[], userId: string) {
+  async createBatch(
+    createAccountItemDtos: CreateAccountItemDto[],
+    userId: string,
+  ) {
     let successCount = 0;
     const errors = [];
 
     // 使用事务处理批量创建
-    await this.accountItemRepository.manager.transaction(async (transactionalEntityManager) => {
-      for (const dto of createAccountItemDtos) {
-        try {
-          // 校验账本是否存在
-          const accountBook = await transactionalEntityManager.findOneBy(AccountBook, {
-            id: dto.accountBookId,
-          });
-          if (!accountBook) {
-            errors.push(`账本ID ${dto.accountBookId} 不存在`);
-            continue;
-          }
+    await this.accountItemRepository.manager.transaction(
+      async (transactionalEntityManager) => {
+        for (const dto of createAccountItemDtos) {
+          try {
+            // 校验账本是否存在
+            const accountBook = await transactionalEntityManager.findOneBy(
+              AccountBook,
+              {
+                id: dto.accountBookId,
+              },
+            );
+            if (!accountBook) {
+              errors.push(`账本ID ${dto.accountBookId} 不存在`);
+              continue;
+            }
 
-          // 校验账本资产权限
-          await this.validateBookFundPermission(
-            dto.accountBookId,
-            dto.fundId,
-            dto.type,
-          );
+            // 校验账本资产权限
+            await this.validateBookFundPermission(
+              dto.accountBookId,
+              dto.fundId,
+              dto.type,
+            );
 
-          // 处理分类
-          const category = await this.getOrCreateCategory(
-            dto.category,
-            dto.accountBookId,
-            userId,
-          );
-
-          // 处理商家信息
-          let shopCode = null;
-          if (dto.shop) {
-            const shop = await this.accountShopService.getOrCreateShop(
-              dto.shop,
+            // 处理分类
+            const category = await this.getOrCreateCategory(
+              dto.category,
               dto.accountBookId,
               userId,
             );
-            shopCode = shop.shopCode;
+
+            // 处理商家信息
+            let shopCode = null;
+            if (dto.shop) {
+              const shop = await this.accountShopService.getOrCreateShop(
+                dto.shop,
+                dto.accountBookId,
+                userId,
+              );
+              shopCode = shop.shopCode;
+            }
+
+            // 创建账目
+            const accountItem = transactionalEntityManager.create(AccountItem, {
+              ...dto,
+              shopCode,
+              categoryCode: category.code,
+              createdBy: userId,
+              updatedBy: userId,
+            });
+
+            await transactionalEntityManager.save(AccountItem, accountItem);
+
+            // 更新分类的最近账目时间
+            await transactionalEntityManager.update(
+              Category,
+              { code: category.code },
+              { lastAccountItemAt: accountItem.createdAt },
+            );
+
+            successCount++;
+          } catch (error) {
+            errors.push(error.message);
           }
-
-          // 创建账目
-          const accountItem = transactionalEntityManager.create(AccountItem, {
-            ...dto,
-            shopCode,
-            categoryCode: category.code,
-            createdBy: userId,
-            updatedBy: userId,
-          });
-
-          await transactionalEntityManager.save(AccountItem, accountItem);
-
-          // 更新分类的最近账目时间
-          await transactionalEntityManager.update(
-            Category,
-            { code: category.code },
-            { lastAccountItemAt: accountItem.createdAt },
-          );
-
-          successCount++;
-        } catch (error) {
-          errors.push(error.message);
         }
-      }
-    });
+      },
+    );
 
     return {
       successCount,

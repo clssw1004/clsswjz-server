@@ -9,6 +9,7 @@ import { AccountShop } from '../pojo/entities/account-shop.entity';
 import { generateUid } from '../utils/id.util';
 import { CreateAccountShopDto } from '../pojo/dto/account-shop/create-account-shop.dto';
 import { UpdateAccountShopDto } from '../pojo/dto/account-shop/update-account-shop.dto';
+import { DEFAULT_SHOP } from 'src/config/default-shop.config';
 
 @Injectable()
 export class AccountShopService {
@@ -31,6 +32,15 @@ export class AccountShopService {
         accountBookId,
       },
     });
+    if (name === DEFAULT_SHOP) {
+      shop = this.accountShopRepository.create({
+        name: DEFAULT_SHOP,
+        shopCode: DEFAULT_SHOP,
+        accountBookId,
+        createdBy: userId,
+        updatedBy: userId,
+      });
+    }
 
     if (!shop) {
       shop = this.accountShopRepository.create({

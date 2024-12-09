@@ -12,14 +12,15 @@ import {
 import { CategoryService } from '../services/category.service';
 import { Category } from '../pojo/entities/category.entity';
 import { QueryCategoryDto } from '../pojo/dto/category/query-category.dto';
+import { CreateCategoryDto } from 'src/pojo/dto/category/create-category.dto';
 
 @Controller('account/category')
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
   @Post()
-  create(@Body() category: Partial<Category>, @Request() req) {
-    return this.categoryService.create(category, req.user.sub);
+  create(@Body() category: CreateCategoryDto, @Request() req) {
+    return this.categoryService.create({ ...category, id: null }, req.user.sub);
   }
 
   @Get()
