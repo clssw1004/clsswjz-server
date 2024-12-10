@@ -69,7 +69,7 @@ Response: {
 
 Errors:
 - 404 账本不存在
-- 403 该账户在当前账本中不允许支出/收入
+- 403 ���账户在当前账本中不允许支出/收入
 ```
 
 ## 查询记账记录
@@ -184,7 +184,7 @@ Response: {
     "shopCode": string?,      // 商家编码
     "shop": string?,          // 商家名称
     "createdBy": string,      // 创建人ID
-    "updatedBy": string,      // 更新人ID
+    "updatedBy": string,      // ��新人ID
     "createdAt": Date,        // 创建时间
     "updatedAt": Date         // 更新时间
   }
@@ -196,7 +196,7 @@ Errors:
 ```
 
 ## 删除记账记录
-``
+```
 DELETE /api/account/item/:id
 
 Response: {

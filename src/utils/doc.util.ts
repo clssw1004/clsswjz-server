@@ -27,6 +27,7 @@ export const generateApiDocs = () => {
   generateHealthDocs();
   generateEntitiesDocs();
   generateMainDocs();
+  generateEnumDocs();
 };
 
 /**
@@ -54,7 +55,7 @@ Response:
 }
 \`\`\`
 
-## 检查Token有效性
+## ��查Token有效性
 \`\`\`
 GET /api/auth/check
 
@@ -254,7 +255,7 @@ GET /api/health
 Response:
 {
   "status": "ok",        // 服务状态
-  "timestamp": string,   // ���前时间戳
+  "timestamp": string,   // 当前时间戳
   "uptime": number,      // 服务运行时间（秒）
   "memory": {
     "heapUsed": string,  // 已用堆内存
@@ -281,19 +282,128 @@ const generateEntitiesDocs = () => {
 \`\`\`typescript
 {
   id: string;              // 主键ID
-  name: string;        // 资金账户名称
+  name: string;            // 资金账户名称
   fundType: FundType;      // 资金类型
   fundRemark: string;      // 备注
   fundBalance: number;     // 余额
-  isDefault: boolean;      // 是否默认账户
   createdBy: string;       // 创建人ID
   updatedBy: string;       // 更新人ID
-  createdAt: Date;         // 时间
+  createdAt: Date;         // 创建时间
   updatedAt: Date;         // 更新时间
 }
 \`\`\`
 
-// ... 其他实体的结构说明
+## AccountBook 账本
+\`\`\`typescript
+{
+  id: string;              // 主键ID
+  name: string;            // 账本名称
+  description: string;     // 账本描述
+  currencySymbol: string; // 货币符号
+  icon: string;           // 账本图标
+  createdBy: string;      // 创建人ID
+  updatedBy: string;      // 更新人ID
+  createdAt: Date;        // 创建时间
+  updatedAt: Date;        // 更新时间
+}
+\`\`\`
+
+## Category 分类
+\`\`\`typescript
+{
+  id: string;              // 主键ID
+  name: string;            // 分类名称
+  accountBookId: string;   // 所属账本ID
+  code: string;            // 分类编码
+  categoryType: ItemType;  // 分类类型：EXPENSE-支出，INCOME-收入
+  lastAccountItemAt: Date; // 最近账目创建时间
+  createdBy: string;       // 创建人ID
+  updatedBy: string;      // 更新人ID
+  createdAt: Date;        // 创建时间
+  updatedAt: Date;        // 更新时间
+}
+\`\`\`
+
+## AccountShop 商家
+\`\`\`typescript
+{
+  id: string;              // 主键ID
+  name: string;            // 商家名称
+  shopCode: string;        // 商家编码
+  accountBookId: string;   // 所属账本ID
+  createdBy: string;       // 创建人ID
+  updatedBy: string;      // 更新人ID
+  createdAt: Date;        // 创建时间
+  updatedAt: Date;        // 更新时间
+}
+\`\`\`
+
+## AccountItem 账目记录
+\`\`\`typescript
+{
+  id: string;              // 主键ID
+  amount: number;          // 金额
+  description: string;     // 描述
+  type: ItemType;         // 类型：EXPENSE-支出，INCOME-收入
+  categoryCode: string;    // 分类编码
+  accountDate: Date;      // 记账日期
+  accountBookId: string;  // 账本ID
+  fundId: string;         // 账户ID
+  shopCode: string;       // 商家编码
+  createdBy: string;      // 创建人ID
+  updatedBy: string;      // 更新人ID
+  createdAt: Date;        // 创建时间
+  updatedAt: Date;        // 更新时间
+}
+\`\`\`
+
+## User 用户
+\`\`\`typescript
+{
+  id: string;              // 主键ID
+  username: string;        // 用户名
+  nickname: string;        // 昵称
+  password: string;        // 密码（加密存储）
+  email: string;          // 邮箱
+  phone: string;          // 手机号
+  inviteCode: string;     // 邀请码
+  language: Language;     // 语言设置
+  timezone: string;       // 时区设置
+  createdAt: Date;        // 创建时间
+  updatedAt: Date;        // 更新时间
+}
+\`\`\`
+
+## AccountBookUser 账本用户关联
+\`\`\`typescript
+{
+  id: string;              // 主键ID
+  userId: string;          // 用户ID
+  accountBookId: string;   // 账本ID
+  canViewBook: boolean;    // 查看账本权限
+  canEditBook: boolean;    // 编辑账本权限
+  canDeleteBook: boolean;  // 删除账本权限
+  canViewItem: boolean;    // 查看账目权限
+  canEditItem: boolean;    // 编辑账目权限
+  canDeleteItem: boolean;  // 删除账目权限
+  createdAt: Date;        // 创建时间
+  updatedAt: Date;        // 更新时间
+}
+\`\`\`
+
+## AccountBookFund 账本资金账户关联
+\`\`\`typescript
+{
+  id: string;              // 主键ID
+  accountBookId: string;   // 账本ID
+  fundId: string;         // 资金账户ID
+  fundIn: boolean;        // 是否可收入
+  fundOut: boolean;       // 是否可支出
+  isDefault: boolean;     // 是否默认账户
+  createdAt: Date;        // 创建时间
+  updatedAt: Date;        // 更新时间
+}
+\`\`\`
 `;
 
   fs.writeFileSync(path.join(process.cwd(), 'docs/entities.md'), docs);
@@ -315,6 +425,10 @@ const generateMainDocs = () => {
 - [商家相关](api/shop.md)
 - [健康检查](api/health.md)
 
+## 数据结构
+- [实体说明](entities.md)
+- [枚举类型](enums.md)
+
 ## 通用说明
 
 ### 认证方式
@@ -332,9 +446,6 @@ Authorization: Bearer <token>
   data: any;      // 响应数据
 }
 \`\`\`
-
-### 数据结构
-详细的数据结构说明请参考 [entities.md](entities.md)
 `;
 
   fs.writeFileSync(path.join(process.cwd(), 'docs/api.md'), docs);
@@ -581,7 +692,7 @@ POST /api/account/book
 
 Request Body:
 {
-  "name": string,                // 账本���称
+  "name": string,                // 账本名称
   "description": string?,        // 账本描述（可选）
   "currencySymbol": Currency,    // 货币符号
   "icon": string?               // 账本图标（选）
@@ -619,7 +730,7 @@ Response: Array<{
   permissions: {          // 当前用户权限
     canViewBook: boolean,   // 查看账本权限
     canEditBook: boolean,   // 编辑账本权限
-    canDeleteBook: boolean, // 删除���本权限
+    canDeleteBook: boolean, // 删除账本权限
     canViewItem: boolean,   // 查看账目权限
     canEditItem: boolean,   // 编辑目权限
     canDeleteItem: boolean  // 删除账目权限
@@ -708,7 +819,7 @@ Response: {
 
 Errors:
 - 404 账本不存在
-- 403 该账户在当前账本中不允许支出/收入
+- 403 ���账户在当前账本中不允许支出/收入
 \`\`\`
 
 ## 查询记账记录
@@ -823,7 +934,7 @@ Response: {
     "shopCode": string?,      // 商家编码
     "shop": string?,          // 商家名称
     "createdBy": string,      // 创建人ID
-    "updatedBy": string,      // 更新人ID
+    "updatedBy": string,      // ��新人ID
     "createdAt": Date,        // 创建时间
     "updatedAt": Date         // 更新时间
   }
@@ -835,7 +946,7 @@ Errors:
 \`\`\`
 
 ## 删除记账记录
-\`\`
+\`\`\`
 DELETE /api/account/item/:id
 
 Response: {
@@ -1000,9 +1111,64 @@ Response: AccountShop   // 参考 AccountShop 数据结构
 \`\`\`
 DELETE /api/account/shop/:id
 
-Response: {}           // 返回\`空对象
+Response: {}           // 返回空对象
 \`\`\`
 `;
 
   fs.writeFileSync(path.join(process.cwd(), 'docs/api/shop.md'), docs);
+};
+
+/**
+ * 生成枚举类型说明文档
+ */
+const generateEnumDocs = () => {
+  const docs = `# 枚举类型说明
+
+## ItemType 记账类型
+\`\`\`typescript
+enum ItemType {
+  EXPENSE = 'EXPENSE',   // 支出
+  INCOME = 'INCOME'      // 收入
+}
+\`\`\`
+
+## FundType 资金账户类型
+\`\`\`typescript
+enum FundType {
+  CASH = 'CASH',            // 现金
+  DEBIT_CARD = 'DEBIT',     // 储蓄卡
+  CREDIT_CARD = 'CREDIT',   // 信用卡
+  PREPAID_CARD = 'PREPAID', // 充值卡
+  DEBT = 'DEBT',            // 欠款
+  E_WALLET = 'E_WALLET',    // 网络钱包
+  ALIPAY = 'ALIPAY',        // 支付宝
+  WECHAT = 'WECHAT',        // 微信
+  INVESTMENT = 'INVESTMENT',// 投资账户
+  OTHER = 'OTHER'           // 其他
+}
+\`\`\`
+
+## Language 语言设置
+\`\`\`typescript
+enum Language {
+  ZH_CN = 'zh-CN',  // 简体中文
+  ZH_TW = 'zh-TW',  // 繁体中文
+  EN = 'en'         // 英语
+}
+\`\`\`
+
+## Currency 货币类型
+\`\`\`typescript
+enum Currency {
+  CNY = 'CNY',  // 人民币
+  USD = 'USD',  // 美元
+  EUR = 'EUR',  // 欧元
+  GBP = 'GBP',  // 英镑
+  JPY = 'JPY',  // 日元
+  HKD = 'HKD'   // 港币
+}
+\`\`\`
+`;
+
+  fs.writeFileSync(path.join(process.cwd(), 'docs/enums.md'), docs);
 };

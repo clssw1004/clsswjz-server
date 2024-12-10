@@ -28,16 +28,22 @@ function randomAmount(min: number, max: number) {
 // 生成随机账目数据
 function generateRandomItems(count: number) {
   const expenseCategories = [
-    '餐饮',
-    '交通',
-    '购物',
-    '娱乐',
-    '日用',
-    '服饰',
-    '医疗',
-    '教育',
+    { name: '餐饮', type: 'EXPENSE' },
+    { name: '交通', type: 'EXPENSE' },
+    { name: '购物', type: 'EXPENSE' },
+    { name: '娱乐', type: 'EXPENSE' },
+    { name: '日用', type: 'EXPENSE' },
+    { name: '服饰', type: 'EXPENSE' },
+    { name: '医疗', type: 'EXPENSE' },
+    { name: '教育', type: 'EXPENSE' },
   ];
-  const incomeCategories = ['工资', '奖金', '理财', '兼职', '报销'];
+  const incomeCategories = [
+    { name: '工资', type: 'INCOME' },
+    { name: '奖金', type: 'INCOME' },
+    { name: '理财', type: 'INCOME' },
+    { name: '兼职', type: 'INCOME' },
+    { name: '报销', type: 'INCOME' },
+  ];
   const shops = [
     '永辉超市',
     '盒马生鲜',
@@ -69,7 +75,7 @@ function generateRandomItems(count: number) {
   const items = [];
   const endDate = new Date();
   const startDate = new Date();
-  startDate.setMonth(endDate.getMonth() - 12); // 生成最近3个月的数据
+  startDate.setMonth(endDate.getMonth() - 12); // 生成最近12个月的数据
 
   for (let i = 0; i < count; i++) {
     const isExpense = Math.random() > 0.2; // 80%概率是支出
@@ -84,7 +90,7 @@ function generateRandomItems(count: number) {
     const shop = isExpense
       ? shops[Math.floor(Math.random() * shops.length)]
       : null;
-    const categoryDescriptions = descriptions[category] || [];
+    const categoryDescriptions = descriptions[category.name] || [];
     const description =
       categoryDescriptions[
         Math.floor(Math.random() * categoryDescriptions.length)
@@ -94,7 +100,7 @@ function generateRandomItems(count: number) {
     items.push({
       amount,
       type,
-      category,
+      category: category.name,
       shop,
       description,
       accountDate,
@@ -193,7 +199,7 @@ const api = {
 
     // 逐批发送请求
     for (const batch of batches) {
-      const itemsToCreate = batch.map(item => ({
+      const itemsToCreate = batch.map((item) => ({
         ...item,
         accountBookId,
         fundId,
@@ -231,6 +237,24 @@ const api = {
           isDefault: true,
         },
       ],
+    });
+    return data;
+  },
+
+  async createCategory(accountBookId: string, category: any, userId: string) {
+    const { data } = await axios.post(`${API_URL}/account/category`, {
+      name: category.name,
+      accountBookId,
+      categoryType: category.type,
+    });
+    return data;
+  },
+
+  async createItem(accountBookId: string, fundId: string, item: any) {
+    const { data } = await axios.post(`${API_URL}/account/item`, {
+      ...item,
+      accountBookId,
+      fundId,
     });
     return data;
   },
@@ -280,7 +304,7 @@ async function main() {
     );
     console.log(
       `账目创建完成！成功: ${result.successCount} 条${
-        result.errors ? '，失���: ' + result.errors.length + ' 条' : ''
+        result.errors ? '，失败: ' + result.errors.length + ' 条' : ''
       }`,
     );
     if (result.errors) {

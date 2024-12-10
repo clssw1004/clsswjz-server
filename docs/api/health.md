@@ -7,7 +7,7 @@ GET /api/health
 Response:
 {
   "status": "ok",        // 服务状态
-  "timestamp": string,   // ���前时间戳
+  "timestamp": string,   // 当前时间戳
   "uptime": number,      // 服务运行时间（秒）
   "memory": {
     "heapUsed": string,  // 已用堆内存

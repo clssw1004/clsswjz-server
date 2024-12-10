@@ -10,6 +10,10 @@
 - [商家相关](api/shop.md)
 - [健康检查](api/health.md)
 
+## 数据结构
+- [实体说明](entities.md)
+- [枚举类型](enums.md)
+
 ## 通用说明
 
 ### 认证方式
@@ -27,6 +31,3 @@ Authorization: Bearer <token>
   data: any;      // 响应数据
 }
 ```
-
-### 数据结构
-详细的数据结构说明请参考 [entities.md](entities.md)

@@ -1,99 +1,170 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# CLSSWJZ - Personal Finance Management System
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+[中文说明](./README_CN.md)
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Projects
+- Backend Service (Current)
+- Mobile App: [CLSSWJZ-APP](https://github.com/clssw1004/clsswjz-app.git) (Flutter)
 
-## Description
+### Introduction
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+CLSSWJZ is a comprehensive personal finance management system that includes both backend services and mobile applications. It helps users manage their finances through features like multi-account books, fund accounts, and collaborative bookkeeping.
 
-## Project setup
+### Features
 
-```bash
-$ pnpm install
-```
+- Multi-account book management
+- Fund account management
+- Income/Expense recording
+- Category management
+- Merchant management
+- User collaboration
+- Multi-language support (zh-CN, zh-TW, en)
+- Multi-platform support
 
-## Compile and run the project
+### Tech Stack
 
-```bash
-# development
-$ pnpm run start
+- Backend: NestJS + TypeORM
+- Database: MySQL/SQLite
+- Authentication: JWT
+- API Documentation: Markdown
+- Mobile App: Flutter
 
-# watch mode
-$ pnpm run start:dev
+### Development
 
-# production mode
-$ pnpm run start:prod
-```
+#### Prerequisites
 
-## Run tests
+- Node.js >= 18
+- MySQL/SQLite
+- npm/yarn
+
+#### Installation
 
 ```bash
-# unit tests
-$ pnpm run test
+# Clone the repository
+git clone https://github.com/your-repo/clsswjz-server.git
 
-# e2e tests
-$ pnpm run test:e2e
+# Install dependencies
+npm install
 
-# test coverage
-$ pnpm run test:cov
+# Configure environment variables
+cp .env.example .env
+# Edit .env file with your database settings
+
+# Start development server
+npm run start:dev
 ```
 
-## Deployment
+#### Development Commands
+```bash
+# Start development server with watch mode
+npm run start:dev
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+# Run tests
+npm run test
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+# Run e2e tests
+npm run test:e2e
+
+# Generate API documentation
+npm run doc:generate
+
+# Run mock data script
+npm run mock:data
+```
+
+#### Docker Deployment
 
 ```bash
-$ pnpm install -g mau
-$ mau deploy
+# Build image
+npm run docker:build
+
+# Run with docker-compose
+npm run docker:compose
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Documentation
 
-## Resources
+- [API Documentation](docs/api.md)
+- [Entity Documentation](docs/entities.md)
 
-Check out a few resources that may come in handy when working with NestJS:
+### Environment Configuration
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+#### Local Development
+Create a `.env` file in the root directory and configure the following variables:
 
-## Support
+```bash
+# Server Configuration
+PORT=3000                 # Server port
+API_PREFIX=api           # API prefix
+NODE_ENV=development     # Environment: development/production
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+# Database Configuration (MySQL)
+DB_TYPE=mysql           # Database type: mysql/sqlite
+DB_HOST=localhost       # Database host
+DB_PORT=3306           # Database port
+DB_USERNAME=root       # Database username
+DB_PASSWORD=password   # Database password
+DB_DATABASE=clsswjz    # Database name
 
-## Stay in touch
+# Database Configuration (SQLite)
+# DB_TYPE=sqlite
+# DB_DATABASE=db.sqlite
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+#### Docker Deployment
+When using Docker, you can configure environment variables in the following ways:
 
-## License
+1. Using docker-compose.yml:
+```yaml
+services:
+  api:
+    environment:
+      - PORT=3000
+      - API_PREFIX=api
+      - NODE_ENV=production
+      - DB_TYPE=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USERNAME=root
+      - DB_PASSWORD=your_password
+      - DB_DATABASE=clsswjz
+```
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+2. Using environment file:
+```bash
+# Create .env file
+cp .env.example .env
+
+# Start with docker-compose
+docker-compose --env-file .env up -d
+```
+
+3. Using command line:
+```bash
+docker run -d \
+  -e PORT=3000 \
+  -e DB_TYPE=mysql \
+  -e DB_HOST=db \
+  -e DB_PORT=3306 \
+  -e DB_USERNAME=root \
+  -e DB_PASSWORD=your_password \
+  -e DB_DATABASE=clsswjz \
+  clsswjz-server
+```
+
+#### Database Selection
+1. MySQL Configuration:
+```env
+DB_TYPE=mysql
+DB_HOST=localhost
+DB_PORT=3306
+DB_USERNAME=root
+DB_PASSWORD=your_password
+DB_DATABASE=clsswjz
+```
+
+2. SQLite Configuration:
+```env
+DB_TYPE=sqlite
+DB_DATABASE=db.sqlite
+```

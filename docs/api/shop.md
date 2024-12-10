@@ -52,5 +52,5 @@ Response: AccountShop   // 参考 AccountShop 数据结构
 ```
 DELETE /api/account/shop/:id
 
-Response: {}           // 返回`空对象
+Response: {}           // 返回空对象
 ```

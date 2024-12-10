@@ -42,6 +42,7 @@ export class AccountService {
    */
   private async getOrCreateCategory(
     categoryName: string,
+    categoryType: ItemType,
     accountBookId: string,
     userId: string,
   ): Promise<Category> {
@@ -54,6 +55,7 @@ export class AccountService {
       category = this.categoryRepository.create({
         code: generateUid(),
         name: categoryName,
+        categoryType,
         accountBookId,
         createdBy: userId,
         updatedBy: userId,
@@ -115,6 +117,7 @@ export class AccountService {
     // 处理分类
     const category = await this.getOrCreateCategory(
       createAccountItemDto.category,
+      createAccountItemDto.type,
       createAccountItemDto.accountBookId,
       userId,
     );
@@ -350,6 +353,7 @@ export class AccountService {
     if (updateAccountItemDto.category) {
       const category = await this.getOrCreateCategory(
         updateAccountItemDto.category,
+        accountItem.type,
         accountItem.accountBookId,
         userId,
       );
@@ -421,6 +425,7 @@ export class AccountService {
             // 处理分类
             const category = await this.getOrCreateCategory(
               dto.category,
+              dto.type,
               dto.accountBookId,
               userId,
             );

@@ -6,7 +6,7 @@ POST /api/account/book
 
 Request Body:
 {
-  "name": string,                // 账本���称
+  "name": string,                // 账本名称
   "description": string?,        // 账本描述（可选）
   "currencySymbol": Currency,    // 货币符号
   "icon": string?               // 账本图标（选）
@@ -44,7 +44,7 @@ Response: Array<{
   permissions: {          // 当前用户权限
     canViewBook: boolean,   // 查看账本权限
     canEditBook: boolean,   // 编辑账本权限
-    canDeleteBook: boolean, // 删除���本权限
+    canDeleteBook: boolean, // 删除账本权限
     canViewItem: boolean,   // 查看账目权限
     canEditItem: boolean,   // 编辑目权限
     canDeleteItem: boolean  // 删除账目权限
