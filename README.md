@@ -25,9 +25,57 @@ CLSSWJZ is a comprehensive personal finance management system that includes both
 
 - Backend: NestJS + TypeORM
 - Database: MySQL/SQLite
-- Authentication: JWT
 - API Documentation: Markdown
 - Mobile App: Flutter
+
+### Deployment
+
+CLSSWJZ supports both traditional self-hosted deployment and containerized deployment using Docker. Choose the method that best suits your needs:
+
+#### Self-Hosted Deployment
+Self-hosted deployment gives you full control over your environment and is suitable for users who want to:
+- Customize the database configuration
+- Integrate with existing infrastructure
+- Have specific security requirements
+- Need maximum performance
+
+Requirements:
+- Node.js runtime environment
+- MySQL or SQLite database
+- Reverse proxy (recommended, e.g., Nginx)
+- Process manager (recommended, e.g., PM2)
+
+Key steps:
+1. Set up the database
+2. Configure environment variables
+3. Build and start the application
+4. Set up reverse proxy
+5. Configure process manager
+
+#### Docker Deployment
+Docker deployment provides an isolated, consistent environment and is ideal for users who want to:
+- Quick and easy deployment
+- Consistent environment across different platforms
+- Easy scaling and updates
+- Minimal system dependencies
+
+Options:
+1. Single Container: Suitable for personal use or small deployments
+2. Docker Compose: Recommended for production use, includes:
+   - API service container
+   - Database container
+   - Volume persistence
+   - Network isolation
+3. Kubernetes: Available for large-scale deployments
+
+Key benefits:
+- Simplified dependency management
+- Easy database setup
+- Automatic container restart
+- Built-in logging and monitoring
+- Easy backup and migration
+
+[Detailed deployment instructions](#deployment-guides)
 
 ### Development
 
