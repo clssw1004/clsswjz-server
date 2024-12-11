@@ -1,6 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import * as path from 'path';
+import * as fs from 'fs';
 
 export const getDatabaseConfig = (
   configService: ConfigService,
@@ -24,6 +25,23 @@ export const getDatabaseConfig = (
   const absoluteDbPath = path.isAbsolute(dbPath)
     ? dbPath
     : path.join(process.cwd(), dbPath);
+
+  // 检查数据库文件是否存在，不存在则需要同步表结构
+  const shouldSync = dbType === 'sqlite' 
+    ? !fs.existsSync(absoluteDbPath)
+    : !hasRequiredMySQLConfig || configService.get('DB_FORCE_SYNC') === 'true';
+
+  if (shouldSync) {
+    console.warn(
+      '\x1b[33m%s\x1b[0m',
+      `Database schema synchronization is enabled because:
+${dbType === 'sqlite' ? '- SQLite database file does not exist' : '- MySQL configuration is incomplete or DB_FORCE_SYNC is true'}
+Tables will be automatically created/updated.
+WARNING: This should be disabled in production!
+      `,
+    );
+  }
+
   if (dbType === 'sqlite') {
     // 如果使用 SQLite，且是因为 MySQL 配置不完整，打印提示信息
     if (!hasRequiredMySQLConfig && configService.get('DB_TYPE') !== 'sqlite') {
@@ -31,7 +49,7 @@ export const getDatabaseConfig = (
         '\x1b[33m%s\x1b[0m',
         `
 WARNING: MySQL configuration is incomplete or missing. 
-Using SQLite as the default database,data store path: ${absoluteDbPath}. 
+Using SQLite as the default database, data store path: ${absoluteDbPath}. 
 If you run with docker, please mount the volume to this path.
 To use MySQL, please configure the following environment variables:
 - DB_TYPE=mysql
@@ -40,15 +58,21 @@ To use MySQL, please configure the following environment variables:
 - DB_USERNAME
 - DB_PASSWORD
 - DB_DATABASE
-      `,
+        `,
       );
+    }
+
+    // 确保数据目录存在
+    const dataDir = path.dirname(absoluteDbPath);
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
     }
 
     return {
       type: 'sqlite',
       database: absoluteDbPath,
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: configService.get('NODE_ENV') !== 'production',
+      synchronize: shouldSync,
       logging: configService.get('NODE_ENV') === 'development',
     };
   }
@@ -62,7 +86,7 @@ To use MySQL, please configure the following environment variables:
     password: configService.get('DB_PASSWORD'),
     database: configService.get('DB_DATABASE'),
     entities: [__dirname + '/**/*.entity{.ts,.js}'],
-    synchronize: configService.get('NODE_ENV') !== 'production',
+    synchronize: shouldSync,
     logging: configService.get('NODE_ENV') === 'development',
   };
 
