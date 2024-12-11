@@ -36,7 +36,7 @@ POST /api/account/item
 Request Body:
 {
   "accountBookId": string,   // 账本ID
-  "fundId": string,         // 资金账户ID
+  "fundId": string,         // 资���账户ID
   "amount": number,         // 金额
   "type": ItemType,         // 类型：EXPENSE-支出，INCOME-收入
   "category": string,       // 分类
@@ -69,7 +69,7 @@ Response: {
 
 Errors:
 - 404 账本不存在
-- 403 ���账户在当前账本中不允许支出/收入
+- 403 该账户在当前账本中不允许支出/收入
 ```
 
 ## 查询记账记录
@@ -184,7 +184,7 @@ Response: {
     "shopCode": string?,      // 商家编码
     "shop": string?,          // 商家名称
     "createdBy": string,      // 创建人ID
-    "updatedBy": string,      // ��新人ID
+    "updatedBy": string,      // 更新人ID
     "createdAt": Date,        // 创建时间
     "updatedAt": Date         // 更新时间
   }
@@ -236,4 +236,24 @@ Response: {
 Errors:
 - 404 账本不存在
 - 403 该账户在当前账本中不允许支出/收入
+```
+
+## 批量删除记账记录
+```
+POST /api/account/item/batch/delete
+
+Request Body: string[]  // 账目ID数组
+
+Response: {
+  "code": 200,
+  "message": "success",
+  "data": {
+    "successCount": number,   // 成功删除的记录数
+    "errors": string[]?      // 错误信息列表（如果有）
+  }
+}
+
+Errors:
+- 404 账目不存在
+- 403 没有删除权限
 ```

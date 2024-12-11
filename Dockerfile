@@ -1,5 +1,5 @@
 # 构建阶段
-FROM node:18-alpine AS builder
+FROM node:20-alpine3.21 AS builder
 
 # 设置工作目录
 WORKDIR /app
@@ -17,7 +17,7 @@ COPY . .
 RUN npm run build
 
 # 运行阶段
-FROM node:18-alpine
+FROM node:20-alpine3.21
 
 # 设置工作目录
 WORKDIR /app

@@ -9,7 +9,6 @@ import {
   Patch,
 } from '@nestjs/common';
 import { UserService } from '../services/user.service';
-import { User } from '../pojo/entities/user.entity';
 import { Public } from '../decorators/public';
 import { UpdateUserDto } from '../pojo/dto/user/update-user.dto';
 import { CreateUserDto } from '../pojo/dto/user/create-user.dto';
@@ -26,7 +25,11 @@ export class UserController {
 
   @Get('invite/:code')
   async findByInviteCode(@Param('code') inviteCode: string) {
-    return await this.userService.findByInviteCode(inviteCode);
+    const user = await this.userService.findByInviteCode(inviteCode);
+    return {
+      ...user,
+      userId: user?.id,
+    };
   }
 
   @Put('invite/reset')

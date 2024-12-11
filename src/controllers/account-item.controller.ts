@@ -47,7 +47,15 @@ export class AccountController {
   }
 
   @Post('batch')
-  createBatch(@Body() createAccountItemDtos: CreateAccountItemDto[], @Request() req) {
+  createBatch(
+    @Body() createAccountItemDtos: CreateAccountItemDto[],
+    @Request() req,
+  ) {
     return this.accountService.createBatch(createAccountItemDtos, req.user.sub);
+  }
+
+  @Post('batch/delete')
+  async batchDelete(@Body() ids: string[], @Request() req) {
+    return await this.accountService.batchDelete(ids, req.user.sub);
   }
 }

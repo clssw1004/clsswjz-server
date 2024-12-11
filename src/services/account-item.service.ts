@@ -17,6 +17,7 @@ import { CategoryService } from './category.service';
 import { AccountShopService } from './account-shop.service';
 import { generateUid } from '../utils/id.util';
 import { DEFAULT_FUND } from 'src/config/default-fund.config';
+import { AccountBookUser } from 'src/pojo/entities/account-book-user.entity';
 
 @Injectable()
 export class AccountService {
@@ -462,6 +463,64 @@ export class AccountService {
             successCount++;
           } catch (error) {
             errors.push(error.message);
+          }
+        }
+      },
+    );
+
+    return {
+      successCount,
+      errors: errors.length > 0 ? errors : undefined,
+    };
+  }
+
+  async batchDelete(
+    ids: string[],
+    userId: string,
+  ): Promise<{ successCount: number; errors?: string[] }> {
+    let successCount = 0;
+    const errors = [];
+
+    // 使用事务处理批量删除
+    await this.accountItemRepository.manager.transaction(
+      async (transactionalEntityManager) => {
+        for (const id of ids) {
+          try {
+            // 查找账目记录
+            const accountItem = await transactionalEntityManager.findOne(
+              AccountItem,
+              {
+                where: { id },
+              },
+            );
+
+            if (!accountItem) {
+              errors.push(`账目ID ${id} 不存在`);
+              continue;
+            }
+
+            // 检查删除权限
+            const accountUser = await transactionalEntityManager.findOne(
+              AccountBookUser,
+              {
+                where: {
+                  accountBookId: accountItem.accountBookId,
+                  userId,
+                  canDeleteItem: true,
+                },
+              },
+            );
+
+            if (!accountUser) {
+              errors.push(`没有权限删除账目ID ${id}`);
+              continue;
+            }
+
+            // 删除账目
+            await transactionalEntityManager.remove(accountItem);
+            successCount++;
+          } catch (error) {
+            errors.push(`删除账目ID ${id} 失败: ${error.message}`);
           }
         }
       },

@@ -19,7 +19,7 @@ Response:
 }
 ```
 
-## ��查Token有效性
+## 检查Token有效性
 ```
 GET /api/auth/check
 
