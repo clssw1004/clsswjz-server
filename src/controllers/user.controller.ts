@@ -39,7 +39,11 @@ export class UserController {
    */
   @Get('current')
   async getCurrentUser(@Request() req) {
-    return await this.userService.getCurrentUser(req.user.sub);
+    const user = await this.userService.getCurrentUser(req.user.sub);
+    return {
+      ...user,
+      userId: user?.id,
+    };
   }
 
   /**
