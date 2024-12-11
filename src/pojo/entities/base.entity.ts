@@ -15,10 +15,16 @@ export abstract class BaseEntity extends TypeOrmBaseEntity {
   })
   id: string;
 
-  @CreateDateColumn({ comment: '创建时间' })
+  @CreateDateColumn({ 
+    type: 'timestamp',
+    comment: '创建时间',
+  })
   createdAt: Date;
 
-  @UpdateDateColumn({ comment: '更新时间' })
+  @UpdateDateColumn({ 
+    type: 'timestamp',
+    comment: '更新时间',
+  })
   updatedAt: Date;
 
   @BeforeInsert()
@@ -30,9 +36,15 @@ export abstract class BaseEntity extends TypeOrmBaseEntity {
 }
 
 export abstract class BaseBusinessEntity extends BaseEntity {
-  @Column({ comment: '创建人ID' })
+  @Column({ 
+    length: 32,
+    comment: '创建人ID' 
+  })
   createdBy: string;
 
-  @Column({ comment: '更新人ID' })
+  @Column({ 
+    length: 32,
+    comment: '更新人ID' 
+  })
   updatedBy: string;
 }

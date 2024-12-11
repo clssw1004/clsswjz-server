@@ -31,7 +31,7 @@ export const getDatabaseConfig = async (
   let shouldSync = false;
 
   if (dbType === 'sqlite') {
-    // SQLite: 检查数��库文件是否存在
+    // SQLite: 检查数据库文件是否存在
     shouldSync = !fs.existsSync(absoluteDbPath);
   } else {
     // MySQL/PostgreSQL: 检查数据库表是否存在
@@ -51,14 +51,14 @@ export const getDatabaseConfig = async (
       const hasTable = await tempDataSource.query(`
         SELECT COUNT(*) as count 
         FROM information_schema.tables 
-        WHERE table_schema = '${configService.get('DB_DATABASE')}' 
+        WHERE table_schema = '${configService.get<string>('DB_DATABASE')}' 
         AND table_name = 'users'
       `);
 
       await tempDataSource.destroy();
 
       shouldSync =
-        !hasTable[0].count || configService.get('DB_FORCE_SYNC') === 'true';
+        Number(hasTable[0].count) === 0 || configService.get('DB_FORCE_SYNC') === 'true';
     } catch (error) {
       console.warn(
         '\x1b[33m%s\x1b[0m',

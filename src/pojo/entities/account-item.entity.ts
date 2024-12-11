@@ -1,4 +1,4 @@
-import { Entity, Column } from 'typeorm';
+import { Entity, Column, BeforeInsert } from 'typeorm';
 import { ItemType } from '../enums/item-type.enum';
 import { BaseBusinessEntity } from './base.entity';
 
@@ -10,7 +10,7 @@ export class AccountItem extends BaseBusinessEntity {
   @Column({ length: 100, nullable: true, comment: '描述' })
   description: string;
 
-  @Column({ length: 4, comment: '类型：EXPENSE-支出，INCOME-收入' })
+  @Column({ length: 10, comment: '类型：EXPENSE-支出，INCOME-收入' })
   type: ItemType;
 
   @Column({ length: 50, comment: '分类编码' })
@@ -19,7 +19,6 @@ export class AccountItem extends BaseBusinessEntity {
   @Column({
     type: 'date',
     comment: '记账日期',
-    default: () => 'CURRENT_DATE',
   })
   accountDate: Date;
 
@@ -35,4 +34,11 @@ export class AccountItem extends BaseBusinessEntity {
     comment: '商家编码',
   })
   shopCode: string;
+
+  @BeforeInsert()
+  setDefaultDate() {
+    if (!this.accountDate) {
+      this.accountDate = new Date();
+    }
+  }
 }
