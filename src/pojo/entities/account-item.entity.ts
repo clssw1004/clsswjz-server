@@ -1,6 +1,7 @@
 import { Entity, Column, BeforeInsert } from 'typeorm';
 import { ItemType } from '../enums/item-type.enum';
 import { BaseBusinessEntity } from './base.entity';
+import { getColumnTypeForDatabase } from '../../utils/db.util';
 
 @Entity('account_items')
 export class AccountItem extends BaseBusinessEntity {
@@ -17,7 +18,11 @@ export class AccountItem extends BaseBusinessEntity {
   categoryCode: string;
 
   @Column({
-    type: 'date',
+    type: getColumnTypeForDatabase({
+      sqlite: 'datetime',
+      mysql: 'timestamp',
+      postgres: 'timestamp',
+    }),
     comment: '记账日期',
   })
   accountDate: Date;

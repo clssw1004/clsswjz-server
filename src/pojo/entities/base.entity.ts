@@ -7,6 +7,7 @@ import {
   BeforeInsert,
 } from 'typeorm';
 import { generatePrimaryKey } from '../../utils/id.util';
+import { getColumnTypeForDatabase } from '../../utils/db.util';
 
 export abstract class BaseEntity extends TypeOrmBaseEntity {
   @PrimaryColumn('varchar', {
@@ -15,14 +16,22 @@ export abstract class BaseEntity extends TypeOrmBaseEntity {
   })
   id: string;
 
-  @CreateDateColumn({ 
-    type: 'timestamp',
+  @CreateDateColumn({
+    type: getColumnTypeForDatabase({
+      sqlite: 'datetime',
+      mysql: 'timestamp',
+      postgres: 'timestamp',
+    }),
     comment: '创建时间',
   })
   createdAt: Date;
 
-  @UpdateDateColumn({ 
-    type: 'timestamp',
+  @UpdateDateColumn({
+    type: getColumnTypeForDatabase({
+      sqlite: 'datetime',
+      mysql: 'timestamp',
+      postgres: 'timestamp',
+    }),
     comment: '更新时间',
   })
   updatedAt: Date;
@@ -36,15 +45,15 @@ export abstract class BaseEntity extends TypeOrmBaseEntity {
 }
 
 export abstract class BaseBusinessEntity extends BaseEntity {
-  @Column({ 
+  @Column({
     length: 32,
-    comment: '创建人ID' 
+    comment: '创建人ID',
   })
   createdBy: string;
 
-  @Column({ 
+  @Column({
     length: 32,
-    comment: '更新人ID' 
+    comment: '更新人ID',
   })
   updatedBy: string;
 }
