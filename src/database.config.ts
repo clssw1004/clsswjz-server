@@ -1,30 +1,70 @@
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import * as path from 'path';
+
 export const getDatabaseConfig = (
   configService: ConfigService,
 ): TypeOrmModuleOptions => {
-  const dbType = configService.get('DB_TYPE');
+  // 检查是否配置了必要的 MySQL 环境变量
+  const hasRequiredMySQLConfig =
+    configService.get('DB_HOST') &&
+    configService.get('DB_PORT') &&
+    configService.get('DB_USERNAME') &&
+    configService.get('DB_PASSWORD') &&
+    configService.get('DB_DATABASE');
+
+  // 获取数据库类型，如果未配置或配置不完整，默认使用 sqlite
+  const dbType = hasRequiredMySQLConfig
+    ? configService.get('DB_TYPE', 'sqlite')
+    : 'sqlite';
+  const dbPath = configService.get(
+    'DB_DATABASE',
+    `${configService.get('DATA_PATH') || '/data'}/clsswjz.sqlite`,
+  );
+  const absoluteDbPath = path.isAbsolute(dbPath)
+    ? dbPath
+    : path.join(process.cwd(), dbPath);
   if (dbType === 'sqlite') {
+    // 如果使用 SQLite，且是因为 MySQL 配置不完整，打印提示信息
+    if (!hasRequiredMySQLConfig && configService.get('DB_TYPE') !== 'sqlite') {
+      console.warn(
+        '\x1b[33m%s\x1b[0m',
+        `
+WARNING: MySQL configuration is incomplete or missing. 
+Using SQLite as the default database,data store path: ${absoluteDbPath}. 
+If you run with docker, please mount the volume to this path.
+To use MySQL, please configure the following environment variables:
+- DB_TYPE=mysql
+- DB_HOST
+- DB_PORT
+- DB_USERNAME
+- DB_PASSWORD
+- DB_DATABASE
+      `,
+      );
+    }
+
     return {
       type: 'sqlite',
-      database: configService.get('DB_DATABASE', 'db.sqlite'),
+      database: absoluteDbPath,
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: configService.get('NODE_ENV') !== 'production',
-      logging: true,
+      logging: configService.get('NODE_ENV') === 'development',
     };
   }
 
+  // MySQL 配置
   const datasourceConfig = {
     type: dbType,
     host: configService.get('DB_HOST'),
     port: configService.get('DB_PORT'),
-    username: configService.getOrThrow<string>('DB_USERNAME'),
-    password: configService.getOrThrow<string>('DB_PASSWORD'),
-    database: configService.getOrThrow<string>('DB_DATABASE'),
+    username: configService.get('DB_USERNAME'),
+    password: configService.get('DB_PASSWORD'),
+    database: configService.get('DB_DATABASE'),
     entities: [__dirname + '/**/*.entity{.ts,.js}'],
     synchronize: configService.get('NODE_ENV') !== 'production',
-    logging: true,
+    logging: configService.get('NODE_ENV') === 'development',
   };
-  console.log(datasourceConfig);
+
   return datasourceConfig;
 };
