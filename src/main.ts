@@ -41,10 +41,10 @@ async function bootstrap() {
   app.use(json({ limit: '50mb' }));
 
   // 生成API文档
-  if (process.env.NODE_ENV === 'development') {
+  if (configService.get<string>('NODE_ENV') === 'development') {
     generateApiDocs();
   }
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(configService.get<string>('PORT') ?? 3000);
 }
 bootstrap();
