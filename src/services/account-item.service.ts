@@ -290,6 +290,7 @@ export class AccountService {
     return {
       items: accountItems.map((item) => ({
         ...item,
+        amount: Number(item.amount),
       })),
       summary: {
         allIn: Number(summary.allIn.toFixed(2)),
@@ -327,6 +328,7 @@ export class AccountService {
 
     return {
       ...accountItem,
+      amount: Number(accountItem.amount),
     };
   }
 

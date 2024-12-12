@@ -105,6 +105,7 @@ export class AccountFundService {
       fundOut: !!item.fundOut,
       isDefault: !!item.isDefault,
       accountBookName: item.accountBookName,
+      fundBalance: Number(item.fundBalance),
     }));
   }
 
@@ -254,6 +255,7 @@ export class AccountFundService {
 
     return {
       ...fund,
+      fundBalance: Number(fund.fundBalance),
       fundBooks: fund.accountBookId
         ? [
             {
@@ -373,6 +375,7 @@ export class AccountFundService {
 
       return {
         ...fund,
+        fundBalance: Number(fund.fundBalance),
         fundBooks: books,
       };
     });

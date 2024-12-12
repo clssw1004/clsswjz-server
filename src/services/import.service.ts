@@ -9,6 +9,9 @@ import { CreateAccountItemDto } from '../pojo/dto/account-item/create-account-it
 import { ItemType } from '../pojo/enums/item-type.enum';
 import * as csv from 'csv-parse';
 import { Readable } from 'stream';
+import * as _ from 'lodash';
+import { DEFAULT_FUND } from '../config/default-fund.config';
+import { DEFAULT_SHOP } from '../config/default-shop.config';
 
 @Injectable()
 export class ImportService {
@@ -76,7 +79,6 @@ export class ImportService {
       const parser = csv.parse({
         delimiter: '\t',
         columns: (headers) => {
-          console.log('CSV Headers:', headers); // 调试输出
           return headers;
         },
         skip_empty_lines: true,
@@ -90,7 +92,6 @@ export class ImportService {
       parser.on('readable', () => {
         let record;
         while ((record = parser.read()) !== null) {
-          console.log('Parsed Record:', record); // 调试输出
           records.push(record);
         }
       });
@@ -117,19 +118,17 @@ export class ImportService {
     userCache: Map<string, string>,
     fundCache: Map<string, string>,
   ): Promise<CreateAccountItemDto> {
-    console.log('Record Keys:', Object.keys(record)); // 调试输出
-
     // 使用 Object.keys 找到正确的键名
     const typeKey = Object.keys(record).find((key) => key.includes('类型'));
     const amountKey = Object.keys(record).find((key) => key.includes('金额'));
     const categoryKey = Object.keys(record).find((key) => key.includes('分类'));
-    const accountKey = Object.keys(record).find((key) => key.includes('账户'));
+    const fundKey = Object.keys(record).find((key) => key.includes('账户'));
     const shopKey = Object.keys(record).find((key) => key.includes('商家'));
     const dateKey = Object.keys(record).find((key) => key.includes('日期'));
     const authorKey = Object.keys(record).find((key) => key.includes('作者'));
     const remarkKey = Object.keys(record).find((key) => key.includes('备注'));
 
-    if (!typeKey || !amountKey || !categoryKey || !accountKey || !dateKey) {
+    if (!typeKey || !amountKey || !categoryKey || !fundKey || !dateKey) {
       throw new Error('CSV文件格式不正确，缺少必要的列');
     }
 
@@ -147,12 +146,14 @@ export class ImportService {
     );
 
     // 获取账户ID
-    const fundId = await this.getFundId(
-      record[accountKey],
-      accountBookId,
-      createdBy,
-      fundCache,
-    );
+    const fundId = _.isEmpty(record[fundKey])
+      ? DEFAULT_FUND
+      : await this.getFundId(
+          record[fundKey],
+          accountBookId,
+          createdBy,
+          fundCache,
+        );
 
     // 转换日期
     const accountDate = this.convertDate(record[dateKey]);
@@ -163,7 +164,7 @@ export class ImportService {
       amount,
       category: record[categoryKey],
       fundId,
-      shop: shopKey ? record[shopKey] : undefined,
+      shop: shopKey ? record[shopKey] : DEFAULT_SHOP,
       description: remarkKey ? record[remarkKey] : undefined,
       accountDate,
       createdBy,
