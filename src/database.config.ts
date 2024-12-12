@@ -58,7 +58,8 @@ export const getDatabaseConfig = async (
       await tempDataSource.destroy();
 
       shouldSync =
-        Number(hasTable[0].count) === 0 || configService.get('DB_FORCE_SYNC') === 'true';
+        Number(hasTable[0].count) === 0 ||
+        configService.get('DB_FORCE_SYNC') === 'true';
     } catch (error) {
       console.warn(
         '\x1b[33m%s\x1b[0m',

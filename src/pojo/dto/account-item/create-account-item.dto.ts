@@ -35,5 +35,9 @@ export class CreateAccountItemDto {
   description?: string;
 
   @IsNotEmpty({ message: '记账日期不能为空' })
-  accountDate: Date;
+  accountDate: string;
+
+  @IsOptional()
+  @IsString()
+  createdBy?: string;
 }

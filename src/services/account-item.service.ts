@@ -139,8 +139,8 @@ export class AccountService {
       ...createAccountItemDto,
       shopCode,
       categoryCode: category.code,
-      createdBy: userId,
-      updatedBy: userId,
+      createdBy: createAccountItemDto.createdBy || userId,
+      updatedBy: createAccountItemDto.createdBy || userId,
     });
 
     const savedAccountItem = await this.accountItemRepository.save(accountItem);

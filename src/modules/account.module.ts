@@ -25,6 +25,8 @@ import { AccountShopController } from '../controllers/account-shop.controller';
 import { AccountShopService } from '../services/account-shop.service';
 import { HealthController } from '../controllers/health.controller';
 import { HealthService } from '../services/health.service';
+import { ImportService } from '../services/import.service';
+import { ImportController } from '../controllers/import.controller';
 
 @Module({
   imports: [
@@ -47,6 +49,7 @@ import { HealthService } from '../services/health.service';
     AccountFundController,
     AccountShopController,
     HealthController,
+    ImportController,
   ],
   providers: [
     AccountService,
@@ -58,6 +61,7 @@ import { HealthService } from '../services/health.service';
     AccountShopService,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     HealthService,
+    ImportService,
   ],
 })
 export class AccountModule {}

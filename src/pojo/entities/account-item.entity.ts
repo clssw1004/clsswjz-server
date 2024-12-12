@@ -1,7 +1,7 @@
 import { Entity, Column, BeforeInsert } from 'typeorm';
 import { ItemType } from '../enums/item-type.enum';
 import { BaseBusinessEntity } from './base.entity';
-import { getColumnTypeForDatabase } from '../../utils/db.util';
+import { now } from 'src/utils/date.util';
 
 @Entity('account_items')
 export class AccountItem extends BaseBusinessEntity {
@@ -18,14 +18,11 @@ export class AccountItem extends BaseBusinessEntity {
   categoryCode: string;
 
   @Column({
-    type: getColumnTypeForDatabase({
-      sqlite: 'datetime',
-      mysql: 'timestamp',
-      postgres: 'timestamp',
-    }),
+    type: 'varchar',
+    length: 19,
     comment: '记账日期',
   })
-  accountDate: Date;
+  accountDate: string;
 
   @Column({ comment: '账本ID' })
   accountBookId: string;
@@ -43,7 +40,7 @@ export class AccountItem extends BaseBusinessEntity {
   @BeforeInsert()
   setDefaultDate() {
     if (!this.accountDate) {
-      this.accountDate = new Date();
+      this.accountDate = now();
     }
   }
 }

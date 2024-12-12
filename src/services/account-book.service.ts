@@ -30,13 +30,16 @@ export class AccountBookService {
     accountBookId: string,
     userId: string,
   ): Promise<void> {
-    const categories = DEFAULT_CATEGORIES.map((category) => ({
-      name: category.name,
-      accountBookId: accountBookId,
-      code: generateUid(),
-      createdBy: userId,
-      updatedBy: userId,
-    }));
+    const categories = DEFAULT_CATEGORIES.map((category) =>
+      this.categoryRepository.create({
+        name: category.name,
+        accountBookId: accountBookId,
+        categoryType: category.type,
+        code: generateUid(),
+        createdBy: userId,
+        updatedBy: userId,
+      }),
+    );
 
     await this.categoryRepository.save(categories);
   }
