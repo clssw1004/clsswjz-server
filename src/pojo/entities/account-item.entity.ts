@@ -8,7 +8,7 @@ export class AccountItem extends BaseBusinessEntity {
   @Column({ type: 'decimal', precision: 10, scale: 2, comment: '金额' })
   amount: number;
 
-  @Column({ length: 100, nullable: true, comment: '描述' })
+  @Column({ type: 'text', nullable: true, comment: '描述' })
   description: string;
 
   @Column({ length: 10, comment: '类型：EXPENSE-支出，INCOME-收入' })
