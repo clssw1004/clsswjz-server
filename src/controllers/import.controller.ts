@@ -8,18 +8,20 @@ import {
   ParseFilePipe,
   MaxFileSizeValidator,
   FileTypeValidator,
+  Body,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ImportService } from '../services/import.service';
+import { ImportDataDto } from '../pojo/dto/import/import-data-dto';
 
 @Controller('import')
 export class ImportController {
   constructor(private readonly importService: ImportService) {}
 
-  @Post('mint/:accountBookId')
+  @Post('')
   @UseInterceptors(FileInterceptor('file'))
   async importMintData(
-    @Param('accountBookId') accountBookId: string,
+    @Body() createDto: ImportDataDto,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
@@ -31,10 +33,7 @@ export class ImportController {
     file: Express.Multer.File,
     @Request() req,
   ) {
-    return await this.importService.importMintData(
-      accountBookId,
-      file,
-      req.user.sub,
-    );
+    createDto.file = file;
+    return await this.importService.importData(createDto, req.user.sub);
   }
 }

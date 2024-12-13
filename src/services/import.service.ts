@@ -12,6 +12,8 @@ import { Readable } from 'stream';
 import * as _ from 'lodash';
 import { DEFAULT_FUND } from '../config/default-fund.config';
 import { DEFAULT_SHOP } from '../config/default-shop.config';
+import { ImportDataDto } from '../pojo/dto/import/import-data-dto';
+import { ImportSource } from 'src/pojo/enums/import-source.enum';
 
 @Injectable()
 export class ImportService {
@@ -24,11 +26,20 @@ export class ImportService {
     private accountFundService: AccountFundService,
   ) {}
 
+  async importData(importDataDto: ImportDataDto, userId: string) {
+    switch (importDataDto.dataSource) {
+      case ImportSource.MINT:
+        return this.importMintData(importDataDto, userId);
+      default:
+        throw new BadRequestException('不支持的数据源');
+    }
+  }
+
   async importMintData(
-    accountBookId: string,
-    file: Express.Multer.File,
+    importDataDto: ImportDataDto,
     userId: string,
   ): Promise<{ successCount: number; errors: string[] }> {
+    const { accountBookId, file } = importDataDto;
     const errors: string[] = [];
     let successCount = 0;
 
