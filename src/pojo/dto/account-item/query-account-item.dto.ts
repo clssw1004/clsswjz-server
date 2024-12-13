@@ -1,4 +1,5 @@
-import { IsOptional, IsString, IsDateString, IsArray } from 'class-validator';
+import { IsOptional, IsString, IsDateString, IsArray, IsNumber, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ItemType } from '../../enums/item-type.enum';
 
 export class QueryAccountItemDto {
@@ -45,4 +46,16 @@ export class QueryAccountItemDto {
 
   @IsOptional()
   maxAmount?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  pageSize?: number;
 }

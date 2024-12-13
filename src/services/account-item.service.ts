@@ -154,7 +154,9 @@ export class AccountService {
     return this.findOne(savedAccountItem.id);
   }
 
-  async findAll(queryParams?: QueryAccountItemDto) {
+  async findPage(
+    queryParams?: QueryAccountItemDto & { page?: number; pageSize?: number },
+  ) {
     // 使用 QueryBuilder 构建查询
     const queryBuilder = this.accountItemRepository
       .createQueryBuilder('account')
@@ -263,15 +265,31 @@ export class AccountService {
       }
     }
 
-    // 添加排序
+    // 克隆查询构建器用于统计总金额
+    const summaryQueryBuilder = queryBuilder.clone();
+
+    // 获取总记录数和分页数据
+    const total = await queryBuilder.getCount();
+
+    // 添加分页
+    const page = queryParams?.page || 1;
+    const pageSize = queryParams?.pageSize || 50;
+    const skip = (page - 1) * pageSize;
+
+    // 只对分页数据添加排序和分页限制
     queryBuilder
       .orderBy('account.accountDate', 'DESC')
-      .addOrderBy('account.createdAt', 'DESC');
+      .addOrderBy('account.createdAt', 'DESC')
+      .offset(skip)
+      .limit(pageSize);
 
-    const accountItems = await queryBuilder.getRawMany();
+    const [accountItems, summaryItems] = await Promise.all([
+      queryBuilder.getRawMany(),
+      summaryQueryBuilder.getRawMany(),
+    ]);
 
-    // 计算总收入和总支出
-    const summary = accountItems.reduce(
+    // 计算所有符合条件的记录的总收入和总支出
+    const summary = summaryItems.reduce(
       (acc, item) => {
         const amount = Number(item.amount);
         if (item.type === ItemType.INCOME) {
@@ -287,6 +305,9 @@ export class AccountService {
     // 计算结余
     const allBalance = summary.allIn - summary.allOut;
 
+    // 计算总页数
+    const totalPage = Math.ceil(total / pageSize);
+
     return {
       items: accountItems.map((item) => ({
         ...item,
@@ -296,6 +317,13 @@ export class AccountService {
         allIn: Number(summary.allIn.toFixed(2)),
         allOut: Number(summary.allOut.toFixed(2)),
         allBalance: Number(allBalance.toFixed(2)),
+      },
+      pagination: {
+        isLastPage: page === totalPage,
+        total,
+        totalPage,
+        current: page,
+        pageSize,
       },
     };
   }

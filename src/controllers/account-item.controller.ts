@@ -24,7 +24,7 @@ export class AccountController {
 
   @Post('list')
   findAll(@Body() queryAccountItemDto: QueryAccountItemDto) {
-    return this.accountService.findAll(queryAccountItemDto);
+    return this.accountService.findPage(queryAccountItemDto);
   }
 
   @Get(':id')
