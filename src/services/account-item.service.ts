@@ -221,12 +221,12 @@ export class AccountService {
         Array.isArray(queryParams.shopCodes) &&
         queryParams.shopCodes.length > 0
       ) {
-        queryBuilder.andWhere('account.shop IN (:...shopCodes)', {
+        queryBuilder.andWhere('account.shopCode IN (:...shopCodes)', {
           shopCodes: queryParams.shopCodes,
         });
       }
       if (queryParams.shopCode) {
-        queryBuilder.andWhere('account.shop = :shopCode', {
+        queryBuilder.andWhere('account.shopCode = :shopCode', {
           shopCode: queryParams.shopCode,
         });
       }

@@ -1,7 +1,5 @@
 import {
   PrimaryColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
   Column,
   BaseEntity as TypeOrmBaseEntity,
   BeforeInsert,
