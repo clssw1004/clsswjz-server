@@ -25,6 +25,7 @@ export const generateApiDocs = () => {
   generateCategoryDocs();
   generateShopDocs();
   generateHealthDocs();
+  generateAttachmentDocs();
   generateEntitiesDocs();
   generateMainDocs();
   generateEnumDocs();
@@ -404,6 +405,23 @@ const generateEntitiesDocs = () => {
   updatedAt: Date;        // 更新时间
 }
 \`\`\`
+
+## AttachmentEntity 附件
+\`\`\`typescript
+{
+  id: string;              // 主键ID
+  originName: string;      // 原始文件名
+  fileLength: number;      // 文件大小(字节)
+  extension: string;       // 文件扩展名
+  contentType: string;     // 文件MIME类型
+  businessCode: BusinessCode; // 业务类型
+  businessId: string;      // 业务ID
+  createdBy: string;       // 创建人ID
+  updatedBy: string;       // 更新人ID
+  createdAt: Date;         // 创建时间
+  updatedAt: Date;         // 更新时间
+}
+\`\`\`
 `;
 
   fs.writeFileSync(path.join(process.cwd(), 'docs/entities.md'), docs);
@@ -423,7 +441,8 @@ const generateMainDocs = () => {
 - [记账相关](api/account-item.md)
 - [分类相关](api/category.md)
 - [商家相关](api/shop.md)
-- [健康检���](api/health.md)
+- [附件相关](api/attachment.md)
+- [健康检查](api/health.md)
 
 ## 数据结构
 - [实体说明](entities.md)
@@ -630,7 +649,7 @@ Response: {
 }
 
 Errors:
-- 400 账户名���已存在
+- 400 账户名称已存在
 - 404 资金账户不存在
 \`\`\`
 
@@ -671,7 +690,7 @@ Errors:
 ## 注意事项
 1. 每个账本只能有一个默认账户
 2. 创建账本的第一个账户会自动设为默认账户
-3. 设置新的默认账户时会自动取消原有默认账户的状态
+3. 设置新的默认账户时��自动取消原有默认账户的状态
 4. 账户可以关联多个账本，每个关联关系都可以独立设置权限和默认状态
 5. 账户名称在同一用户下必须唯一
 6. 已关联账本的账户不能删除
@@ -768,6 +787,17 @@ const generateAccountItemDocs = () => {
   updatedBy: string;      // 更新人ID
   createdAt: Date;        // 创建时间
   updatedAt: Date;        // 更新时间
+  attachments: Array<{    // 附件列表
+    id: string;           // 附件ID
+    originName: string;   // 原始文件名
+    fileLength: number;   // 文件大小
+    extension: string;    // 文件扩展名
+    contentType: string;  // 文件类型
+    businessCode: string; // 业务类型
+    businessId: string;   // 业务ID
+    createdAt: string;    // 创建时间
+    updatedAt: string;    // 更新时间
+  }>
 }
 \`\`\`
 
@@ -782,17 +812,19 @@ enum ItemType {
 ## 创建记账记录
 \`\`\`
 POST /api/account/item
+Content-Type: multipart/form-data
 
 Request Body:
 {
   "accountBookId": string,   // 账本ID
-  "fundId": string,         // 资���账户ID
+  "fundId": string,         // 资金账户ID
   "amount": number,         // 金额
   "type": ItemType,         // 类型：EXPENSE-支出，INCOME-收入
   "category": string,       // 分类
   "shop": string?,         // 商家（可选）
   "description": string?,   // 描述（可选）
-  "accountDate": Date      // 记账日期
+  "accountDate": Date,     // 记账日期
+  "attachments": File[]          // 附件文件列表（可选）
 }
 
 Response: {
@@ -813,7 +845,18 @@ Response: {
     "createdBy": string,      // 创建人ID
     "updatedBy": string,      // 更新人ID
     "createdAt": Date,        // 创建时间
-    "updatedAt": Date         // 更新时间
+    "updatedAt": Date,        // 更新时间
+    "attachments": Array<{    // 附件列表
+      "id": string,           // 附件ID
+      "originName": string,   // 原始文件名
+      "fileLength": number,   // 文件大小
+      "extension": string,    // 文件扩展名
+      "contentType": string,  // 文件类型
+      "businessCode": string, // 业务类型
+      "businessId": string,   // 业务ID
+      "createdAt": string,    // 创建时间
+      "updatedAt": string     // 更新时间
+    }>
   }
 }
 
@@ -824,22 +867,24 @@ Errors:
 
 ## 查询记账记录
 \`\`\`
-GET /api/account/item/list
+POST /api/account/item/list
 
-Query Parameters:
+Request Body:
 {
-  "accountBookId": string?,    // 账本ID（可选）
-  "category": string?,         // 分类（可选）
-  "categories": string[]?,     // 分类列表（可选）
-  "fundId": string?,          // 资金账户ID（可选）
-  "fundIds": string[]?,       // 资金账户ID列表（可选）
-  "shopCode": string?,        // 商家编码（可选）
-  "shopCodes": string[]?,     // 商家编码列表（可选）
-  "startDate": string?,       // 开始日期（可选）
-  "endDate": string?,         // 结束日期（可选）
-  "type": ItemType?,          // 类型（可选）
-  "minAmount": number?,       // 最小金额（可选）
-  "maxAmount": number?        // 最大金额（可选）
+  "accountBookId": string,    // 账本ID
+  "category": string?,        // 分类（可选）
+  "categories": string[]?,    // 分类列表（可选）
+  "fundId": string?,         // 资金账户ID（可选）
+  "fundIds": string[]?,      // 资金账户ID列表（可选）
+  "shopCode": string?,       // 商家编码（可选）
+  "shopCodes": string[]?,    // 商家编码列表（可选）
+  "startDate": string?,      // 开始日期（可选）
+  "endDate": string?,        // 结束日期（可选）
+  "type": ItemType?,         // 类型（可选）
+  "minAmount": number?,      // 最小金额（可选）
+  "maxAmount": number?,      // 最大金额（可选）
+  "page": number?,           // 页码（可选，默认1）
+  "pageSize": number?        // 每页大小（可选，默认50）
 }
 
 Response: {
@@ -862,12 +907,30 @@ Response: {
       "createdBy": string,      // 创建人ID
       "updatedBy": string,      // 更新人ID
       "createdAt": Date,        // 创建时间
-      "updatedAt": Date         // 更新时间
+      "updatedAt": Date,        // 更新时间
+      "attachments": Array<{    // 附件列表
+        "id": string,           // 附件ID
+        "originName": string,   // 原始文件名
+        "fileLength": number,   // 文件大小
+        "extension": string,    // 文件扩展名
+        "contentType": string,  // 文件类型
+        "businessCode": string, // 业务类型
+        "businessId": string,   // 业务ID
+        "createdAt": string,    // 创建时间
+        "updatedAt": string     // 更新时间
+      }>
     }>,
     "summary": {
       "allIn": number,        // 总收入
       "allOut": number,       // 总支出
       "allBalance": number    // 结余（总收入-总支出）
+    },
+    "pagination": {
+      "isLastPage": boolean,  // 是否最后一页
+      "total": number,        // 总记录数
+      "totalPage": number,    // 总页数
+      "current": number,      // 当前页码
+      "pageSize": number      // 每页大小
     }
   }
 }
@@ -889,13 +952,24 @@ Response: {
     "category": string,        // 分类名称
     "accountDate": Date,      // 记账日期
     "accountBookId": string,  // 账本ID
-    "fundId": string,         // 账户ID
+    "fundId": string,         // 账��ID
     "shopCode": string?,      // 商家编码
     "shop": string?,          // 商家名称
     "createdBy": string,      // 创建人ID
     "updatedBy": string,      // 更新人ID
     "createdAt": Date,        // 创建时间
-    "updatedAt": Date         // 更新时间
+    "updatedAt": Date,        // 更新时间
+    "attachments": Array<{    // 附件列表
+      "id": string,           // 附件ID
+      "originName": string,   // 原始文件名
+      "fileLength": number,   // 文件大小
+      "extension": string,    // 文件扩展名
+      "contentType": string,  // 文件类型
+      "businessCode": string, // 业务类型
+      "businessId": string,   // 业务ID
+      "createdAt": string,    // 创建时间
+      "updatedAt": string     // 更新时间
+    }>
   }
 }
 
@@ -941,7 +1015,7 @@ Response: {
 }
 
 Errors:
-- 404 记账记录不存在
+- 404 ��账记录不存在
 - 403 该账户在当前账本中不允许支出/收入
 \`\`\`
 
@@ -1183,7 +1257,7 @@ enum Currency {
   CNY = 'CNY',  // 人民币
   USD = 'USD',  // 美元
   EUR = 'EUR',  // 欧元
-  GBP = 'GBP',  // 英���
+  GBP = 'GBP',  // 英镑
   JPY = 'JPY',  // 日元
   HKD = 'HKD'   // 港币
 }
@@ -1191,4 +1265,80 @@ enum Currency {
 `;
 
   fs.writeFileSync(path.join(process.cwd(), 'docs/enums.md'), docs);
+};
+
+/**
+ * 生成附件相关接口文档
+ */
+const generateAttachmentDocs = () => {
+  const docs = `# 附件相关接口
+
+## 数据结构
+
+### BusinessCode 业务类型
+\`\`\`typescript
+enum BusinessCode {
+  ITEM = 'item',   // 账目
+  BOOK = 'book',   // 账本
+  FUND = 'fund',   // 资金账户
+  USER = 'user',   // 用户
+}
+\`\`\`
+
+### AttachmentEntity 附件实体
+\`\`\`typescript
+{
+  id: string;              // 主键ID
+  originName: string;      // 原始文件名
+  fileLength: number;      // 文件大小(字节)
+  extension: string;       // 文件扩展名
+  contentType: string;     // 文件MIME类型
+  businessCode: BusinessCode; // 业务类型
+  businessId: string;      // 业务ID
+  createdBy: string;       // 创建人ID
+  updatedBy: string;       // 更新人ID
+  createdAt: Date;         // 创建时间
+  updatedAt: Date;         // 更新时间
+}
+\`\`\`
+
+## 下载附件
+\`\`\`
+GET /api/attachments/:id
+
+Response Headers:
+{
+  "Content-Type": string,      // 文件MIME类型
+  "Content-Disposition": string,// 文件下载名称
+  "Content-Length": number     // 文件大小
+}
+
+Response Body: 文件二进制内容
+
+Errors:
+- 404 附件不存在
+- 404 附件文件不存在
+- 404 文件下载失败
+\`\`\`
+
+## 上传附件
+附件上传通过其他业务接口进行，例如创建账目时可以同时上传附件：
+
+\`\`\`
+POST /api/account/item
+Content-Type: multipart/form-data
+
+Request Body:
+{
+  // 账目相关字段...
+  files: File[]  // 附件文件列表
+}
+
+Response: 参考账目创建接口
+\`\`\`
+
+上传的附件文件将被保存在 DATA_PATH/attachments 目录下，文件名为附件ID。
+`;
+
+  fs.writeFileSync(path.join(process.cwd(), 'docs/api/attachment.md'), docs);
 };

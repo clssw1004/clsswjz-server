@@ -126,3 +126,20 @@
   updatedAt: Date;        // 更新时间
 }
 ```
+
+## AttachmentEntity 附件
+```typescript
+{
+  id: string;              // 主键ID
+  originName: string;      // 原始文件名
+  fileLength: number;      // 文件大小(字节)
+  extension: string;       // 文件扩展名
+  contentType: string;     // 文件MIME类型
+  businessCode: BusinessCode; // 业务类型
+  businessId: string;      // 业务ID
+  createdBy: string;       // 创建人ID
+  updatedBy: string;       // 更新人ID
+  createdAt: Date;         // 创建时间
+  updatedAt: Date;         // 更新时间
+}
+```

@@ -4,6 +4,7 @@ import {
   IsString,
   IsOptional,
   IsEnum,
+  IsNumberString,
 } from 'class-validator';
 import { ItemType } from '../../enums/item-type.enum';
 
@@ -15,7 +16,7 @@ export class CreateAccountItemDto {
   fundId: string;
 
   @IsNotEmpty({ message: '金额不能为空' })
-  @IsNumber()
+  @IsNumberString()
   amount: number;
 
   @IsNotEmpty({ message: '类型不能为空' })
@@ -42,5 +43,5 @@ export class CreateAccountItemDto {
   createdBy?: string;
 
   @IsOptional()
-  files?: Express.Multer.File[];
+  attachments?: Express.Multer.File[];
 }

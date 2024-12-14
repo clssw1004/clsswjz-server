@@ -20,6 +20,7 @@ import { DEFAULT_FUND } from 'src/config/default-fund.config';
 import { AccountBookUser } from 'src/pojo/entities/account-book-user.entity';
 import { AttachmentService } from './attachment.service';
 import { BusinessCode } from '../pojo/entities/attachment.entity';
+import { AccountItemPageVO } from '../pojo/vo/account-item/account-item-vo';
 
 @Injectable()
 export class AccountItemService {
@@ -175,13 +176,14 @@ export class AccountItemService {
 
         // 处理附件上传
         if (
-          createAccountItemDto.files &&
-          createAccountItemDto.files.length > 0
+          createAccountItemDto.attachments &&
+          createAccountItemDto.attachments.length > 0
         ) {
           await this.attachmentService.createBatch(
             BusinessCode.ITEM,
             savedAccountItem.id,
-            createAccountItemDto.files,
+            createAccountItemDto.attachments,
+            userId,
           );
         }
 
@@ -192,7 +194,7 @@ export class AccountItemService {
 
   async findPage(
     queryParams?: QueryAccountItemDto & { page?: number; pageSize?: number },
-  ) {
+  ): Promise<AccountItemPageVO> {
     // 使用 QueryBuilder 构建查询
     const queryBuilder = this.accountItemRepository
       .createQueryBuilder('item')
@@ -323,7 +325,18 @@ export class AccountItemService {
       summaryQueryBuilder.getRawMany(),
     ]);
 
-    // 计算所有符合条件的记录的总收入和总支出
+    // 获取所有账目的附件
+    const itemIds = accountItems.map(item => item.id);
+    const attachments = await this.attachmentService.findByBusinessIds(itemIds);
+
+    // 组装返回数据
+    const items = accountItems.map(item => ({
+      ...item,
+      amount: Number(item.amount),
+      attachments: attachments.filter(att => att.businessId === item.id)
+    }));
+
+    // 计算汇总信息
     const summary = summaryItems.reduce(
       (acc, item) => {
         const amount = Number(item.amount);
@@ -344,10 +357,7 @@ export class AccountItemService {
     const totalPage = Math.ceil(total / pageSize);
 
     return {
-      items: accountItems.map((item) => ({
-        ...item,
-        amount: Number(item.amount),
-      })),
+      items,
       summary: {
         allIn: Number(summary.allIn.toFixed(2)),
         allOut: Number(summary.allOut.toFixed(2)),
@@ -365,35 +375,39 @@ export class AccountItemService {
 
   async findOne(id: string) {
     const accountItem = await this.accountItemRepository
-      .createQueryBuilder('account')
+      .createQueryBuilder('item')
       .leftJoinAndSelect(
         Category,
         'category',
-        'item.categoryCode = category.code',
+        'item.category_code = category.code',
       )
       .leftJoinAndSelect(
         'account_shops',
         'shop',
-        'item.shopCode = shop.shopCode',
+        'item.shop_code = item.shop_code',
       )
       .select([
         ...AccountItemService.ALL_COLUMNS,
         'category.name as category',
         'shop.name as shop',
-        'shop.shopCode as shopCode',
+        'shop.shop_code as shopCode',
       ])
       .where('item.id = :id', { id })
       .getRawOne();
 
     if (!accountItem) {
-      throw new Error('记账条目不存在');
+      throw new NotFoundException('记账条目不存在');
     }
+
+    // 获取附件信息
+    const attachments = await this.attachmentService.findByBusinessId(id);
 
     return {
       ...accountItem,
       amount: Number(accountItem.amount),
+      attachments,
     };
-  }
+  } 
 
   async update(
     id: string,

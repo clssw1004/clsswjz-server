@@ -21,16 +21,16 @@ export class AccountController {
   constructor(private readonly accountService: AccountItemService) {}
 
   @Post()
-  @UseInterceptors(FilesInterceptor('files'))
+  @UseInterceptors(FilesInterceptor('attachments'))
   async create(
     @Body() createAccountItemDto: CreateAccountItemDto,
-    @UploadedFiles() files: Express.Multer.File[],
+    @UploadedFiles() attachments: Express.Multer.File[],
     @Request() req,
   ) {
     return this.accountService.create(
       {
         ...createAccountItemDto,
-        files,
+        attachments,
       },
       req.user.sub,
     );

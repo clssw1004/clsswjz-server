@@ -8,7 +8,8 @@
 - [记账相关](api/account-item.md)
 - [分类相关](api/category.md)
 - [商家相关](api/shop.md)
-- [健康检���](api/health.md)
+- [附件相关](api/attachment.md)
+- [健康检查](api/health.md)
 
 ## 数据结构
 - [实体说明](entities.md)

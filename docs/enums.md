@@ -39,7 +39,7 @@ enum Currency {
   CNY = 'CNY',  // 人民币
   USD = 'USD',  // 美元
   EUR = 'EUR',  // 欧元
-  GBP = 'GBP',  // 英���
+  GBP = 'GBP',  // 英镑
   JPY = 'JPY',  // 日元
   HKD = 'HKD'   // 港币
 }
