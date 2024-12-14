@@ -145,7 +145,7 @@ export class UserService {
     // 更新用户信息
     await this.userRepository.update(userId, updateUserDto);
 
-    // 返回更新后的用户信息
+    // 返回更新后的用户信��
     return this.getCurrentUser(userId);
   }
 }

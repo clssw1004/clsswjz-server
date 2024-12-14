@@ -117,10 +117,10 @@ export class AccountBookService {
     if (accountBook.createdBy !== userId) {
       const currentUserMember = await this.accountUserRepository
         .createQueryBuilder('abu')
-        .where('abu.accountBookId = :accountBookId', {
+        .where('abu.account_book_id = :accountBookId', {
           accountBookId: accountBook.id,
         })
-        .andWhere('abu.userId = :userId', { userId })
+        .andWhere('abu.user_id = :userId', { userId })
         .getOne();
 
       if (currentUserMember) {
@@ -139,20 +139,20 @@ export class AccountBookService {
     const members = await this.accountUserRepository
       .createQueryBuilder('abu')
       .select([
-        'abu.userId as userId',
-        'abu.canViewBook as canViewBook',
-        'abu.canEditBook as canEditBook',
-        'abu.canDeleteBook as canDeleteBook',
-        'abu.canViewItem as canViewItem',
-        'abu.canEditItem as canEditItem',
-        'abu.canDeleteItem as canDeleteItem',
+        'abu.user_id as userId',
+        'abu.can_view_book as canViewBook',
+        'abu.can_edit_book as canEditBook',
+        'abu.can_delete_book as canDeleteBook',
+        'abu.can_view_item as canViewItem',
+        'abu.can_edit_item as canEditItem',
+        'abu.can_delete_item as canDeleteItem',
         'u.nickname as nickname',
       ])
-      .leftJoin('users', 'u', 'u.id = abu.userId')
-      .where('abu.accountBookId = :accountBookId', {
+      .leftJoin('users', 'u', 'u.id = abu.user_id')
+      .where('abu.account_book_id = :accountBookId', {
         accountBookId: accountBook.id,
       })
-      .andWhere('abu.userId != :createdBy', {
+      .andWhere('abu.user_id != :createdBy', {
         createdBy: accountBook.createdBy,
       })
       .getRawMany();
@@ -161,12 +161,12 @@ export class AccountBookService {
       id: accountBook.id,
       name: accountBook.name,
       description: accountBook.description,
-      currencySymbol: accountBook.currencySymbol,
+      currencySymbol: accountBook.currency_symbol,
       icon: accountBook.icon,
-      createdAt: accountBook.createdAt,
-      updatedAt: accountBook.updatedAt,
-      createdBy: accountBook.createdBy,
-      updatedBy: accountBook.updatedBy,
+      createdAt: accountBook.created_at,
+      updatedAt: accountBook.updated_at,
+      createdBy: accountBook.created_by,
+      updatedBy: accountBook.updated_by,
       fromId: accountBook.fromId,
       fromName: accountBook.fromName,
       permissions: currentUserPermissions,
@@ -188,12 +188,12 @@ export class AccountBookService {
       .createQueryBuilder('book')
       .select([
         'book.*',
-        'abu.canViewBook as canViewBook',
-        'abu.canEditBook as canEditBook',
-        'abu.canDeleteBook as canDeleteBook',
-        'abu.canViewItem as canViewItem',
-        'abu.canEditItem as canEditItem',
-        'abu.canDeleteItem as canDeleteItem',
+        'abu.can_view_book as canViewBook',
+        'abu.can_edit_book as canEditBook',
+        'abu.can_delete_book as canDeleteBook',
+        'abu.can_view_item as canViewItem',
+        'abu.can_edit_item as canEditItem',
+        'abu.can_delete_item as canDeleteItem',
         'creator.id as fromId',
         'creator.nickname as fromName',
       ])
@@ -230,19 +230,19 @@ export class AccountBookService {
       .createQueryBuilder('book')
       .select([
         'book.*',
-        'abu.canViewBook as canViewBook',
-        'abu.canEditBook as canEditBook',
-        'abu.canDeleteBook as canDeleteBook',
-        'abu.canViewItem as canViewItem',
-        'abu.canEditItem as canEditItem',
-        'abu.canDeleteItem as canDeleteItem',
+        'abu.can_view_book as canViewBook',
+        'abu.can_edit_book as canEditBook',
+        'abu.can_delete_book as canDeleteBook',
+        'abu.can_view_item as canViewItem',
+        'abu.can_edit_item as canEditItem',
+        'abu.can_delete_item as canDeleteItem',
         'creator.id as fromId',
         'creator.nickname as fromName',
       ])
-      .innerJoin('rel_accountbook_user', 'abu', 'abu.accountBookId = book.id')
-      .innerJoin('users', 'creator', 'creator.id = book.createdBy')
+      .innerJoin('rel_accountbook_user', 'abu', 'abu.account_book_id = book.id')
+      .innerJoin('users', 'creator', 'creator.id = book.created_by')
       .where('book.id = :id', { id })
-      .andWhere('abu.userId = :userId', { userId })
+      .andWhere('abu.user_id = :userId', { userId })
       .getRawOne();
 
     if (!accountBook) {

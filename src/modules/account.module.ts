@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AccountService } from '../services/account-item.service';
+import { AccountItemService } from '../services/account-item.service';
 import { AccountBookService } from '../services/account-book.service';
 import { AccountController } from '../controllers/account-item.controller';
 import { AccountBookController } from '../controllers/account-book.controller';
@@ -54,7 +54,7 @@ import { AttachmentModule } from './attachment.module';
     ImportController,
   ],
   providers: [
-    AccountService,
+    AccountItemService,
     AccountBookService,
     CategoryService,
     UserService,

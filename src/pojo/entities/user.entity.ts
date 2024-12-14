@@ -10,30 +10,45 @@ export class User extends BaseEntity {
   @Index('IDX_USER_USERNAME', { unique: true })
   @Column({
     length: 50,
+    name: 'username',
     comment: '用户名',
   })
   username: string;
 
-  @Column({ length: 50, comment: '昵称' })
+  @Column({ 
+    length: 50,
+    name: 'nickname',
+    comment: '昵称' 
+  })
   nickname: string;
 
-  @Column({ comment: '密码' })
+  @Column({ 
+    name: 'password',
+    comment: '密码' 
+  })
   password: string;
 
   @Index('IDX_USER_EMAIL', { unique: true })
   @Column({
     length: 100,
     nullable: true,
+    name: 'email',
     comment: '邮箱',
   })
   email: string;
 
-  @Column({ length: 20, nullable: true, comment: '手机号' })
+  @Column({ 
+    length: 20, 
+    nullable: true,
+    name: 'phone',
+    comment: '手机号' 
+  })
   phone: string;
 
   @Index('IDX_USER_INVITE_CODE', { unique: true })
   @Column({
     length: 50,
+    name: 'invite_code',
     comment: '邀请码',
   })
   inviteCode: string;
@@ -44,12 +59,14 @@ export class User extends BaseEntity {
   @Column({
     type: 'varchar',
     default: Language.ZH_CN,
+    name: 'language',
     comment: '语言设置',
   })
   language: Language;
 
   @Column({
     default: 'Asia/Shanghai',
+    name: 'timezone',
     comment: '时区设置',
   })
   timezone: string;

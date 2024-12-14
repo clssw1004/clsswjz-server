@@ -11,14 +11,14 @@ import {
   UploadedFiles,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { AccountService } from '../services/account-item.service';
+import { AccountItemService } from '../services/account-item.service';
 import { CreateAccountItemDto } from '../pojo/dto/account-item/create-account-item.dto';
 import { UpdateAccountItemDto } from '../pojo/dto/account-item/update-account-item.dto';
 import { QueryAccountItemDto } from '../pojo/dto/account-item/query-account-item.dto';
 
 @Controller('account/item')
 export class AccountController {
-  constructor(private readonly accountService: AccountService) {}
+  constructor(private readonly accountService: AccountItemService) {}
 
   @Post()
   @UseInterceptors(FilesInterceptor('files'))

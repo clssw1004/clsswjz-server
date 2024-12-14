@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AccountFund, FundType } from '../pojo/entities/account-fund.entity';
 import { User } from '../pojo/entities/user.entity';
-import { AccountService } from './account-item.service';
+import { AccountItemService } from './account-item.service';
 import { AccountFundService } from './account-fund.service';
 import { CreateAccountItemDto } from '../pojo/dto/account-item/create-account-item.dto';
 import { ItemType } from '../pojo/enums/item-type.enum';
@@ -22,7 +22,7 @@ export class ImportService {
     private accountFundRepository: Repository<AccountFund>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    private accountService: AccountService,
+    private accountService: AccountItemService,
     private accountFundService: AccountFundService,
   ) {}
 

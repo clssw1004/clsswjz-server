@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, EntityManager } from 'typeorm';
 import { Category } from '../pojo/entities/category.entity';
@@ -86,7 +90,10 @@ export class CategoryService {
     }
 
     // 不允许更改分类类型
-    if (category.categoryType && category.categoryType !== existingCategory.categoryType) {
+    if (
+      category.categoryType &&
+      category.categoryType !== existingCategory.categoryType
+    ) {
       throw new Error('分类类型不允许修改');
     }
 

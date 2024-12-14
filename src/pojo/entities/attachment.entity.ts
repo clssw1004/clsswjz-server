@@ -16,7 +16,7 @@ export class  AttachmentEntity extends BaseBusinessEntity {
   @Column({ name: 'file_length', comment: '文件大小' })
   fileLength: number;
 
-  @Column({ comment: '文件后缀' })
+  @Column({ name: 'extension', comment: '文件后缀' })
   extension: string;
 
   @Column({ name: 'content_type', comment: '文件媒体类型' })

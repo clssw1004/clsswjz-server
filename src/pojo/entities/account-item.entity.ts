@@ -5,34 +5,61 @@ import { now } from 'src/utils/date.util';
 
 @Entity('account_items')
 export class AccountItem extends BaseBusinessEntity {
-  @Column({ type: 'decimal', precision: 10, scale: 2, comment: '金额' })
+  @Column({ 
+    type: 'decimal', 
+    precision: 10, 
+    scale: 2,
+    name: 'amount',
+    comment: '金额' 
+  })
   amount: number;
 
-  @Column({ type: 'text', nullable: true, comment: '描述' })
+  @Column({ 
+    type: 'text', 
+    nullable: true,
+    name: 'description',
+    comment: '描述' 
+  })
   description: string;
 
-  @Column({ length: 10, comment: '类型：EXPENSE-支出，INCOME-收入' })
+  @Column({ 
+    length: 10,
+    name: 'type',
+    comment: '类型：EXPENSE-支出，INCOME-收入' 
+  })
   type: ItemType;
 
-  @Column({ length: 50, comment: '分类编码' })
+  @Column({ 
+    length: 50,
+    name: 'category_code',
+    comment: '分类编码' 
+  })
   categoryCode: string;
 
   @Column({
     type: 'varchar',
     length: 19,
+    name: 'account_date',
     comment: '记账日期',
   })
   accountDate: string;
 
-  @Column({ comment: '账本ID' })
+  @Column({ 
+    name: 'account_book_id',
+    comment: '账本ID' 
+  })
   accountBookId: string;
 
-  @Column({ comment: '账户ID' })
+  @Column({ 
+    name: 'fund_id',
+    comment: '账户ID' 
+  })
   fundId: string;
 
   @Column({
     length: 20,
     nullable: true,
+    name: 'shop_code',
     comment: '商家编码',
   })
   shopCode: string;

@@ -19,6 +19,7 @@ export enum FundType {
 export class AccountFund extends BaseBusinessEntity {
   @Column({
     length: 50,
+    name: 'name',
     comment: '资金来源名称',
   })
   name: string;
@@ -26,6 +27,7 @@ export class AccountFund extends BaseBusinessEntity {
   @Column({
     type: 'varchar',
     length: 20,
+    name: 'fund_type',
     comment: '资金类型',
   })
   fundType: FundType;
@@ -33,6 +35,7 @@ export class AccountFund extends BaseBusinessEntity {
   @Column({
     type: 'text',
     nullable: true,
+    name: 'fund_remark',
     comment: '资金备注',
   })
   fundRemark: string;
@@ -42,6 +45,7 @@ export class AccountFund extends BaseBusinessEntity {
     precision: 10,
     scale: 2,
     default: 0,
+    name: 'fund_balance',
     comment: '余额',
   })
   fundBalance: number;

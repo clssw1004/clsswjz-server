@@ -22,6 +22,17 @@ export class AccountFundService {
     private accountBookUserRepository: Repository<AccountBookUser>,
   ) {}
 
+  static readonly FUND_COLUMNS = [
+    'fund.id as id',
+    'fund.name as name', 
+    'fund.fund_type as fundType',
+    'fund.fund_balance as fundBalance',
+    'fund.fund_remark as fundRemark',
+    'fund.created_at as createdAt',
+    'fund.updated_at as updatedAt',
+    'fund.created_by as createdBy',
+    'fund.updated_by as updatedBy'
+  ];
   /**
    * 设置账本的默认账户
    */
@@ -76,15 +87,15 @@ export class AccountFundService {
     const queryBuilder = this.accountFundRepository
       .createQueryBuilder('fund')
       .select([
-        'fund.*',
-        'abf.fundIn as fundIn',
-        'abf.fundOut as fundOut',
-        'abf.isDefault as isDefault',
+        ...AccountFundService.FUND_COLUMNS,
+        'abf.fund_in as fundIn',
+        'abf.fund_out as fundOut',
+        'abf.is_default as isDefault',
         'book.name as accountBookName',
       ])
-      .innerJoin('rel_accountbook_funds', 'abf', 'abf.fundId = fund.id')
-      .leftJoin('account_books', 'book', 'book.id = abf.accountBookId')
-      .where('abf.accountBookId = :accountBookId', {
+      .innerJoin('rel_accountbook_funds', 'abf', 'abf.fund_id = fund.id')
+      .leftJoin('account_books', 'book', 'book.id = abf.account_book_id')
+      .where('abf.account_book_id = :accountBookId', {
         accountBookId: query.accountBookId,
       });
 
@@ -241,7 +252,7 @@ export class AccountFundService {
     const fund = await this.accountFundRepository
       .createQueryBuilder('fund')
       .select([
-        'fund.*',
+        ...AccountFundService.FUND_COLUMNS,
         'abf.accountBookId',
         'abf.fundIn',
         'abf.fundOut',
@@ -298,41 +309,41 @@ export class AccountFundService {
     const funds = await this.accountFundRepository
       .createQueryBuilder('fund')
       .select([
-        'fund.*',
+        ...AccountFundService.FUND_COLUMNS,
         'creator.nickname as creatorName', // 创建人名称
       ])
-      .leftJoin('users', 'creator', 'creator.id = fund.createdBy')
-      .where('fund.createdBy = :userId', { userId })
-      .orderBy('fund.createdAt', 'DESC')
+      .leftJoin('users', 'creator', 'creator.id = fund.created_by')
+      .where('fund.created_by = :userId', { userId })
+      .orderBy('fund.created_at', 'DESC')
       .getRawMany();
 
     // 获取用户有权限的所有账本
     const userBooks = await this.accountBookUserRepository
       .createQueryBuilder('abu')
       .select([
-        'abu.accountBookId as accountBookId',
+        'abu.account_book_id as accountBookId',
         'book.name as accountBookName',
         'book.icon as accountBookIcon',
       ])
-      .leftJoin('account_books', 'book', 'book.id = abu.accountBookId')
-      .where('abu.userId = :userId', { userId })
-      .andWhere('abu.canViewBook = :canView', { canView: true })
+      .leftJoin('account_books', 'book', 'book.id = abu.account_book_id')
+      .where('abu.user_id = :userId', { userId })
+      .andWhere('abu.can_view_book = :canView', { canView: true })
       .getRawMany();
 
     // 获取所有资金账户的关联账本信息
     const fundBooks = await this.accountBookFundRepository
       .createQueryBuilder('abf')
       .select([
-        'abf.fundId as fundId',
-        'abf.accountBookId as accountBookId',
-        'abf.fundIn as fundIn',
-        'abf.fundOut as fundOut',
-        'abf.isDefault as isDefault',
+        'abf.fund_id as fundId',
+        'abf.account_book_id as accountBookId',
+        'abf.fund_in as fundIn',
+        'abf.fund_out as fundOut',
+        'abf.is_default as isDefault',
         'book.name as accountBookName',
         'book.icon as accountBookIcon',
       ])
-      .leftJoin('account_books', 'book', 'book.id = abf.accountBookId')
-      .where('abf.fundId IN (:...fundIds)', {
+      .leftJoin('account_books', 'book', 'book.id = abf.account_book_id')
+      .where('abf.fund_id IN (:...fundIds)', {
         fundIds: funds.map((fund) => fund.id),
       })
       .getRawMany();

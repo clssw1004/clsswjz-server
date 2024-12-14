@@ -22,7 +22,7 @@ import { AttachmentService } from './attachment.service';
 import { BusinessCode } from '../pojo/entities/attachment.entity';
 
 @Injectable()
-export class AccountService {
+export class AccountItemService {
   constructor(
     @InjectRepository(AccountItem)
     private accountItemRepository: Repository<AccountItem>,
@@ -37,6 +37,21 @@ export class AccountService {
     private accountBookFundRepository: Repository<AccountBookFund>,
   ) {}
 
+  static readonly ALL_COLUMNS = [
+    'item.id as id',
+    'item.amount as amount',
+    'item.type as type',
+    'item.category_code as categoryCode',
+    'item.shop_code as shopCode',
+    'item.description as description',
+    'item.account_book_id as accountBookId',
+    'item.fund_id as fundId',
+    'item.created_at as createdAt',
+    'item.updated_at as updatedAt',
+    'item.created_by as createdBy',
+    'item.updated_by as updatedBy',
+    'item.account_date as accountDate',
+  ];
   /**
    * 获取或创建分类
    * @param categoryName 分类名称
@@ -102,71 +117,77 @@ export class AccountService {
 
   async create(createAccountItemDto: CreateAccountItemDto, userId: string) {
     // 使用事务来确保账目和附件的创建是原子操作
-    return await this.accountItemRepository.manager.transaction(async transactionalEntityManager => {
-      // 校验账本是否存在
-      const accountBook = await this.accountBookRepository.findOneBy({
-        id: createAccountItemDto.accountBookId,
-      });
-      if (!accountBook) {
-        throw new NotFoundException(
-          `账本ID ${createAccountItemDto.accountBookId} 不存在`,
+    return await this.accountItemRepository.manager.transaction(
+      async (transactionalEntityManager) => {
+        // 校验账本是否存在
+        const accountBook = await this.accountBookRepository.findOneBy({
+          id: createAccountItemDto.accountBookId,
+        });
+        if (!accountBook) {
+          throw new NotFoundException(
+            `账本ID ${createAccountItemDto.accountBookId} 不存在`,
+          );
+        }
+
+        // 校验账本资产权限
+        await this.validateBookFundPermission(
+          createAccountItemDto.accountBookId,
+          createAccountItemDto.fundId,
+          createAccountItemDto.type,
         );
-      }
 
-      // 校验账本资产权限
-      await this.validateBookFundPermission(
-        createAccountItemDto.accountBookId,
-        createAccountItemDto.fundId,
-        createAccountItemDto.type,
-      );
-
-      // 处理分类
-      const category = await this.getOrCreateCategory(
-        createAccountItemDto.category,
-        createAccountItemDto.type,
-        createAccountItemDto.accountBookId,
-        userId,
-      );
-
-      // 处理商家信息
-      let shopCode = null;
-      if (createAccountItemDto.shop) {
-        const shop = await this.accountShopService.getOrCreateShop(
-          createAccountItemDto.shop,
+        // 处理分类
+        const category = await this.getOrCreateCategory(
+          createAccountItemDto.category,
+          createAccountItemDto.type,
           createAccountItemDto.accountBookId,
           userId,
         );
-        shopCode = shop.shopCode;
-      }
 
-      // 创建账目
-      const accountItem = this.accountItemRepository.create({
-        ...createAccountItemDto,
-        shopCode,
-        categoryCode: category.code,
-        createdBy: createAccountItemDto.createdBy || userId,
-        updatedBy: createAccountItemDto.createdBy || userId,
-      });
+        // 处理商家信息
+        let shopCode = null;
+        if (createAccountItemDto.shop) {
+          const shop = await this.accountShopService.getOrCreateShop(
+            createAccountItemDto.shop,
+            createAccountItemDto.accountBookId,
+            userId,
+          );
+          shopCode = shop.shopCode;
+        }
 
-      const savedAccountItem = await transactionalEntityManager.save(accountItem);
+        // 创建账目
+        const accountItem = this.accountItemRepository.create({
+          ...createAccountItemDto,
+          shopCode,
+          categoryCode: category.code,
+          createdBy: createAccountItemDto.createdBy || userId,
+          updatedBy: createAccountItemDto.createdBy || userId,
+        });
 
-      // 更新分类的最近账目时间
-      await this.categoryRepository.update(
-        { code: category.code },
-        { lastAccountItemAt: savedAccountItem.createdAt },
-      );
+        const savedAccountItem =
+          await transactionalEntityManager.save(accountItem);
 
-      // 处理附件上传
-      if (createAccountItemDto.files && createAccountItemDto.files.length > 0) {
-        await this.attachmentService.createBatch(
-          BusinessCode.ITEM,
-          savedAccountItem.id,
-          createAccountItemDto.files,
+        // 更新分类的最近账目时间
+        await this.categoryRepository.update(
+          { code: category.code },
+          { lastAccountItemAt: savedAccountItem.createdAt },
         );
-      }
 
-      return this.findOne(savedAccountItem.id);
-    });
+        // 处理附件上传
+        if (
+          createAccountItemDto.files &&
+          createAccountItemDto.files.length > 0
+        ) {
+          await this.attachmentService.createBatch(
+            BusinessCode.ITEM,
+            savedAccountItem.id,
+            createAccountItemDto.files,
+          );
+        }
+
+        return this.findOne(savedAccountItem.id);
+      },
+    );
   }
 
   async findPage(
@@ -174,29 +195,28 @@ export class AccountService {
   ) {
     // 使用 QueryBuilder 构建查询
     const queryBuilder = this.accountItemRepository
-      .createQueryBuilder('account')
-      .leftJoinAndSelect(
-        Category,
-        'category',
-        'account.categoryCode = category.code',
-      )
-      .leftJoinAndSelect(
-        'account_shops',
-        'shops',
-        'account.shopCode = shops.shopCode',
-      )
-      .leftJoinAndSelect('account_funds', 'fund', 'account.fundId = fund.id')
+      .createQueryBuilder('item')
       .select([
-        'account.*',
+        ...AccountItemService.ALL_COLUMNS,
         'category.name as category',
-        'shops.name as shop',
-        'fund.name as fundName',
-      ]);
+        'shop.name as shop',
+        'fund.name as fund',
+      ])
+      .leftJoin(
+        'account_categories',
+        'category',
+        'category.code = item.category_code',
+      )
+      .leftJoin('account_shops', 'shop', 'shop.shop_code = item.shop_code')
+      .leftJoin('account_funds', 'fund', 'fund.id = item.fund_id')
+      .where('item.account_book_id = :accountBookId', {
+        accountBookId: queryParams.accountBookId,
+      });
 
     // 添加筛选条件
     if (queryParams) {
       if (queryParams.accountBookId) {
-        queryBuilder.andWhere('account.accountBookId = :accountBookId', {
+        queryBuilder.andWhere('item.account_book_id = :accountBookId', {
           accountBookId: queryParams.accountBookId,
         });
       }
@@ -221,12 +241,12 @@ export class AccountService {
         Array.isArray(queryParams.fundIds) &&
         queryParams.fundIds.length > 0
       ) {
-        queryBuilder.andWhere('account.fundId IN (:...fundIds)', {
+        queryBuilder.andWhere('item.fund_id IN (:...fundIds)', {
           fundIds: queryParams.fundIds,
         });
       }
       if (queryParams.fundId) {
-        queryBuilder.andWhere('account.fundId = :fundId', {
+        queryBuilder.andWhere('item.fund_id = :fundId', {
           fundId: queryParams.fundId,
         });
       }
@@ -236,45 +256,45 @@ export class AccountService {
         Array.isArray(queryParams.shopCodes) &&
         queryParams.shopCodes.length > 0
       ) {
-        queryBuilder.andWhere('account.shopCode IN (:...shopCodes)', {
+        queryBuilder.andWhere('item.shop_code IN (:...shopCodes)', {
           shopCodes: queryParams.shopCodes,
         });
       }
       if (queryParams.shopCode) {
-        queryBuilder.andWhere('account.shopCode = :shopCode', {
+        queryBuilder.andWhere('item.shop_code = :shopCode', {
           shopCode: queryParams.shopCode,
         });
       }
 
       // 日期筛选
       if (queryParams.startDate) {
-        queryBuilder.andWhere('account.accountDate >= :startDate', {
+        queryBuilder.andWhere('item.account_date >= :startDate', {
           startDate: queryParams.startDate,
         });
       }
 
       if (queryParams.endDate) {
-        queryBuilder.andWhere('account.accountDate <= :endDate', {
+        queryBuilder.andWhere('item.account_date <= :endDate', {
           endDate: queryParams.endDate,
         });
       }
 
       // 类型筛选
       if (queryParams.type) {
-        queryBuilder.andWhere('account.type = :type', {
+        queryBuilder.andWhere('item.type = :type', {
           type: queryParams.type,
         });
       }
 
       // 金额范围筛选
       if (queryParams.minAmount !== undefined) {
-        queryBuilder.andWhere('account.amount >= :minAmount', {
+        queryBuilder.andWhere('item.amount >= :minAmount', {
           minAmount: queryParams.minAmount,
         });
       }
 
       if (queryParams.maxAmount !== undefined) {
-        queryBuilder.andWhere('account.amount <= :maxAmount', {
+        queryBuilder.andWhere('item.amount <= :maxAmount', {
           maxAmount: queryParams.maxAmount,
         });
       }
@@ -293,8 +313,8 @@ export class AccountService {
 
     // 只对分页数据添加排序和分页限制
     queryBuilder
-      .orderBy('account.accountDate', 'DESC')
-      .addOrderBy('account.createdAt', 'DESC')
+      .orderBy('item.account_date', 'DESC')
+      .addOrderBy('item.created_at', 'DESC')
       .offset(skip)
       .limit(pageSize);
 
@@ -349,20 +369,20 @@ export class AccountService {
       .leftJoinAndSelect(
         Category,
         'category',
-        'account.categoryCode = category.code',
+        'item.categoryCode = category.code',
       )
       .leftJoinAndSelect(
         'account_shops',
         'shop',
-        'account.shopCode = shop.shopCode',
+        'item.shopCode = shop.shopCode',
       )
       .select([
-        'account.*',
+        ...AccountItemService.ALL_COLUMNS,
         'category.name as category',
         'shop.name as shop',
         'shop.shopCode as shopCode',
       ])
-      .where('account.id = :id', { id })
+      .where('item.id = :id', { id })
       .getRawOne();
 
     if (!accountItem) {
@@ -551,7 +571,7 @@ export class AccountService {
                 where: {
                   accountBookId: accountItem.accountBookId,
                   userId,
-                  canDeleteItem: true,
+                  canDeleteBook: true,
                 },
               },
             );
