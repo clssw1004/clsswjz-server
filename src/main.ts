@@ -4,7 +4,6 @@ import * as dotenv from 'dotenv';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import { generateApiDocs } from './utils/doc.util';
-import { TransformInterceptor } from './interceptors/transform.interceptor';
 import { HttpExceptionFilter } from './filters/http-exception.filter';
 import { json } from 'express';
 dotenv.config();
@@ -13,7 +12,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // 添加全局响应转换拦截器
-  app.useGlobalInterceptors(new TransformInterceptor());
+  // app.useGlobalInterceptors(new TransformInterceptor());
 
   // 添加 CORS 配置
   app.enableCors({

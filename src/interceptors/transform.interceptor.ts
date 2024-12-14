@@ -7,16 +7,28 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { ResponseData } from '../interfaces/response.interface';
+import { Reflector } from '@nestjs/core';
+import { SKIP_INTERCEPTORS_KEY } from '../decorators/skip-interceptors.decorator';
 
 @Injectable()
 export class TransformInterceptor<T>
-  implements NestInterceptor<T, ResponseData<T>>
+  implements NestInterceptor<T, any>
 {
+  constructor(private reflector: Reflector) {}
+
   intercept(
     context: ExecutionContext,
     next: CallHandler,
-  ): Observable<ResponseData<T>> {
+  ): Observable<any> {
+    const skipInterceptors = this.reflector.get<boolean>(
+      SKIP_INTERCEPTORS_KEY,
+      context.getHandler(),
+    );
+
+    if (skipInterceptors) {
+      return next.handle();
+    }
+
     const ctx = context.switchToHttp();
     const response = ctx.getResponse();
 

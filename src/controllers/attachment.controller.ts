@@ -5,15 +5,21 @@ import {
   Res,
   NotFoundException,
   StreamableFile,
+  Header,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { AttachmentService } from '../services/attachment.service';
+import { Public } from 'src/decorators/public';
+import { SkipInterceptors } from 'src/decorators/skip-interceptors.decorator';
 
 @Controller('attachments')
 export class AttachmentController {
   constructor(private readonly attachmentService: AttachmentService) {}
 
   @Get(':id')
+  @Public()
+  @Header('Accept-Ranges', 'bytes')
+  @SkipInterceptors()
   async downloadFile(
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
@@ -23,10 +29,11 @@ export class AttachmentController {
 
       res.set({
         'Content-Type': attachment.contentType,
-        'Content-Disposition': `attachment; filename="${encodeURIComponent(
+        'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(
           attachment.originName,
-        )}"`,
+        )}`,
         'Content-Length': attachment.fileLength,
+        'Cache-Control': 'no-cache',
       });
 
       return new StreamableFile(file);

@@ -5,6 +5,8 @@ import { ConfigService } from '@nestjs/config';
 import { AttachmentEntity, BusinessCode } from '../pojo/entities/attachment.entity';
 import * as fs from 'fs';
 import * as path from 'path';
+import { createReadStream } from 'fs';
+import { Readable } from 'stream';
 
 @Injectable()
 export class AttachmentService {
@@ -54,7 +56,15 @@ export class AttachmentService {
 
       // 将文件保存到本地
       const filePath = path.join(this.attachmentPath, savedAttachment.id);
-      fs.writeFileSync(filePath, file.buffer);
+      
+      // 使用 stream 写入文件，而不是一次性写入
+      await new Promise<void>((resolve, reject) => {
+        const writeStream = fs.createWriteStream(filePath);
+        writeStream.write(file.buffer);
+        writeStream.end();
+        writeStream.on('finish', () => resolve());
+        writeStream.on('error', reject);
+      });
 
       attachments.push(savedAttachment);
     }
@@ -80,7 +90,10 @@ export class AttachmentService {
     return attachment;
   }
 
-  async getFile(id: string): Promise<{ file: Buffer; attachment: AttachmentEntity }> {
+  async getFile(id: string): Promise<{ 
+    file: Readable; 
+    attachment: AttachmentEntity;
+  }> {
     const attachment = await this.findOne(id);
     const filePath = path.join(this.attachmentPath, id);
 
@@ -88,7 +101,8 @@ export class AttachmentService {
       throw new NotFoundException('附件文件不存在');
     }
 
-    const file = fs.readFileSync(filePath);
+    // 使用 createReadStream 创建文件流而不是直接读取整个文件
+    const file = createReadStream(filePath);
     return { file, attachment };
   }
 
