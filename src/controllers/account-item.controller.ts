@@ -7,7 +7,10 @@ import {
   Param,
   Delete,
   Request,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { AccountService } from '../services/account-item.service';
 import { CreateAccountItemDto } from '../pojo/dto/account-item/create-account-item.dto';
 import { UpdateAccountItemDto } from '../pojo/dto/account-item/update-account-item.dto';
@@ -18,8 +21,19 @@ export class AccountController {
   constructor(private readonly accountService: AccountService) {}
 
   @Post()
-  create(@Body() createAccountItemDto: CreateAccountItemDto, @Request() req) {
-    return this.accountService.create(createAccountItemDto, req.user.sub);
+  @UseInterceptors(FilesInterceptor('files'))
+  async create(
+    @Body() createAccountItemDto: CreateAccountItemDto,
+    @UploadedFiles() files: Express.Multer.File[],
+    @Request() req,
+  ) {
+    return this.accountService.create(
+      {
+        ...createAccountItemDto,
+        files,
+      },
+      req.user.sub,
+    );
   }
 
   @Post('list')

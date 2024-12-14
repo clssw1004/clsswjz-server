@@ -18,6 +18,8 @@ import { AccountShopService } from './account-shop.service';
 import { generateUid } from '../utils/id.util';
 import { DEFAULT_FUND } from 'src/config/default-fund.config';
 import { AccountBookUser } from 'src/pojo/entities/account-book-user.entity';
+import { AttachmentService } from './attachment.service';
+import { BusinessCode } from '../pojo/entities/attachment.entity';
 
 @Injectable()
 export class AccountService {
@@ -26,6 +28,7 @@ export class AccountService {
     private accountItemRepository: Repository<AccountItem>,
     private categoryService: CategoryService,
     private accountShopService: AccountShopService,
+    private attachmentService: AttachmentService,
     @InjectRepository(Category)
     private categoryRepository: Repository<Category>,
     @InjectRepository(AccountBook)
@@ -98,60 +101,72 @@ export class AccountService {
   }
 
   async create(createAccountItemDto: CreateAccountItemDto, userId: string) {
-    // 校验账本是否存在
-    const accountBook = await this.accountBookRepository.findOneBy({
-      id: createAccountItemDto.accountBookId,
-    });
-    if (!accountBook) {
-      throw new NotFoundException(
-        `账本ID ${createAccountItemDto.accountBookId} 不存在`,
+    // 使用事务来确保账目和附件的创建是原子操作
+    return await this.accountItemRepository.manager.transaction(async transactionalEntityManager => {
+      // 校验账本是否存在
+      const accountBook = await this.accountBookRepository.findOneBy({
+        id: createAccountItemDto.accountBookId,
+      });
+      if (!accountBook) {
+        throw new NotFoundException(
+          `账本ID ${createAccountItemDto.accountBookId} 不存在`,
+        );
+      }
+
+      // 校验账本资产权限
+      await this.validateBookFundPermission(
+        createAccountItemDto.accountBookId,
+        createAccountItemDto.fundId,
+        createAccountItemDto.type,
       );
-    }
 
-    // 校验账本资产权限
-    await this.validateBookFundPermission(
-      createAccountItemDto.accountBookId,
-      createAccountItemDto.fundId,
-      createAccountItemDto.type,
-    );
-
-    // 处理分类
-    const category = await this.getOrCreateCategory(
-      createAccountItemDto.category,
-      createAccountItemDto.type,
-      createAccountItemDto.accountBookId,
-      userId,
-    );
-
-    // 处理商家信息
-    let shopCode = null;
-    if (createAccountItemDto.shop) {
-      const shop = await this.accountShopService.getOrCreateShop(
-        createAccountItemDto.shop,
+      // 处理分类
+      const category = await this.getOrCreateCategory(
+        createAccountItemDto.category,
+        createAccountItemDto.type,
         createAccountItemDto.accountBookId,
         userId,
       );
-      shopCode = shop.shopCode;
-    }
 
-    // 创建账目
-    const accountItem = this.accountItemRepository.create({
-      ...createAccountItemDto,
-      shopCode,
-      categoryCode: category.code,
-      createdBy: createAccountItemDto.createdBy || userId,
-      updatedBy: createAccountItemDto.createdBy || userId,
+      // 处理商家信息
+      let shopCode = null;
+      if (createAccountItemDto.shop) {
+        const shop = await this.accountShopService.getOrCreateShop(
+          createAccountItemDto.shop,
+          createAccountItemDto.accountBookId,
+          userId,
+        );
+        shopCode = shop.shopCode;
+      }
+
+      // 创建账目
+      const accountItem = this.accountItemRepository.create({
+        ...createAccountItemDto,
+        shopCode,
+        categoryCode: category.code,
+        createdBy: createAccountItemDto.createdBy || userId,
+        updatedBy: createAccountItemDto.createdBy || userId,
+      });
+
+      const savedAccountItem = await transactionalEntityManager.save(accountItem);
+
+      // 更新分类的最近账目时间
+      await this.categoryRepository.update(
+        { code: category.code },
+        { lastAccountItemAt: savedAccountItem.createdAt },
+      );
+
+      // 处理附件上传
+      if (createAccountItemDto.files && createAccountItemDto.files.length > 0) {
+        await this.attachmentService.createBatch(
+          BusinessCode.ITEM,
+          savedAccountItem.id,
+          createAccountItemDto.files,
+        );
+      }
+
+      return this.findOne(savedAccountItem.id);
     });
-
-    const savedAccountItem = await this.accountItemRepository.save(accountItem);
-
-    // 更新分类的最近账目时间
-    await this.categoryRepository.update(
-      { code: category.code },
-      { lastAccountItemAt: savedAccountItem.createdAt },
-    );
-
-    return this.findOne(savedAccountItem.id);
   }
 
   async findPage(

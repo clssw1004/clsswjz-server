@@ -40,4 +40,7 @@ export class CreateAccountItemDto {
   @IsOptional()
   @IsString()
   createdBy?: string;
+
+  @IsOptional()
+  files?: Express.Multer.File[];
 }

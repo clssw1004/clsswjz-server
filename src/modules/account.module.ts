@@ -27,6 +27,7 @@ import { HealthController } from '../controllers/health.controller';
 import { HealthService } from '../services/health.service';
 import { ImportService } from '../services/import.service';
 import { ImportController } from '../controllers/import.controller';
+import { AttachmentModule } from './attachment.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { ImportController } from '../controllers/import.controller';
       AccountBookFund,
       AccountShop,
     ]),
+    AttachmentModule,
   ],
   controllers: [
     AccountController,
