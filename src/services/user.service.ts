@@ -19,12 +19,33 @@ export class UserService {
   ) {}
 
   async create(userData: Partial<User>): Promise<User> {
+    // 检查用户名是否存在
     const existingUser = await this.userRepository.findOne({
       where: { username: userData.username },
     });
 
     if (existingUser) {
       throw new ConflictException('用户名已存在');
+    }
+
+    // 检查邮箱是否已被使用（忽略 null）
+    if (userData.email) {
+      const existingEmail = await this.userRepository.findOne({
+        where: { email: userData.email },
+      });
+      if (existingEmail) {
+        throw new ConflictException('该邮箱已被使用');
+      }
+    }
+
+    // 检查手机号是否已被使用（忽略 null）
+    if (userData.phone) {
+      const existingPhone = await this.userRepository.findOne({
+        where: { phone: userData.phone },
+      });
+      if (existingPhone) {
+        throw new ConflictException('该手机号已被使用');
+      }
     }
 
     if (!userData.nickname) {
@@ -34,7 +55,6 @@ export class UserService {
     // 使用事务确保用户创建和数据初始化是原子操作
     return await this.userRepository.manager.transaction(
       async (transactionalEntityManager) => {
-        // ���建用户
         const user = this.userRepository.create(userData);
         const savedUser = await transactionalEntityManager.save(user);
 
@@ -145,7 +165,7 @@ export class UserService {
     // 更新用户信息
     await this.userRepository.update(userId, updateUserDto);
 
-    // 返回更新后的用户信��
+    // 返回更新后的用户信息
     return this.getCurrentUser(userId);
   }
 }

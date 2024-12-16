@@ -15,20 +15,19 @@ export class User extends BaseEntity {
   })
   username: string;
 
-  @Column({ 
+  @Column({
     length: 50,
     name: 'nickname',
-    comment: '昵称' 
+    comment: '昵称',
   })
   nickname: string;
 
-  @Column({ 
+  @Column({
     name: 'password',
-    comment: '密码' 
+    comment: '密码',
   })
   password: string;
 
-  @Index('IDX_USER_EMAIL', { unique: true })
   @Column({
     length: 100,
     nullable: true,
@@ -37,11 +36,11 @@ export class User extends BaseEntity {
   })
   email: string;
 
-  @Column({ 
-    length: 20, 
+  @Column({
+    length: 20,
     nullable: true,
     name: 'phone',
-    comment: '手机号' 
+    comment: '手机号',
   })
   phone: string;
 
