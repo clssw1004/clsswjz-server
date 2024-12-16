@@ -21,6 +21,7 @@ import { AccountBookUser } from 'src/pojo/entities/account-book-user.entity';
 import { AttachmentService } from './attachment.service';
 import { BusinessCode } from '../pojo/entities/attachment.entity';
 import { AccountItemPageVO } from '../pojo/vo/account-item/account-item-vo';
+import { isEmpty } from 'lodash';
 
 @Injectable()
 export class AccountItemService {
@@ -195,7 +196,6 @@ export class AccountItemService {
   async findPage(
     queryParams?: QueryAccountItemDto & { page?: number; pageSize?: number },
   ): Promise<AccountItemPageVO> {
-    // 使用 QueryBuilder 构建查询
     const queryBuilder = this.accountItemRepository
       .createQueryBuilder('item')
       .select([
@@ -203,6 +203,7 @@ export class AccountItemService {
         'category.name as category',
         'shop.name as shop',
         'fund.name as fund',
+        'creator.nickname as createdByName',
       ])
       .leftJoin(
         'account_categories',
@@ -211,6 +212,7 @@ export class AccountItemService {
       )
       .leftJoin('account_shops', 'shop', 'shop.shop_code = item.shop_code')
       .leftJoin('account_funds', 'fund', 'fund.id = item.fund_id')
+      .leftJoin('users', 'creator', 'creator.id = item.created_by')
       .where('item.account_book_id = :accountBookId', {
         accountBookId: queryParams.accountBookId,
       });
@@ -326,14 +328,15 @@ export class AccountItemService {
     ]);
 
     // 获取所有账目的附件
-    const itemIds = accountItems.map(item => item.id);
+    const itemIds = accountItems.map((item) => item.id);
     const attachments = await this.attachmentService.findByBusinessIds(itemIds);
 
     // 组装返回数据
-    const items = accountItems.map(item => ({
+    const items = accountItems.map((item) => ({
       ...item,
       amount: Number(item.amount),
-      attachments: attachments.filter(att => att.businessId === item.id)
+      attachments: attachments.filter((att) => att.businessId === item.id),
+      createdByName: item.createdByName,
     }));
 
     // 计算汇总信息
@@ -407,68 +410,118 @@ export class AccountItemService {
       amount: Number(accountItem.amount),
       attachments,
     };
-  } 
+  }
 
   async update(
     id: string,
     updateAccountItemDto: UpdateAccountItemDto,
     userId: string,
   ) {
-    console.log('updateAccountItemDto', updateAccountItemDto);
-    const accountItem = await this.accountItemRepository.findOneBy({ id });
-    if (!accountItem) {
-      throw new NotFoundException('记账条目不存在');
-    }
+    // 使用事务来确保账目和附件的更新是原子操作
+    return await this.accountItemRepository.manager.transaction(
+      async (transactionalEntityManager) => {
+        const accountItem = await this.accountItemRepository.findOneBy({ id });
+        if (!accountItem) {
+          throw new NotFoundException('记账条目不存在');
+        }
 
-    // 如果更新了账户或类型，需要重新校验权限
-    if (updateAccountItemDto.fundId || updateAccountItemDto.type) {
-      await this.validateBookFundPermission(
-        accountItem.accountBookId,
-        updateAccountItemDto.fundId || accountItem.fundId,
-        updateAccountItemDto.type || accountItem.type,
-      );
-    }
+        // 如果更新了账户或类型，需要重新校验权限
+        if (updateAccountItemDto.fundId || updateAccountItemDto.type) {
+          await this.validateBookFundPermission(
+            accountItem.accountBookId,
+            updateAccountItemDto.fundId || accountItem.fundId,
+            updateAccountItemDto.type || accountItem.type,
+          );
+        }
 
-    // 如果更新了分类，需要处理分类逻辑
-    if (updateAccountItemDto.category) {
-      const category = await this.getOrCreateCategory(
-        updateAccountItemDto.category,
-        accountItem.type,
-        accountItem.accountBookId,
-        userId,
-      );
-      accountItem.categoryCode = category.code;
-    }
+        // 如果更新了分类，需要处理分类逻辑
+        if (updateAccountItemDto.category) {
+          const category = await this.getOrCreateCategory(
+            updateAccountItemDto.category,
+            accountItem.type,
+            accountItem.accountBookId,
+            userId,
+          );
+          accountItem.categoryCode = category.code;
+        }
 
-    // 处理商家信息
-    if (updateAccountItemDto.shop !== undefined) {
-      if (updateAccountItemDto.shop) {
-        const shop = await this.accountShopService.getOrCreateShop(
-          updateAccountItemDto.shop,
-          accountItem.accountBookId,
-          userId,
-        );
-        accountItem.shopCode = shop.shopCode;
-      } else {
-        accountItem.shopCode = null;
-      }
-    }
+        // 处理商家信息
+        if (updateAccountItemDto.shop !== undefined) {
+          if (updateAccountItemDto.shop) {
+            const shop = await this.accountShopService.getOrCreateShop(
+              updateAccountItemDto.shop,
+              accountItem.accountBookId,
+              userId,
+            );
+            accountItem.shopCode = shop.shopCode;
+          } else {
+            accountItem.shopCode = null;
+          }
+        }
+        const deleteAttachmentIds = [];
 
-    Object.assign(accountItem, {
-      ...updateAccountItemDto,
-      shopCode: accountItem.shopCode,
-      updatedBy: userId,
-    });
+        // 删除指定的附件
+        if (!isEmpty(updateAccountItemDto.deleteAttachmentId)) {
+          deleteAttachmentIds.push(updateAccountItemDto.deleteAttachmentId);
+        }
+        // 删除指定的附件
+        if (updateAccountItemDto.deleteAttachmentIds?.length > 0) {
+          deleteAttachmentIds.push(...updateAccountItemDto.deleteAttachmentIds);
+        }
+        if (deleteAttachmentIds.length > 0) {
+          await this.attachmentService.removeByIds(
+            deleteAttachmentIds,
+            transactionalEntityManager,
+          );
+        }
 
-    return this.accountItemRepository.save(accountItem);
+        // 添加新的附件
+        if (updateAccountItemDto.attachments?.length > 0) {
+          await this.attachmentService.createBatch(
+            BusinessCode.ITEM,
+            id,
+            updateAccountItemDto.attachments,
+            userId,
+            transactionalEntityManager,
+          );
+        }
+
+        // 更新账目基本信息
+        Object.assign(accountItem, {
+          ...updateAccountItemDto,
+          shopCode: accountItem.shopCode,
+          updatedBy: userId,
+        });
+
+        await transactionalEntityManager.save(accountItem);
+
+        // 返回更新后的完整信息
+        return this.findOne(id);
+      },
+    );
   }
 
   async remove(id: string) {
-    const accountItem = await this.accountItemRepository.findOneBy({ id });
-    if (!accountItem) {
-      throw new Error('记账条目不存在');
-    }
-    return this.accountItemRepository.remove(accountItem);
+    // 使用事务来确保账目和附件的删除是原子操作
+    return await this.accountItemRepository.manager.transaction(
+      async (transactionalEntityManager) => {
+        const accountItem = await this.accountItemRepository.findOneBy({ id });
+        if (!accountItem) {
+          throw new NotFoundException('记账条目不存在');
+        }
+
+        // 删除关联的附件文件和记录
+        await this.attachmentService.removeByIds(
+          [id],
+          transactionalEntityManager,
+        );
+
+        // 删除账目记录
+        await transactionalEntityManager.remove(accountItem);
+
+        return { success: true };
+      },
+    );
   }
 
   async createBatch(
@@ -526,8 +579,8 @@ export class AccountItemService {
               ...dto,
               shopCode,
               categoryCode: category.code,
-              createdBy: userId,
-              updatedBy: userId,
+              createdBy: dto.createdBy || userId,
+              updatedBy: dto.createdBy || userId,
             });
 
             await transactionalEntityManager.save(AccountItem, accountItem);

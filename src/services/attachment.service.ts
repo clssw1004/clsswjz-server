@@ -1,8 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, EntityManager } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
-import { AttachmentEntity, BusinessCode } from '../pojo/entities/attachment.entity';
+import {
+  AttachmentEntity,
+  BusinessCode,
+} from '../pojo/entities/attachment.entity';
 import * as fs from 'fs';
 import * as path from 'path';
 import { createReadStream } from 'fs';
@@ -30,17 +33,15 @@ export class AttachmentService {
     }
   }
 
-
   async createBatch(
     businessCode: BusinessCode,
     businessId: string,
     files: Express.Multer.File[],
     userId: string,
+    transactionalEntityManager?: EntityManager,
   ): Promise<AttachmentEntity[]> {
     const attachments = [];
-
     for (const file of files) {
-      // 创建附件记录
       const attachment = new AttachmentEntity();
       attachment.originName = file.originalname;
       attachment.fileLength = file.size;
@@ -51,13 +52,12 @@ export class AttachmentService {
       attachment.createdBy = userId;
       attachment.updatedBy = userId;
 
-      // 保存附件记录
-      const savedAttachment = await this.attachmentRepository.save(attachment);
+      const savedAttachment = transactionalEntityManager
+        ? await transactionalEntityManager.save(AttachmentEntity, attachment)
+        : await this.attachmentRepository.save(attachment);
 
-      // 将文件保存到本地
       const filePath = path.join(this.attachmentPath, savedAttachment.id);
-      
-      // 使用 stream 写入文件，而不是一次性写入
+
       await new Promise<void>((resolve, reject) => {
         const writeStream = fs.createWriteStream(filePath);
         writeStream.write(file.buffer);
@@ -90,8 +90,8 @@ export class AttachmentService {
     return attachment;
   }
 
-  async getFile(id: string): Promise<{ 
-    file: Readable; 
+  async getFile(id: string): Promise<{
+    file: Readable;
     attachment: AttachmentEntity;
   }> {
     const attachment = await this.findOne(id);
@@ -106,10 +106,7 @@ export class AttachmentService {
     return { file, attachment };
   }
 
-
   async remove(id: string): Promise<void> {
-    const attachment = await this.findOne(id);
-    
     // 删除文件
     const filePath = path.join(this.attachmentPath, id);
     if (fs.existsSync(filePath)) {
@@ -122,9 +119,21 @@ export class AttachmentService {
 
   async findByBusinessIds(businessIds: string[]): Promise<AttachmentEntity[]> {
     if (!businessIds.length) return [];
-    
+
     return await this.attachmentRepository.find({
       where: { businessId: In(businessIds) },
     });
   }
-} 
+  async removeByIds(
+    ids: string[],
+    transactionalEntityManager?: EntityManager,
+  ): Promise<void> {
+    if (transactionalEntityManager) {
+      await transactionalEntityManager.delete(AttachmentEntity, {
+        id: In(ids),
+      });
+    } else {
+      await this.attachmentRepository.delete({ id: In(ids) });
+    }
+  }
+}

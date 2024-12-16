@@ -47,12 +47,21 @@ export class AccountController {
   }
 
   @Patch(':id')
-  update(
+  @UseInterceptors(FilesInterceptor('attachments'))
+  async update(
     @Param('id') id: string,
     @Body() updateAccountItemDto: UpdateAccountItemDto,
+    @UploadedFiles() attachments: Express.Multer.File[],
     @Request() req,
   ) {
-    return this.accountService.update(id, updateAccountItemDto, req.user.sub);
+    return this.accountService.update(
+      id,
+      {
+        ...updateAccountItemDto,
+        attachments,
+      },
+      req.user.sub,
+    );
   }
 
   @Delete(':id')

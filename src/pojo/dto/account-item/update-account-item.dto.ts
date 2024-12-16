@@ -1,4 +1,11 @@
-import { IsDateString, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsDateString,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsArray,
+  IsNumberString,
+} from 'class-validator';
 import { ItemType } from '../../enums/item-type.enum';
 
 export class UpdateAccountItemDto {
@@ -10,7 +17,7 @@ export class UpdateAccountItemDto {
   id?: string;
 
   @IsOptional()
-  @IsNumber({}, { message: '金额必须是数字' })
+  @IsNumberString({}, { message: '金额必须是数字' })
   amount?: number;
 
   @IsOptional()
@@ -34,4 +41,13 @@ export class UpdateAccountItemDto {
   @IsOptional()
   @IsString()
   shop?: string;
+
+  @IsOptional()
+  deleteAttachmentId?: string[];
+
+  @IsOptional()
+  @IsArray()
+  deleteAttachmentIds?: string[];
+
+  attachments?: Express.Multer.File[];
 }

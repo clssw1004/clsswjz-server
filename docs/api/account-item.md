@@ -183,7 +183,7 @@ Response: {
     "category": string,        // 分类名称
     "accountDate": Date,      // 记账日期
     "accountBookId": string,  // 账本ID
-    "fundId": string,         // 账��ID
+    "fundId": string,         // 账户ID
     "shopCode": string?,      // 商家编码
     "shop": string?,          // 商家名称
     "createdBy": string,      // 创建人ID
@@ -211,6 +211,7 @@ Errors:
 ## 更新记账记录
 ```
 PATCH /api/account/item/:id
+Content-Type: multipart/form-data
 
 Request Body:
 {
@@ -220,7 +221,9 @@ Request Body:
   "shop": string?,         // 商家（可选）
   "description": string?,   // 描述（可选）
   "accountDate": Date?,    // 记账日期（可选）
-  "fundId": string?        // 资金账户ID（可选）
+  "fundId": string?,       // 资金账户ID（可选）
+  "deleteAttachmentIds": string[]?, // 要删除的附件ID列表（可选）
+  "attachments": File[]    // 新上传的附件文件列表（可选）
 }
 
 Response: {
@@ -241,12 +244,23 @@ Response: {
     "createdBy": string,      // 创建人ID
     "updatedBy": string,      // 更新人ID
     "createdAt": Date,        // 创建时间
-    "updatedAt": Date         // 更新时间
+    "updatedAt": Date,        // 更新时间
+    "attachments": Array<{    // 附件列表
+      "id": string,           // 附件ID
+      "originName": string,   // 原始文件名
+      "fileLength": number,   // 文件大小
+      "extension": string,    // 文件扩展名
+      "contentType": string,  // 文件类型
+      "businessCode": string, // 业务类型
+      "businessId": string,   // 业务ID
+      "createdAt": string,    // 创建时间
+      "updatedAt": string     // 更新时间
+    }>
   }
 }
 
 Errors:
-- 404 ��账记录不存在
+- 404 记账记录不存在
 - 403 该账户在当前账本中不允许支出/收入
 ```
 
@@ -257,7 +271,9 @@ DELETE /api/account/item/:id
 Response: {
   "code": 200,
   "message": "success",
-  "data": {}
+  "data": {
+    "success": true
+  }
 }
 
 Errors:
