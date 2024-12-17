@@ -633,7 +633,6 @@ export class AccountItemService {
           const categoryUpdates = {
             lastAccountItemAt: new Date(),
           };
-          console.log(Array.from(categoryMap.values()).map((c) => c.code));
           await transactionalEntityManager.update(
             Category,
             { code: In(Array.from(categoryMap.values()).map((c) => c.code)) },
