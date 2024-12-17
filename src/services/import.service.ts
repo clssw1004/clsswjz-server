@@ -1,6 +1,10 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, EntityManager } from 'typeorm';
 import { AccountFund, FundType } from '../pojo/entities/account-fund.entity';
 import { User } from '../pojo/entities/user.entity';
 import { AccountItemService } from './account-item.service';
@@ -14,7 +18,9 @@ import { DEFAULT_FUND } from '../config/default-fund.config';
 import { DEFAULT_SHOP } from '../config/default-shop.config';
 import { ImportDataDto } from '../pojo/dto/import/import-data-dto';
 import { ImportSource } from 'src/pojo/enums/import-source.enum';
-
+import { AccountBook } from '../pojo/entities/account-book.entity';
+import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
+import { AccountItem } from '../pojo/entities/account-item.entity';
 @Injectable()
 export class ImportService {
   constructor(
@@ -22,6 +28,12 @@ export class ImportService {
     private accountFundRepository: Repository<AccountFund>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(AccountItem)
+    private accountItemRepository: Repository<AccountItem>,
+    @InjectRepository(AccountBook)
+    private accountBookRepository: Repository<AccountBook>,
+    @InjectRepository(AccountBookUser)
+    private accountBookUserRepository: Repository<AccountBookUser>,
     private accountService: AccountItemService,
     private accountFundService: AccountFundService,
   ) {}
@@ -32,6 +44,48 @@ export class ImportService {
         return this.importMintData(importDataDto, userId);
       default:
         throw new BadRequestException('不支持的数据源');
+    }
+  }
+
+  private async ensureUserBookPermission(
+    accountBookId: string,
+    userId: string,
+    transactionalEntityManager: EntityManager,
+  ): Promise<void> {
+    // 检查用户是否是账本创建人
+    const accountBook = await transactionalEntityManager.findOne(AccountBook, {
+      where: { id: accountBookId },
+    });
+
+    if (!accountBook) {
+      throw new NotFoundException('账本不存在');
+    }
+
+    if (accountBook.createdBy === userId) {
+      return; // 创建人直接返回
+    }
+
+    // 检查用户是否已是账本成员
+    const existingMember = await transactionalEntityManager.findOne(
+      AccountBookUser,
+      {
+        where: { accountBookId, userId },
+      },
+    );
+
+    if (!existingMember) {
+      // 创建新的账本用户关联，只赋予查看权限
+      const bookUser = transactionalEntityManager.create(AccountBookUser, {
+        accountBookId,
+        userId,
+        canViewBook: true,
+        canEditBook: false,
+        canDeleteBook: false,
+        canViewItem: true,
+        canEditItem: false,
+        canDeleteItem: false,
+      });
+      await transactionalEntityManager.save(AccountBookUser, bookUser);
     }
   }
 
@@ -54,29 +108,43 @@ export class ImportService {
       // 批量处理记录
       const items: CreateAccountItemDto[] = [];
 
-      for (const record of records) {
-        try {
-          const item = await this.convertRecordToDto(
-            record,
-            accountBookId,
-            userId,
-            userCache,
-            fundCache,
-          );
-          items.push(item);
-        } catch (error) {
-          errors.push(`行 ${records.indexOf(record) + 1}: ${error.message}`);
-        }
-      }
+      // 使用事务处理
+      await this.accountItemRepository.manager.transaction(
+        async (transactionalEntityManager) => {
+          for (const record of records) {
+            try {
+              const item = await this.convertRecordToDto(
+                record,
+                accountBookId,
+                userId,
+                userCache,
+                fundCache,
+              );
+              items.push(item);
+            } catch (error) {
+              errors.push(
+                `行 ${records.indexOf(record) + 1}: ${error.message}`,
+              );
+            }
+          }
 
-      // 批量创建账目
-      if (items.length > 0) {
-        const result = await this.accountService.createBatch(items, userId);
-        successCount = result.successCount;
-        if (result.errors) {
-          errors.push(...result.errors);
-        }
-      }
+          // 批量创建账目
+          if (items.length > 0) {
+            const result = await this.accountService.createBatch(items, userId);
+            successCount = result.successCount;
+            if (result.errors) {
+              errors.push(...result.errors);
+            }
+          }
+          userCache.forEach(async (value) => {
+            await this.ensureUserBookPermission(
+              accountBookId,
+              value,
+              transactionalEntityManager,
+            );
+          });
+        },
+      );
 
       return { successCount, errors };
     } catch (error) {

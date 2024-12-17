@@ -5,18 +5,18 @@ import { BaseBusinessEntity } from './base.entity';
 @Entity('account_books')
 @Unique(['createdBy', 'name'])
 export class AccountBook extends BaseBusinessEntity {
-  @Column({ 
+  @Column({
     length: 50,
     name: 'name',
-    comment: '账本名称' 
+    comment: '账本名称',
   })
   name: string;
 
-  @Column({ 
-    length: 200, 
+  @Column({
+    length: 200,
     nullable: true,
-    name: 'description', 
-    comment: '账本描述' 
+    name: 'description',
+    comment: '账本描述',
   })
   description: string;
 

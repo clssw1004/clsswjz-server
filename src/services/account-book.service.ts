@@ -25,6 +25,18 @@ export class AccountBookService {
     private categoryRepository: Repository<Category>,
   ) {}
 
+  static COLLUMN_ALL = [
+    'book.id as id',
+    'book.name as name',
+    'book.description as description',
+    'book.created_at as createdAt',
+    'book.updated_at as updatedAt',
+    'book.created_by as createdBy',
+    'book.updated_by as updatedBy',
+    'book.currency_symbol as currencySymbol',
+    'book.icon as icon',
+  ];
+
   // 创建默认分类
   private async createDefaultCategories(
     accountBookId: string,
@@ -161,12 +173,12 @@ export class AccountBookService {
       id: accountBook.id,
       name: accountBook.name,
       description: accountBook.description,
-      currencySymbol: accountBook.currency_symbol,
+      currencySymbol: accountBook.currencySymbol,
       icon: accountBook.icon,
-      createdAt: accountBook.created_at,
-      updatedAt: accountBook.updated_at,
-      createdBy: accountBook.created_by,
-      updatedBy: accountBook.updated_by,
+      createdAt: accountBook.createdAt,
+      updatedAt: accountBook.updatedAt,
+      createdBy: accountBook.createdBy,
+      updatedBy: accountBook.updatedBy,
       fromId: accountBook.fromId,
       fromName: accountBook.fromName,
       permissions: currentUserPermissions,
@@ -187,7 +199,7 @@ export class AccountBookService {
     const queryBuilder = this.accountBookRepository
       .createQueryBuilder('book')
       .select([
-        'book.*',
+        ...AccountBookService.COLLUMN_ALL,
         'abu.can_view_book as canViewBook',
         'abu.can_edit_book as canEditBook',
         'abu.can_delete_book as canDeleteBook',
@@ -229,7 +241,7 @@ export class AccountBookService {
     const accountBook = await this.accountBookRepository
       .createQueryBuilder('book')
       .select([
-        'book.*',
+        ...AccountBookService.COLLUMN_ALL,
         'abu.can_view_book as canViewBook',
         'abu.can_edit_book as canEditBook',
         'abu.can_delete_book as canDeleteBook',

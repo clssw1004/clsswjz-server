@@ -24,14 +24,14 @@ export class AccountFundService {
 
   static readonly FUND_COLUMNS = [
     'fund.id as id',
-    'fund.name as name', 
+    'fund.name as name',
     'fund.fund_type as fundType',
     'fund.fund_balance as fundBalance',
     'fund.fund_remark as fundRemark',
     'fund.created_at as createdAt',
     'fund.updated_at as updatedAt',
     'fund.created_by as createdBy',
-    'fund.updated_by as updatedBy'
+    'fund.updated_by as updatedBy',
   ];
   /**
    * 设置账本的默认账户

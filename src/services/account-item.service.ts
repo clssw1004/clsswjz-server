@@ -4,7 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, EntityManager } from 'typeorm';
 import { AccountItem } from '../pojo/entities/account-item.entity';
 import { Category } from '../pojo/entities/category.entity';
 import { AccountBook } from '../pojo/entities/account-book.entity';
