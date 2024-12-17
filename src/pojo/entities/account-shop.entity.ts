@@ -13,15 +13,15 @@ export class AccountShop extends BaseBusinessEntity {
 
   @Column({
     length: 20,
-    name: 'shop_code',
+    name: 'code',
     comment: '商家编码',
     unique: true,
   })
-  shopCode: string;
+  code: string;
 
-  @Column({ 
+  @Column({
     name: 'account_book_id',
-    comment: '账本ID' 
+    comment: '账本ID',
   })
   accountBookId: string;
 }

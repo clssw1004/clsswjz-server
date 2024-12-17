@@ -6,12 +6,9 @@ import { AttachmentService } from '../services/attachment.service';
 import { AttachmentController } from '../controllers/attachment.controller';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([AttachmentEntity]),
-    ConfigModule,
-  ],
+  imports: [TypeOrmModule.forFeature([AttachmentEntity]), ConfigModule],
   controllers: [AttachmentController],
   providers: [AttachmentService],
   exports: [AttachmentService],
 })
-export class AttachmentModule {} 
+export class AttachmentModule {}

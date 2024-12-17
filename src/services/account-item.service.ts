@@ -156,7 +156,7 @@ export class AccountItemService {
             createAccountItemDto.accountBookId,
             userId,
           );
-          shopCode = shop.shopCode;
+          shopCode = shop.code;
         }
 
         // 创建账目
@@ -213,7 +213,7 @@ export class AccountItemService {
         'category',
         'category.code = item.category_code',
       )
-      .leftJoin('account_shops', 'shop', 'shop.shop_code = item.shop_code')
+      .leftJoin('account_shops', 'shop', 'shop.code = item.shop_code')
       .leftJoin('account_funds', 'fund', 'fund.id = item.fund_id')
       .leftJoin('users', 'creator', 'creator.id = item.created_by')
       .where('item.account_book_id = :accountBookId', {
@@ -459,7 +459,7 @@ export class AccountItemService {
             accountItem.accountBookId,
             userId,
           );
-          accountItem.shopCode = shop.shopCode;
+          accountItem.shopCode = shop.code;
         }
         const deleteAttachmentIds = [];
 
@@ -582,7 +582,7 @@ export class AccountItemService {
             accountBookId,
             userId,
           );
-          shopMap.set(shopKey, shop.shopCode);
+          shopMap.set(shopKey, shop.code);
         }
 
         // 批量创建账目

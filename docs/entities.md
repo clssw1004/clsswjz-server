@@ -51,7 +51,7 @@
 {
   id: string;              // 主键ID
   name: string;            // 商家名称
-  shopCode: string;        // 商家编码
+  code: string;        // 商家编码
   accountBookId: string;   // 所属账本ID
   createdBy: string;       // 创建人ID
   updatedBy: string;      // 更新人ID
@@ -71,7 +71,7 @@
   accountDate: Date;      // 记账日期
   accountBookId: string;  // 账本ID
   fundId: string;         // 账户ID
-  shopCode: string;       // 商家编码
+  code: string;       // 商家编码
   createdBy: string;      // 创建人ID
   updatedBy: string;      // 更新人ID
   createdAt: Date;        // 创建时间

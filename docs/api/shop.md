@@ -13,7 +13,7 @@ Request Body:
 Response: {
   "id": string,            // 主键ID
   "name": string,          //商家名称
-  "shopCode": string,      // 商家编码
+  "code": string,      // 商家编码
   "accountBookId": string, // 所属账本ID
   "createdBy": string,     // 创建人ID
   "updatedBy": string,     // 更新人ID

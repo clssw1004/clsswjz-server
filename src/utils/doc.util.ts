@@ -330,7 +330,7 @@ const generateEntitiesDocs = () => {
 {
   id: string;              // 主键ID
   name: string;            // 商家名称
-  shopCode: string;        // 商家编码
+  code: string;        // 商家编码
   accountBookId: string;   // 所属账本ID
   createdBy: string;       // 创建人ID
   updatedBy: string;      // 更新人ID
@@ -350,7 +350,7 @@ const generateEntitiesDocs = () => {
   accountDate: Date;      // 记账日期
   accountBookId: string;  // 账本ID
   fundId: string;         // 账户ID
-  shopCode: string;       // 商家编码
+  code: string;       // 商家编码
   createdBy: string;      // 创建人ID
   updatedBy: string;      // 更新人ID
   createdAt: Date;        // 创建时间
@@ -782,7 +782,7 @@ const generateAccountItemDocs = () => {
   accountDate: Date;      // 记账日期
   accountBookId: string;  // 账本ID
   fundId: string;         // 账户ID
-  shopCode: string;       // 商家编码
+  code: string;       // 商家编码
   createdBy: string;      // 创建人ID
   updatedBy: string;      // 更新人ID
   createdAt: Date;        // 创建时间
@@ -840,7 +840,7 @@ Response: {
     "accountDate": Date,      // 记账日期
     "accountBookId": string,  // 账本ID
     "fundId": string,         // 账户ID
-    "shopCode": string?,      // 商家编码
+    "code": string?,      // 商家编码
     "shop": string?,          // 商家名称
     "createdBy": string,      // 创建人ID
     "updatedBy": string,      // 更新人ID
@@ -876,8 +876,8 @@ Request Body:
   "categories": string[]?,    // 分类列表（可选）
   "fundId": string?,         // 资金账户ID（可选）
   "fundIds": string[]?,      // 资金账户ID列表（可选）
-  "shopCode": string?,       // 商家编码（可选）
-  "shopCodes": string[]?,    // 商家编码列表（可选）
+  "code": string?,       // 商家编码（可选）
+  "codes": string[]?,    // 商家编码列表（可选）
   "startDate": string?,      // 开始日期（可选）
   "endDate": string?,        // 结束日期（可选）
   "type": ItemType?,         // 类型（可选）
@@ -902,7 +902,7 @@ Response: {
       "accountBookId": string,  // 账本ID
       "fundId": string,         // 账户ID
       "fundName": string,       // 账户名称
-      "shopCode": string?,      // 商家编码
+      "code": string?,      // 商家编码
       "shop": string?,          // 商家名称
       "createdBy": string,      // 创建人ID
       "updatedBy": string,      // 更新人ID
@@ -953,7 +953,7 @@ Response: {
     "accountDate": Date,      // 记账日期
     "accountBookId": string,  // 账本ID
     "fundId": string,         // 账户ID
-    "shopCode": string?,      // 商家编码
+    "code": string?,      // 商家编码
     "shop": string?,          // 商家名称
     "createdBy": string,      // 创建人ID
     "updatedBy": string,      // 更新人ID
@@ -1008,7 +1008,7 @@ Response: {
     "accountDate": Date,      // 记账日期
     "accountBookId": string,  // 账本ID
     "fundId": string,         // 账户ID
-    "shopCode": string?,      // 商家编码
+    "code": string?,      // 商家编码
     "shop": string?,          // 商家名称
     "createdBy": string,      // 创建人ID
     "updatedBy": string,      // 更新人ID
@@ -1182,7 +1182,7 @@ Request Body:
 Response: {
   "id": string,            // 主键ID
   "name": string,          //商家名称
-  "shopCode": string,      // 商家编码
+  "code": string,      // 商家编码
   "accountBookId": string, // 所属账本ID
   "createdBy": string,     // 创建人ID
   "updatedBy": string,     // 更新人ID

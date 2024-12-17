@@ -15,7 +15,7 @@ export class AccountItemVO {
   accountBookId: string; // 账本ID
   fundId: string; // 账户ID
   fund: string; // 账户名称
-  shopCode?: string; // 商家编码
+  code?: string; // 商家编码
   shop?: string; // 商家名称
   createdBy: string; // 创建人ID
   updatedBy: string; // 更新人ID

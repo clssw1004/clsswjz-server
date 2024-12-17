@@ -35,7 +35,7 @@ export class AccountShopService {
     if (name === DEFAULT_SHOP) {
       shop = this.accountShopRepository.create({
         name: DEFAULT_SHOP,
-        shopCode: DEFAULT_SHOP,
+        code: DEFAULT_SHOP,
         accountBookId,
         createdBy: userId,
         updatedBy: userId,
@@ -45,7 +45,7 @@ export class AccountShopService {
     if (!shop) {
       shop = this.accountShopRepository.create({
         name,
-        shopCode: generateUid(),
+        code: generateUid(),
         accountBookId,
         createdBy: userId,
         updatedBy: userId,
@@ -77,7 +77,7 @@ export class AccountShopService {
     const shop = this.accountShopRepository.create({
       name: createDto.name,
       accountBookId: createDto.accountBookId,
-      shopCode: generateUid(),
+      code: generateUid(),
       createdBy: userId,
       updatedBy: userId,
     });
