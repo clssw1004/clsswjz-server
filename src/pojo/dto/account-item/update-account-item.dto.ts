@@ -32,7 +32,6 @@ export class UpdateAccountItemDto {
   category?: string;
 
   @IsOptional()
-  @IsDateString()
   accountDate?: string;
 
   @IsOptional()

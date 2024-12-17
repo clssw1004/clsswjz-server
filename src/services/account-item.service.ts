@@ -453,17 +453,13 @@ export class AccountItemService {
           accountItem.categoryCode = category.code;
         }
         // 处理商家信息
-        if (updateAccountItemDto.shop !== undefined) {
-          if (updateAccountItemDto.shop) {
-            const shop = await this.accountShopService.getOrCreateShop(
-              updateAccountItemDto.shop,
-              accountItem.accountBookId,
-              userId,
-            );
-            accountItem.shopCode = shop.shopCode;
-          } else {
-            accountItem.shopCode = null;
-          }
+        if (updateAccountItemDto.shop) {
+          const shop = await this.accountShopService.getOrCreateShop(
+            updateAccountItemDto.shop,
+            accountItem.accountBookId,
+            userId,
+          );
+          accountItem.shopCode = shop.shopCode;
         }
         const deleteAttachmentIds = [];
 
@@ -502,7 +498,6 @@ export class AccountItemService {
 
         await transactionalEntityManager.save(accountItem);
 
-        // 返回更新后的��整信息
         return this.findOne(id);
       },
     );
