@@ -4,7 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, EntityManager } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { AccountItem } from '../pojo/entities/account-item.entity';
 import { Category } from '../pojo/entities/category.entity';
 import { AccountBook } from '../pojo/entities/account-book.entity';
@@ -16,13 +16,14 @@ import { QueryAccountItemDto } from '../pojo/dto/account-item/query-account-item
 import { CategoryService } from './category.service';
 import { AccountShopService } from './account-shop.service';
 import { generateUid } from '../utils/id.util';
-import { DEFAULT_FUND } from 'src/config/default-fund.config';
-import { AccountBookUser } from 'src/pojo/entities/account-book-user.entity';
+import { DEFAULT_FUND } from '../config/default-fund.config';
+import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
 import { AttachmentService } from './attachment.service';
 import { BusinessCode } from '../pojo/entities/attachment.entity';
 import { AccountItemPageVO } from '../pojo/vo/account-item/account-item-vo';
 import { isEmpty } from 'lodash';
-import { DEFAULT_SHOP } from 'src/config/default-shop.config';
+import { DEFAULT_SHOP } from '../config/default-shop.config';
+import { formatDate } from '../utils/date.util';
 
 @Injectable()
 export class AccountItemService {
@@ -162,6 +163,7 @@ export class AccountItemService {
         const accountItem = this.accountItemRepository.create({
           ...createAccountItemDto,
           shopCode,
+          accountDate: formatDate(createAccountItemDto.accountDate),
           categoryCode: category.code,
           createdBy: createAccountItemDto.createdBy || userId,
           updatedBy: createAccountItemDto.createdBy || userId,
@@ -434,6 +436,11 @@ export class AccountItemService {
             updateAccountItemDto.type || accountItem.type,
           );
         }
+        if (updateAccountItemDto.accountDate) {
+          accountItem.accountDate = formatDate(
+            updateAccountItemDto.accountDate,
+          );
+        }
 
         // 如果更新了分类，需要处理分类逻辑
         if (updateAccountItemDto.category) {
@@ -445,7 +452,6 @@ export class AccountItemService {
           );
           accountItem.categoryCode = category.code;
         }
-
         // 处理商家信息
         if (updateAccountItemDto.shop !== undefined) {
           if (updateAccountItemDto.shop) {

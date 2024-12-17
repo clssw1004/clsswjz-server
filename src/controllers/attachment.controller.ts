@@ -9,8 +9,8 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { AttachmentService } from '../services/attachment.service';
-import { Public } from 'src/decorators/public';
-import { SkipInterceptors } from 'src/decorators/skip-interceptors.decorator';
+import { Public } from '../decorators/public';
+import { SkipInterceptors } from '../decorators/skip-interceptors.decorator';
 
 @Controller('attachments')
 export class AttachmentController {

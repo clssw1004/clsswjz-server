@@ -1,7 +1,7 @@
 import { Entity, Column, BeforeInsert } from 'typeorm';
 import { ItemType } from '../enums/item-type.enum';
 import { BaseBusinessEntity } from './base.entity';
-import { now } from 'src/utils/date.util';
+import { now } from '../../utils/date.util';
 
 @Entity('account_items')
 export class AccountItem extends BaseBusinessEntity {
@@ -38,7 +38,7 @@ export class AccountItem extends BaseBusinessEntity {
 
   @Column({
     type: 'varchar',
-    length: 19,
+    length: 32,
     name: 'account_date',
     comment: '记账日期',
   })

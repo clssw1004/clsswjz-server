@@ -3,6 +3,7 @@ import {
   Column,
   BaseEntity as TypeOrmBaseEntity,
   BeforeInsert,
+  BeforeUpdate,
 } from 'typeorm';
 import { generatePrimaryKey } from '../../utils/id.util';
 import { now } from '../../utils/date.util';
@@ -17,7 +18,7 @@ export abstract class BaseEntity extends TypeOrmBaseEntity {
 
   @Column({
     type: 'varchar',
-    length: 19,
+    length: 32,
     name: 'created_at',
     comment: '创建时间',
   })
@@ -25,14 +26,14 @@ export abstract class BaseEntity extends TypeOrmBaseEntity {
 
   @Column({
     type: 'varchar',
-    length: 19,
+    length: 32,
     name: 'updated_at',
     comment: '更新时间',
   })
   updatedAt: string;
 
   @BeforeInsert()
-  generateId() {
+  init() {
     if (!this.id) {
       this.id = generatePrimaryKey();
     }
@@ -42,6 +43,10 @@ export abstract class BaseEntity extends TypeOrmBaseEntity {
     if (!this.updatedAt) {
       this.updatedAt = now();
     }
+  }
+  @BeforeUpdate()
+  update() {
+    this.updatedAt = now();
   }
 }
 

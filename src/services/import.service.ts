@@ -17,7 +17,7 @@ import * as _ from 'lodash';
 import { DEFAULT_FUND } from '../config/default-fund.config';
 import { DEFAULT_SHOP } from '../config/default-shop.config';
 import { ImportDataDto } from '../pojo/dto/import/import-data-dto';
-import { ImportSource } from 'src/pojo/enums/import-source.enum';
+import { ImportSource } from '../pojo/enums/import-source.enum';
 import { AccountBook } from '../pojo/entities/account-book.entity';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
 import { AccountItem } from '../pojo/entities/account-item.entity';

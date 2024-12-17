@@ -1,5 +1,5 @@
 import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
-import { ImportSource } from 'src/pojo/enums/import-source.enum';
+import { ImportSource } from '../../../pojo/enums/import-source.enum';
 
 export class ImportDataDto {
   @IsNotEmpty({ message: '数据来源不能为空' })
