@@ -391,4 +391,41 @@ export class AccountFundService {
       };
     });
   }
+
+  /**
+   * 关联账户到账本
+   */
+  async linkToBook(
+    fundId: string,
+    accountBookId: string,
+    userId: string,
+  ): Promise<void> {
+    // 检查账户是否存在
+    const fund = await this.accountFundRepository.findOne({
+      where: { id: fundId },
+    });
+    if (!fund) {
+      throw new NotFoundException('资金账户不存在');
+    }
+
+    // 检查是否已关联
+    const existingRelation = await this.accountBookFundRepository.findOne({
+      where: {
+        fundId,
+        accountBookId,
+      },
+    });
+
+    if (!existingRelation) {
+      // 创建新的关联关系
+      const newRelation = this.accountBookFundRepository.create({
+        accountBookId,
+        fundId,
+        fundIn: true,
+        fundOut: true,
+        isDefault: false,
+      });
+      await this.accountBookFundRepository.save(newRelation);
+    }
+  }
 }

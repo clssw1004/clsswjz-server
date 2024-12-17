@@ -5,34 +5,34 @@ import { now } from 'src/utils/date.util';
 
 @Entity('account_items')
 export class AccountItem extends BaseBusinessEntity {
-  @Column({ 
-    type: 'decimal', 
-    precision: 10, 
+  @Column({
+    type: 'decimal',
+    precision: 10,
     scale: 2,
     name: 'amount',
-    comment: '金额' 
+    comment: '金额',
   })
   amount: number;
 
-  @Column({ 
-    type: 'text', 
+  @Column({
+    type: 'text',
     nullable: true,
     name: 'description',
-    comment: '描述' 
+    comment: '描述',
   })
   description: string;
 
-  @Column({ 
+  @Column({
     length: 10,
     name: 'type',
-    comment: '类型：EXPENSE-支出，INCOME-收入' 
+    comment: '类型：EXPENSE-支出，INCOME-收入',
   })
   type: ItemType;
 
-  @Column({ 
+  @Column({
     length: 50,
     name: 'category_code',
-    comment: '分类编码' 
+    comment: '分类编码',
   })
   categoryCode: string;
 
@@ -44,15 +44,15 @@ export class AccountItem extends BaseBusinessEntity {
   })
   accountDate: string;
 
-  @Column({ 
+  @Column({
     name: 'account_book_id',
-    comment: '账本ID' 
+    comment: '账本ID',
   })
   accountBookId: string;
 
-  @Column({ 
+  @Column({
     name: 'fund_id',
-    comment: '账户ID' 
+    comment: '账户ID',
   })
   fundId: string;
 

@@ -243,23 +243,10 @@ export class ImportService {
       };
 
       fund = await this.accountFundService.create(createFundDto, userId);
-
-      // 关联到账本
-      await this.accountFundService.update(
-        fund.id,
-        {
-          fundBooks: [
-            {
-              accountBookId,
-              fundIn: true,
-              fundOut: true,
-              isDefault: false,
-            },
-          ],
-        },
-        userId,
-      );
     }
+
+    // 关联到账本（如果未关联）
+    await this.accountFundService.linkToBook(fund.id, accountBookId, userId);
 
     fundCache.set(cacheKey, fund.id);
     return fund.id;

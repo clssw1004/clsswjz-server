@@ -4,7 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { AccountItem } from '../pojo/entities/account-item.entity';
 import { Category } from '../pojo/entities/category.entity';
 import { AccountBook } from '../pojo/entities/account-book.entity';
@@ -22,6 +22,7 @@ import { AttachmentService } from './attachment.service';
 import { BusinessCode } from '../pojo/entities/attachment.entity';
 import { AccountItemPageVO } from '../pojo/vo/account-item/account-item-vo';
 import { isEmpty } from 'lodash';
+import { DEFAULT_SHOP } from 'src/config/default-shop.config';
 
 @Injectable()
 export class AccountItemService {
@@ -495,7 +496,7 @@ export class AccountItemService {
 
         await transactionalEntityManager.save(accountItem);
 
-        // 返回更新后的完整信息
+        // 返回更新后的��整信息
         return this.findOne(id);
       },
     );
@@ -534,68 +535,110 @@ export class AccountItemService {
     // 使用事务处理批量创建
     await this.accountItemRepository.manager.transaction(
       async (transactionalEntityManager) => {
+        // 预先获取所有涉及的账本
+        const accountBookIds = [
+          ...new Set(createAccountItemDtos.map((dto) => dto.accountBookId)),
+        ];
+        const accountBooks = await transactionalEntityManager.find(
+          AccountBook,
+          {
+            where: { id: In(accountBookIds) },
+          },
+        );
+        const accountBooksMap = new Map(
+          accountBooks.map((book) => [book.id, book]),
+        );
+
+        // 预先获取或创建所有分类
+        const categoryMap = new Map<string, Category>();
         for (const dto of createAccountItemDtos) {
-          try {
-            // 校验账本是否存在
-            const accountBook = await transactionalEntityManager.findOneBy(
-              AccountBook,
-              {
-                id: dto.accountBookId,
-              },
-            );
-            if (!accountBook) {
-              errors.push(`账本ID ${dto.accountBookId} 不存在`);
-              continue;
-            }
-
-            // 校验账本资产权限
-            await this.validateBookFundPermission(
-              dto.accountBookId,
-              dto.fundId,
-              dto.type,
-            );
-
-            // 处理分类
+          const key = `${dto.accountBookId}:${dto.category}:${dto.type}`;
+          if (!categoryMap.has(key)) {
             const category = await this.getOrCreateCategory(
               dto.category,
               dto.type,
               dto.accountBookId,
               userId,
             );
-
-            // 处理商家信息
-            let shopCode = null;
-            if (dto.shop) {
-              const shop = await this.accountShopService.getOrCreateShop(
-                dto.shop,
-                dto.accountBookId,
-                userId,
-              );
-              shopCode = shop.shopCode;
-            }
-
-            // 创建账目
-            const accountItem = transactionalEntityManager.create(AccountItem, {
-              ...dto,
-              shopCode,
-              categoryCode: category.code,
-              createdBy: dto.createdBy || userId,
-              updatedBy: dto.createdBy || userId,
-            });
-
-            await transactionalEntityManager.save(AccountItem, accountItem);
-
-            // 更新分类的最近账目时间
-            await transactionalEntityManager.update(
-              Category,
-              { code: category.code },
-              { lastAccountItemAt: accountItem.createdAt },
-            );
-
-            successCount++;
-          } catch (error) {
-            errors.push(error.message);
+            categoryMap.set(key, category);
           }
+        }
+
+        // 预先获取或创建所有商家
+        const shopMap = new Map<string, string>();
+        const uniqueShops = [
+          ...new Set(
+            createAccountItemDtos
+              .filter((dto) => dto.shop)
+              .map((dto) => `${dto.accountBookId}:${dto.shop}`),
+          ),
+        ];
+
+        for (const shopKey of uniqueShops) {
+          const [accountBookId, shopName] = shopKey.split(':');
+          const shop = await this.accountShopService.getOrCreateShop(
+            shopName,
+            accountBookId,
+            userId,
+          );
+          shopMap.set(shopKey, shop.shopCode);
+        }
+
+        // 批量创建账目
+        const accountItems = transactionalEntityManager.create(
+          AccountItem,
+          createAccountItemDtos
+            .map((dto) => {
+              try {
+                // 检查账本是否存在
+                if (!accountBooksMap.has(dto.accountBookId)) {
+                  throw new Error(`账本ID ${dto.accountBookId} 不存在`);
+                }
+
+                const categoryKey = `${dto.accountBookId}:${dto.category}:${dto.type}`;
+                const category = categoryMap.get(categoryKey);
+                if (!category) {
+                  throw new Error(`分类 ${dto.category} 获取失败`);
+                }
+
+                const shopKey = dto.shop
+                  ? `${dto.accountBookId}:${dto.shop}`
+                  : null;
+                const shopCode = shopKey ? shopMap.get(shopKey) : DEFAULT_SHOP;
+                return {
+                  ...dto,
+                  shopCode,
+                  fundId: dto.fundId || DEFAULT_FUND,
+                  categoryCode: category.code,
+                  createdBy: dto.createdBy || userId,
+                  updatedBy: dto.createdBy || userId,
+                };
+              } catch (error) {
+                errors.push(error.message);
+                return null;
+              }
+            })
+            .filter((item) => item !== null),
+        );
+
+        // 批量保存账目
+        if (accountItems.length > 0) {
+          const savedItems = await transactionalEntityManager.save(
+            AccountItem,
+            accountItems,
+          );
+          successCount = savedItems.length;
+
+          // 批量更新分类的最近账目时间
+          const categoryUpdates = {
+            lastAccountItemAt: new Date(),
+          };
+          console.log(Array.from(categoryMap.values()).map((c) => c.code));
+          await transactionalEntityManager.update(
+            Category,
+            { code: In(Array.from(categoryMap.values()).map((c) => c.code)) },
+            categoryUpdates,
+          );
         }
       },
     );
