@@ -1,47 +1,49 @@
 import {
   Controller,
-  Get,
   Post,
   Delete,
   Query,
   Body,
   Request,
+  Patch,
+  Param,
 } from '@nestjs/common';
 import { AccountSymbolService } from '../services/account-symbol.service';
-import { SymbolType } from '../pojo/enums/symbol-type.enum';
+import { QueryAccountSymbolDto } from '../pojo/dto/account-symbol/query-account-symbol.dto';
+import { QueryAccountBookSymbolDto } from '../pojo/dto/account-symbol/query-account-book-symbol.dto';
+import { UpdateAccountSymbolDto } from '../pojo/dto/account-symbol/update-account-symbol.dto';
 
 @Controller('account/symbol')
 export class AccountSymbolController {
   constructor(private readonly accountSymbolService: AccountSymbolService) {}
 
-  @Get('list')
-  async findAll(
-    @Query('accountBookId') accountBookId: string,
-    @Query('symbolType') symbolType: SymbolType,
-  ) {
-    return await this.accountSymbolService.findAll(accountBookId, symbolType);
-  }
-
-  @Post('get-or-create')
-  async getOrCreate(
-    @Body() body: { name: string; symbolType: SymbolType; accountBookId: string },
-    @Request() req,
-  ) {
-    return await this.accountSymbolService.getOrCreate(
-      body.name,
-      body.symbolType,
-      body.accountBookId,
-      req.user.sub,
+  @Post('listByType')
+  async findAll(@Body() queryDto: QueryAccountSymbolDto) {
+    return await this.accountSymbolService.findAll(
+      queryDto.accountBookId,
+      queryDto.symbolType,
     );
   }
 
-  @Delete()
-  async remove(
-    @Query('accountBookId') accountBookId: string,
-    @Query('symbolType') symbolType: SymbolType,
-    @Query('code') code: string,
-  ) {
-    await this.accountSymbolService.remove(accountBookId, symbolType, code);
+  @Patch(':id')
+  async renmove(@Param('id') id: string) {
+    await this.accountSymbolService.remove(id);
     return { success: true };
+  }
+
+  @Post('list')
+  async findAllGroupByType(@Body() queryDto: QueryAccountBookSymbolDto) {
+    return await this.accountSymbolService.findAllGroupByType(
+      queryDto.accountBookId,
+    );
+  }
+
+  @Patch(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() updateDto: UpdateAccountSymbolDto,
+    @Request() req,
+  ) {
+    return await this.accountSymbolService.update(id, updateDto, req.user.sub);
   }
 }
