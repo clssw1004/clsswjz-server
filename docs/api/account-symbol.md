@@ -49,7 +49,7 @@ enum SymbolType {
 }
 ```
 
-## 接口列表
+## 接口列���
 
 ### 获取账本下所有类型标识的数据（按类型分组）
 ```
@@ -135,4 +135,26 @@ Response: {
 Errors:
 - 400 请求参数错误
 - 404 数据不存在
+```
+
+### 创建数据
+```
+POST /api/account/symbol
+
+Request Body:
+{
+  "name": string,           // 名称
+  "symbolType": SymbolType, // 属性类型：TAG-标签，PROJECT-项目
+  "accountBookId": string   // 账本ID
+}
+
+Response: {
+  "code": 200,
+  "message": "success",
+  "data": AccountSymbol     // 创建的属性信息
+}
+
+Errors:
+- 400 请求参数错误
+- 409 该名称已存在
 ``` 

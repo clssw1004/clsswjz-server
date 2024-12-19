@@ -12,10 +12,16 @@ import { AccountSymbolService } from '../services/account-symbol.service';
 import { QueryAccountSymbolDto } from '../pojo/dto/account-symbol/query-account-symbol.dto';
 import { QueryAccountBookSymbolDto } from '../pojo/dto/account-symbol/query-account-book-symbol.dto';
 import { UpdateAccountSymbolDto } from '../pojo/dto/account-symbol/update-account-symbol.dto';
+import { CreateAccountSymbolDto } from '../pojo/dto/account-symbol/create-account-symbol.dto';
 
 @Controller('account/symbol')
 export class AccountSymbolController {
   constructor(private readonly accountSymbolService: AccountSymbolService) {}
+
+  @Post()
+  async create(@Body() createDto: CreateAccountSymbolDto, @Request() req) {
+    return await this.accountSymbolService.create(createDto, req.user.sub);
+  }
 
   @Post('listByType')
   async findAll(@Body() queryDto: QueryAccountSymbolDto) {
@@ -25,7 +31,7 @@ export class AccountSymbolController {
     );
   }
 
-  @Patch(':id')
+  @Delete(':id')
   async renmove(@Param('id') id: string) {
     await this.accountSymbolService.remove(id);
     return { success: true };

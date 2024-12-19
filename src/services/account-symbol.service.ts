@@ -9,6 +9,7 @@ import { AccountSymbol } from '../pojo/entities/account-symbol.entity';
 import { generateUid } from '../utils/id.util';
 import { SymbolType } from '../pojo/enums/symbol-type.enum';
 import { UpdateAccountSymbolDto } from '../pojo/dto/account-symbol/update-account-symbol.dto';
+import { CreateAccountSymbolDto } from '../pojo/dto/account-symbol/create-account-symbol.dto';
 
 @Injectable()
 export class AccountSymbolService {
@@ -124,6 +125,30 @@ export class AccountSymbolService {
     try {
       symbol.name = updateDto.name;
       symbol.updatedBy = userId;
+      return await this.accountSymbolRepository.save(symbol);
+    } catch (error) {
+      if (error.code === 'ER_DUP_ENTRY') {
+        throw new ConflictException('该名称已存在');
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 创建数据
+   */
+  async create(
+    createDto: CreateAccountSymbolDto,
+    userId: string,
+  ): Promise<AccountSymbol> {
+    const symbol = this.accountSymbolRepository.create({
+      ...createDto,
+      code: generateUid(),
+      createdBy: userId,
+      updatedBy: userId,
+    });
+
+    try {
       return await this.accountSymbolRepository.save(symbol);
     } catch (error) {
       if (error.code === 'ER_DUP_ENTRY') {
