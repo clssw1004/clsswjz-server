@@ -11,7 +11,6 @@ export class AccountSymbol extends BaseAccountNameSymbol {
     type: 'varchar',
     name: 'symbol_type',
     comment: '类型：TAG-标签，PROJECT-项目',
-    enum: SymbolType,
   })
   symbolType: SymbolType;
 }
