@@ -64,6 +64,22 @@ export class AccountItem extends BaseBusinessEntity {
   })
   shopCode: string;
 
+  @Column({
+    length: 20,
+    nullable: true,
+    name: 'tag_code',
+    comment: '标签编码',
+  })
+  tagCode: string;
+
+  @Column({
+    length: 20,
+    nullable: true,
+    name: 'project_code',
+    comment: '项目编码',
+  })
+  projectCode: string;
+
   @BeforeInsert()
   setDefaultDate() {
     if (!this.accountDate) {

@@ -206,6 +206,8 @@ export class ImportService {
     const dateKey = Object.keys(record).find((key) => key.includes('日期'));
     const authorKey = Object.keys(record).find((key) => key.includes('作者'));
     const remarkKey = Object.keys(record).find((key) => key.includes('备注'));
+    const projectKey = Object.keys(record).find((key) => key.includes('项目'));
+    const tagKey = Object.keys(record).find((key) => key.includes('标签'));
 
     if (!typeKey || !amountKey || !categoryKey || !fundKey || !dateKey) {
       throw new Error('CSV文件格式不正确，缺少必要的列');
@@ -247,6 +249,8 @@ export class ImportService {
       description: remarkKey ? record[remarkKey] : undefined,
       accountDate,
       createdBy,
+      project: projectKey ? record[projectKey] : undefined,
+      tag: tagKey ? record[tagKey] : undefined,
     };
   }
 

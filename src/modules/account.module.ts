@@ -4,10 +4,10 @@ import { AccountItemService } from '../services/account-item.service';
 import { AccountBookService } from '../services/account-book.service';
 import { AccountController } from '../controllers/account-item.controller';
 import { AccountBookController } from '../controllers/account-book.controller';
-import { CategoryController } from '../controllers/category.controller';
-import { CategoryService } from '../services/category.service';
+import { AccountCategoryController } from '../controllers/account-category.controller';
+import { AccountCategoryService } from '../services/account-category.service';
 import { AccountItem } from '../pojo/entities/account-item.entity';
-import { Category } from '../pojo/entities/category.entity';
+import { AccountCategory } from '../pojo/entities/account-category.entity';
 import { AccountBook } from '../pojo/entities/account-book.entity';
 import { User } from '../pojo/entities/user.entity';
 import { UserService } from '../services/user.service';
@@ -28,35 +28,40 @@ import { HealthService } from '../services/health.service';
 import { ImportService } from '../services/import.service';
 import { ImportController } from '../controllers/import.controller';
 import { AttachmentModule } from './attachment.module';
+import { AccountSymbol } from '../pojo/entities/account-symbol.entity';
+import { AccountSymbolController } from '../controllers/account-symbol.controller';
+import { AccountSymbolService } from '../services/account-symbol.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       AccountItem,
       AccountBook,
-      Category,
+      AccountCategory,
       User,
       AccountBookUser,
       AccountFund,
       AccountBookFund,
       AccountShop,
+      AccountSymbol,
     ]),
     AttachmentModule,
   ],
   controllers: [
     AccountController,
     AccountBookController,
-    CategoryController,
+    AccountCategoryController,
     UserController,
     AccountFundController,
     AccountShopController,
     HealthController,
     ImportController,
+    AccountSymbolController,
   ],
   providers: [
     AccountItemService,
     AccountBookService,
-    CategoryService,
+    AccountCategoryService,
     UserService,
     UserDataInitService,
     AccountFundService,
@@ -64,6 +69,7 @@ import { AttachmentModule } from './attachment.module';
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     HealthService,
     ImportService,
+    AccountSymbolService,
   ],
 })
 export class AccountModule {}

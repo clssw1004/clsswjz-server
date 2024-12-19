@@ -1,27 +1,5 @@
-import { Entity, Column, Unique } from 'typeorm';
-import { BaseBusinessEntity } from './base.entity';
-
+import { Entity, Unique } from 'typeorm';
+import { BaseAccountNameSymbol } from './basse-account.entity';
 @Entity('account_shops')
 @Unique(['accountBookId', 'name'])
-export class AccountShop extends BaseBusinessEntity {
-  @Column({
-    length: 100,
-    name: 'name',
-    comment: '商家名称',
-  })
-  name: string;
-
-  @Column({
-    length: 20,
-    name: 'code',
-    comment: '商家编码',
-    unique: true,
-  })
-  code: string;
-
-  @Column({
-    name: 'account_book_id',
-    comment: '账本ID',
-  })
-  accountBookId: string;
-}
+export class AccountShop extends BaseAccountNameSymbol {}

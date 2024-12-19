@@ -6,16 +6,15 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { AccountItem } from '../pojo/entities/account-item.entity';
-import { Category } from '../pojo/entities/category.entity';
+import { AccountCategory } from '../pojo/entities/account-category.entity';
 import { AccountBook } from '../pojo/entities/account-book.entity';
 import { AccountBookFund } from '../pojo/entities/account-book-fund.entity';
 import { CreateAccountItemDto } from '../pojo/dto/account-item/create-account-item.dto';
 import { UpdateAccountItemDto } from '../pojo/dto/account-item/update-account-item.dto';
 import { ItemType } from '../pojo/enums/item-type.enum';
 import { QueryAccountItemDto } from '../pojo/dto/account-item/query-account-item.dto';
-import { CategoryService } from './category.service';
+import { AccountCategoryService } from './account-category.service';
 import { AccountShopService } from './account-shop.service';
-import { generateUid } from '../utils/id.util';
 import { DEFAULT_FUND } from '../config/default-fund.config';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
 import { AttachmentService } from './attachment.service';
@@ -24,21 +23,24 @@ import { AccountItemPageVO } from '../pojo/vo/account-item/account-item-vo';
 import { isEmpty } from 'lodash';
 import { DEFAULT_SHOP } from '../config/default-shop.config';
 import { formatDate } from '../utils/date.util';
+import { SymbolType } from '../pojo/enums/symbol-type.enum';
+import { AccountSymbolService } from './account-symbol.service';
 
 @Injectable()
 export class AccountItemService {
   constructor(
     @InjectRepository(AccountItem)
     private accountItemRepository: Repository<AccountItem>,
-    private categoryService: CategoryService,
+    private accountCategoryService: AccountCategoryService,
     private accountShopService: AccountShopService,
     private attachmentService: AttachmentService,
-    @InjectRepository(Category)
-    private categoryRepository: Repository<Category>,
+    @InjectRepository(AccountCategory)
+    private categoryRepository: Repository<AccountCategory>,
     @InjectRepository(AccountBook)
     private accountBookRepository: Repository<AccountBook>,
     @InjectRepository(AccountBookFund)
     private accountBookFundRepository: Repository<AccountBookFund>,
+    private accountSymbolService: AccountSymbolService,
   ) {}
 
   static readonly ALL_COLUMNS = [
@@ -55,38 +57,9 @@ export class AccountItemService {
     'item.created_by as createdBy',
     'item.updated_by as updatedBy',
     'item.account_date as accountDate',
+    'item.tag_code as tagCode',
+    'item.project_code as projectCode',
   ];
-  /**
-   * 获取或创建分类
-   * @param categoryName 分类名称
-   * @param accountBookId 账本ID
-   * @param userId 用户ID
-   * @returns 分类对象
-   */
-  private async getOrCreateCategory(
-    categoryName: string,
-    categoryType: ItemType,
-    accountBookId: string,
-    userId: string,
-  ): Promise<Category> {
-    let category = await this.categoryRepository.findOneBy({
-      name: categoryName,
-      accountBookId,
-    });
-
-    if (!category) {
-      category = this.categoryRepository.create({
-        code: generateUid(),
-        name: categoryName,
-        categoryType,
-        accountBookId,
-        createdBy: userId,
-        updatedBy: userId,
-      });
-      await this.categoryRepository.save(category);
-    }
-    return category;
-  }
 
   /**
    * 校验账本资产权限
@@ -119,6 +92,22 @@ export class AccountItemService {
     }
   }
 
+  private async handleSymbol(
+    name: string | undefined,
+    symbolType: SymbolType,
+    accountBookId: string,
+    userId: string,
+  ): Promise<string | null> {
+    if (!name) return null;
+    const symbol = await this.accountSymbolService.getOrCreate(
+      name,
+      symbolType,
+      accountBookId,
+      userId,
+    );
+    return symbol.code;
+  }
+
   async create(createAccountItemDto: CreateAccountItemDto, userId: string) {
     // 使用事务来确保账目和附件的创建是原子操作
     return await this.accountItemRepository.manager.transaction(
@@ -141,7 +130,7 @@ export class AccountItemService {
         );
 
         // 处理分类
-        const category = await this.getOrCreateCategory(
+        const category = await this.accountCategoryService.getOrCreateCategory(
           createAccountItemDto.category,
           createAccountItemDto.type,
           createAccountItemDto.accountBookId,
@@ -150,7 +139,10 @@ export class AccountItemService {
 
         // 处理商家信息
         let shopCode = null;
-        if (createAccountItemDto.shop) {
+        if (
+          createAccountItemDto.shop &&
+          createAccountItemDto.shop != DEFAULT_SHOP
+        ) {
           const shop = await this.accountShopService.getOrCreateShop(
             createAccountItemDto.shop,
             createAccountItemDto.accountBookId,
@@ -159,12 +151,29 @@ export class AccountItemService {
           shopCode = shop.code;
         }
 
+        // 处理标签和项目
+        const tagCode = await this.handleSymbol(
+          createAccountItemDto.tag,
+          SymbolType.TAG,
+          createAccountItemDto.accountBookId,
+          userId,
+        );
+
+        const projectCode = await this.handleSymbol(
+          createAccountItemDto.project,
+          SymbolType.PROJECT,
+          createAccountItemDto.accountBookId,
+          userId,
+        );
+
         // 创建账目
         const accountItem = this.accountItemRepository.create({
           ...createAccountItemDto,
           shopCode,
           accountDate: formatDate(createAccountItemDto.accountDate),
           categoryCode: category.code,
+          tagCode,
+          projectCode,
           createdBy: createAccountItemDto.createdBy || userId,
           updatedBy: createAccountItemDto.createdBy || userId,
         });
@@ -206,6 +215,8 @@ export class AccountItemService {
         'category.name as category',
         'shop.name as shop',
         'fund.name as fund',
+        'tag.name as tag',
+        'project.name as project',
         'creator.nickname as createdByName',
       ])
       .leftJoin(
@@ -215,6 +226,18 @@ export class AccountItemService {
       )
       .leftJoin('account_shops', 'shop', 'shop.code = item.shop_code')
       .leftJoin('account_funds', 'fund', 'fund.id = item.fund_id')
+      .leftJoin(
+        'account_symbols',
+        'tag',
+        'tag.code = item.tag_code AND tag.symbol_type = :tagType',
+        { tagType: SymbolType.TAG },
+      )
+      .leftJoin(
+        'account_symbols',
+        'project',
+        'project.code = item.project_code AND project.symbol_type = :projectType',
+        { projectType: SymbolType.PROJECT },
+      )
       .leftJoin('users', 'creator', 'creator.id = item.created_by')
       .where('item.account_book_id = :accountBookId', {
         accountBookId: queryParams.accountBookId,
@@ -383,20 +406,16 @@ export class AccountItemService {
     const accountItem = await this.accountItemRepository
       .createQueryBuilder('item')
       .leftJoinAndSelect(
-        Category,
+        AccountCategory,
         'category',
         'item.category_code = category.code',
       )
-      .leftJoinAndSelect(
-        'account_shops',
-        'shop',
-        'item.shop_code = item.shop_code',
-      )
+      .leftJoinAndSelect('account_shops', 'shop', 'item.shop_code = shop.code')
       .select([
         ...AccountItemService.ALL_COLUMNS,
         'category.name as category',
         'shop.name as shop',
-        'shop.shop_code as shopCode',
+        'shop.code as shopCode',
       ])
       .where('item.id = :id', { id })
       .getRawOne();
@@ -444,12 +463,13 @@ export class AccountItemService {
 
         // 如果更新了分类，需要处理分类逻辑
         if (updateAccountItemDto.category) {
-          const category = await this.getOrCreateCategory(
-            updateAccountItemDto.category,
-            accountItem.type,
-            accountItem.accountBookId,
-            userId,
-          );
+          const category =
+            await this.accountCategoryService.getOrCreateCategory(
+              updateAccountItemDto.category,
+              accountItem.type,
+              accountItem.accountBookId,
+              userId,
+            );
           accountItem.categoryCode = category.code;
         }
         // 处理商家信息
@@ -486,6 +506,25 @@ export class AccountItemService {
             updateAccountItemDto.attachments,
             userId,
             transactionalEntityManager,
+          );
+        }
+
+        // 处理标签和项目
+        if (updateAccountItemDto.tag !== undefined) {
+          accountItem.tagCode = await this.handleSymbol(
+            updateAccountItemDto.tag,
+            SymbolType.TAG,
+            accountItem.accountBookId,
+            userId,
+          );
+        }
+
+        if (updateAccountItemDto.project !== undefined) {
+          accountItem.projectCode = await this.handleSymbol(
+            updateAccountItemDto.project,
+            SymbolType.PROJECT,
+            accountItem.accountBookId,
+            userId,
           );
         }
 
@@ -532,6 +571,7 @@ export class AccountItemService {
   ) {
     let successCount = 0;
     const errors = [];
+    const batchSize = 500; // 每批处理500条记录
 
     // 使用事务处理批量创建
     await this.accountItemRepository.manager.transaction(
@@ -551,16 +591,17 @@ export class AccountItemService {
         );
 
         // 预先获取或创建所有分类
-        const categoryMap = new Map<string, Category>();
+        const categoryMap = new Map<string, AccountCategory>();
         for (const dto of createAccountItemDtos) {
           const key = `${dto.accountBookId}:${dto.category}:${dto.type}`;
           if (!categoryMap.has(key)) {
-            const category = await this.getOrCreateCategory(
-              dto.category,
-              dto.type,
-              dto.accountBookId,
-              userId,
-            );
+            const category =
+              await this.accountCategoryService.getOrCreateCategory(
+                dto.category,
+                dto.type,
+                dto.accountBookId,
+                userId,
+              );
             categoryMap.set(key, category);
           }
         }
@@ -585,8 +626,40 @@ export class AccountItemService {
           shopMap.set(shopKey, shop.code);
         }
 
-        // 批量创建账目
-        const accountItems = transactionalEntityManager.create(
+        // 预先获取或创建所有标签和项目
+        const tagMap = new Map<string, string>();
+        const projectMap = new Map<string, string>();
+
+        for (const dto of createAccountItemDtos) {
+          if (dto.tag) {
+            const tagKey = `${dto.accountBookId}:${dto.tag}`;
+            if (!tagMap.has(tagKey)) {
+              const tag = await this.accountSymbolService.getOrCreate(
+                dto.tag,
+                SymbolType.TAG,
+                dto.accountBookId,
+                userId,
+              );
+              tagMap.set(tagKey, tag.code);
+            }
+          }
+
+          if (dto.project) {
+            const projectKey = `${dto.accountBookId}:${dto.project}`;
+            if (!projectMap.has(projectKey)) {
+              const project = await this.accountSymbolService.getOrCreate(
+                dto.project,
+                SymbolType.PROJECT,
+                dto.accountBookId,
+                userId,
+              );
+              projectMap.set(projectKey, project.code);
+            }
+          }
+        }
+
+        // 创建所有实体
+        const items = transactionalEntityManager.create(
           AccountItem,
           createAccountItemDtos
             .map((dto) => {
@@ -606,9 +679,19 @@ export class AccountItemService {
                   ? `${dto.accountBookId}:${dto.shop}`
                   : null;
                 const shopCode = shopKey ? shopMap.get(shopKey) : DEFAULT_SHOP;
+
+                const tagKey = dto.tag
+                  ? `${dto.accountBookId}:${dto.tag}`
+                  : null;
+                const projectKey = dto.project
+                  ? `${dto.accountBookId}:${dto.project}`
+                  : null;
+
                 return {
                   ...dto,
                   shopCode,
+                  tagCode: tagKey ? tagMap.get(tagKey) : null,
+                  projectCode: projectKey ? projectMap.get(projectKey) : null,
                   fundId: dto.fundId || DEFAULT_FUND,
                   categoryCode: category.code,
                   createdBy: dto.createdBy || userId,
@@ -622,20 +705,23 @@ export class AccountItemService {
             .filter((item) => item !== null),
         );
 
-        // 批量保存账目
-        if (accountItems.length > 0) {
+        // 分批保存
+        for (let i = 0; i < items.length; i += batchSize) {
+          const batch = items.slice(i, i + batchSize);
           const savedItems = await transactionalEntityManager.save(
             AccountItem,
-            accountItems,
+            batch,
           );
-          successCount = savedItems.length;
+          successCount += savedItems.length;
+        }
 
-          // 批量更新分类的最近账目时间
+        // 批量更新分类的最近账目时间
+        if (successCount > 0) {
           const categoryUpdates = {
             lastAccountItemAt: new Date(),
           };
           await transactionalEntityManager.update(
-            Category,
+            AccountCategory,
             { code: In(Array.from(categoryMap.values()).map((c) => c.code)) },
             categoryUpdates,
           );

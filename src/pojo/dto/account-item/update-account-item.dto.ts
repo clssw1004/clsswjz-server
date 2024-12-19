@@ -49,4 +49,12 @@ export class UpdateAccountItemDto {
   deleteAttachmentIds?: string[];
 
   attachments?: Express.Multer.File[];
+
+  @IsOptional()
+  @IsString()
+  tag?: string;
+
+  @IsOptional()
+  @IsString()
+  project?: string;
 }

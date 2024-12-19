@@ -8,7 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AccountBook } from '../pojo/entities/account-book.entity';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
-import { Category } from '../pojo/entities/category.entity';
+import { AccountCategory } from '../pojo/entities/account-category.entity';
 import { DEFAULT_CATEGORIES } from '../config/default-categories.config';
 import { UpdateAccountBookDto } from '../pojo/dto/account-book/update-account-book.dto';
 import { CreateAccountBookDto } from '../pojo/dto/account-book/create-account-book.dto';
@@ -21,8 +21,8 @@ export class AccountBookService {
     private accountBookRepository: Repository<AccountBook>,
     @InjectRepository(AccountBookUser)
     private accountUserRepository: Repository<AccountBookUser>,
-    @InjectRepository(Category)
-    private categoryRepository: Repository<Category>,
+    @InjectRepository(AccountCategory)
+    private categoryRepository: Repository<AccountCategory>,
   ) {}
 
   static COLLUMN_ALL = [

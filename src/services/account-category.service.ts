@@ -5,27 +5,30 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, EntityManager } from 'typeorm';
-import { Category } from '../pojo/entities/category.entity';
+import { AccountCategory } from '../pojo/entities/account-category.entity';
 import { QueryCategoryDto } from '../pojo/dto/category/query-category.dto';
 import { DEFAULT_CATEGORIES } from '../config/default-categories.config';
 import { generateUid } from '../utils/id.util';
 import { CreateCategoryDto } from '../pojo/dto/category/create-category.dto';
+import { ItemType } from 'src/pojo/enums/item-type.enum';
 
 @Injectable()
-export class CategoryService {
+export class AccountCategoryService {
   constructor(
-    @InjectRepository(Category)
-    private categoryRepository: Repository<Category>,
+    @InjectRepository(AccountCategory)
+    private categoryRepository: Repository<AccountCategory>,
   ) {}
 
   // 检查分类名称是否存在
   private async checkNameExists(
     name: string,
+    categoryType: ItemType,
     accountBookId: string,
   ): Promise<boolean> {
     const count = await this.categoryRepository.count({
       where: {
         name,
+        categoryType,
         accountBookId,
       },
     });
@@ -33,10 +36,14 @@ export class CategoryService {
   }
 
   // 创建分类
-  async create(category: CreateCategoryDto, userId: string): Promise<Category> {
+  async create(
+    category: CreateCategoryDto,
+    userId: string,
+  ): Promise<AccountCategory> {
     // 检查名称是否重复
     const nameExists = await this.checkNameExists(
       category.name,
+      category.categoryType,
       category.accountBookId,
     );
     if (nameExists) {
@@ -56,7 +63,7 @@ export class CategoryService {
   }
 
   // 获取所有分类
-  async findAll(query: QueryCategoryDto): Promise<Category[]> {
+  async findAll(query: QueryCategoryDto): Promise<AccountCategory[]> {
     const whereCondition: any = {
       accountBookId: query.accountBookId,
     };
@@ -76,14 +83,17 @@ export class CategoryService {
   }
 
   // 根据ID查找分类
-  async findOne(id: string): Promise<Category> {
+  async findOne(id: string): Promise<AccountCategory> {
     return await this.categoryRepository.findOne({
       where: { id },
     });
   }
 
   // 更新分类
-  async update(id: string, category: Partial<Category>): Promise<Category> {
+  async update(
+    id: string,
+    category: Partial<AccountCategory>,
+  ): Promise<AccountCategory> {
     const existingCategory = await this.findOne(id);
     if (!existingCategory) {
       throw new NotFoundException('分类不存在');
@@ -125,6 +135,38 @@ export class CategoryService {
       }),
     );
 
-    await manager.save(Category, categories);
+    await manager.save(AccountCategory, categories);
+  }
+
+  /**
+   * 获取或创建分类
+   * @param categoryName 分类名称
+   * @param accountBookId 账本ID
+   * @param userId 用户ID
+   * @returns 分类对象
+   */
+  async getOrCreateCategory(
+    categoryName: string,
+    categoryType: ItemType,
+    accountBookId: string,
+    userId: string,
+  ): Promise<AccountCategory> {
+    let category = await this.categoryRepository.findOneBy({
+      name: categoryName,
+      accountBookId,
+    });
+
+    if (!category) {
+      category = this.categoryRepository.create({
+        code: generateUid(),
+        name: categoryName,
+        categoryType,
+        accountBookId,
+        createdBy: userId,
+        updatedBy: userId,
+      });
+      await this.categoryRepository.save(category);
+    }
+    return category;
   }
 }

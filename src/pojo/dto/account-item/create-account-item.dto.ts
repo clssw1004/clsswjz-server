@@ -44,4 +44,12 @@ export class CreateAccountItemDto {
 
   @IsOptional()
   attachments?: Express.Multer.File[];
+
+  @IsOptional()
+  @IsString()
+  tag?: string;
+
+  @IsOptional()
+  @IsString()
+  project?: string;
 }

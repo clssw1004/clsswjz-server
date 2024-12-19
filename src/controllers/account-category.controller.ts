@@ -9,14 +9,14 @@ import {
   Query,
   Request,
 } from '@nestjs/common';
-import { CategoryService } from '../services/category.service';
-import { Category } from '../pojo/entities/category.entity';
+import { AccountCategoryService } from '../services/account-category.service';
+import { AccountCategory } from '../pojo/entities/account-category.entity';
 import { QueryCategoryDto } from '../pojo/dto/category/query-category.dto';
 import { CreateCategoryDto } from '../pojo/dto/category/create-category.dto';
 
 @Controller('account/category')
-export class CategoryController {
-  constructor(private readonly categoryService: CategoryService) {}
+export class AccountCategoryController {
+  constructor(private readonly categoryService: AccountCategoryService) {}
 
   @Post()
   create(@Body() category: CreateCategoryDto, @Request() req) {
@@ -34,7 +34,7 @@ export class CategoryController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() category: Partial<Category>) {
+  update(@Param('id') id: string, @Body() category: Partial<AccountCategory>) {
     return this.categoryService.update(id, category);
   }
 

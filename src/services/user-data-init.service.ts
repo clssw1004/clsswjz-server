@@ -5,7 +5,7 @@ import { AccountFund, FundType } from '../pojo/entities/account-fund.entity';
 import { AccountBook } from '../pojo/entities/account-book.entity';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
 import { AccountBookFund } from '../pojo/entities/account-book-fund.entity';
-import { CategoryService } from './category.service';
+import { AccountCategoryService } from './account-category.service';
 import { Currency } from '../pojo/enums/currency.enum';
 
 @Injectable()
@@ -19,7 +19,7 @@ export class UserDataInitService {
     private accountBookUserRepository: Repository<AccountBookUser>,
     @InjectRepository(AccountBookFund)
     private accountBookFundRepository: Repository<AccountBookFund>,
-    private categoryService: CategoryService,
+    private categoryService: AccountCategoryService,
   ) {}
 
   /**

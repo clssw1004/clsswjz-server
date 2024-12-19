@@ -57,9 +57,7 @@ export const getDatabaseConfig = async (
 
       await tempDataSource.destroy();
 
-      shouldSync =
-        Number(hasTable[0].count) === 0 ||
-        configService.get('DB_FORCE_SYNC') === 'true';
+      shouldSync = Number(hasTable[0].count) === 0;
     } catch (error) {
       console.warn(
         '\x1b[33m%s\x1b[0m',
@@ -69,7 +67,7 @@ Enabling schema synchronization...`,
       shouldSync = true;
     }
   }
-
+  shouldSync = shouldSync || configService.get('DB_FORCE_SYNC') === 'true';
   if (shouldSync) {
     console.warn(
       '\x1b[33m%s\x1b[0m',
@@ -77,7 +75,7 @@ Enabling schema synchronization...`,
 ${
   dbType === 'sqlite'
     ? '- SQLite database file does not exist'
-    : shouldSync
+    : configService.get('DB_FORCE_SYNC') === 'true'
       ? '- Database tables are not initialized or DB_FORCE_SYNC is true'
       : '- Failed to check database tables'
 }

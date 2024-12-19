@@ -32,15 +32,6 @@ export class AccountShopService {
         accountBookId,
       },
     });
-    if (name === DEFAULT_SHOP) {
-      shop = this.accountShopRepository.create({
-        name: DEFAULT_SHOP,
-        code: DEFAULT_SHOP,
-        accountBookId,
-        createdBy: userId,
-        updatedBy: userId,
-      });
-    }
 
     if (!shop) {
       shop = this.accountShopRepository.create({
