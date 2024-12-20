@@ -15,7 +15,7 @@ import { CreateUserDto } from '../pojo/dto/user/create-user.dto';
 
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService) { }
 
   @Public()
   @Post('register')
@@ -43,9 +43,11 @@ export class UserController {
   @Get('current')
   async getCurrentUser(@Request() req) {
     const user = await this.userService.getCurrentUser(req.user.sub);
+    const userStars = await this.userService.getUserStats(req.user.sub);
     return {
       ...user,
       userId: user?.id,
+      ststs:userStars
     };
   }
 

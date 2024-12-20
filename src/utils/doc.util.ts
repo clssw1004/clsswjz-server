@@ -58,7 +58,7 @@ Response:
 
 ## 检查Token有效性
 \`\`\`
-GET /api/auth/check
+GET /api/auth/validate
 
 Headers:
 {
@@ -75,7 +75,20 @@ Response:
       "sub": string,        // 用户ID
       "username": string,   // 用户名
       "iat": number,       // token签发时间
-      "exp": number        // token过期时间
+      "exp": number,       // token过期时间
+      "nickname": string,  // 用户昵称
+      "email": string,    // 邮箱
+      "phone": string,    // 手机号
+      "inviteCode": string, // 邀请码
+      "language": string,   // 语言设置
+      "timezone": string,   // 时区设置
+      "stats": {
+        "totalItems": number,    // 总记账笔数
+        "totalDays": number,     // 总记账天数
+        "totalIncome": number,   // 总收入
+        "totalExpense": number,  // 总支出
+        "netAssets": number      // 净资产（总收入-总支出）
+      }
     }
   }
 }
@@ -255,7 +268,7 @@ GET /api/health
 
 Response:
 {
-  "status": "ok",        // 服务状态
+  "status": "ok",        // 服务状��
   "timestamp": string,   // 当前时间戳
   "uptime": number,      // 服务运行时间（秒）
   "memory": {
@@ -438,7 +451,7 @@ const generateMainDocs = () => {
 - [用户相关](api/user.md)
 - [账本相关](api/account-book.md)
 - [资金账户相关](api/account-fund.md)
-- [记账相关](api/account-item.md)
+- [��账相关](api/account-item.md)
 - [分类相关](api/category.md)
 - [商家相关](api/shop.md)
 - [附件相关](api/attachment.md)
@@ -703,7 +716,7 @@ Errors:
  * 生成账本相关接口文档
  */
 const generateAccountBookDocs = () => {
-  const docs = `# 账本相关接口
+  const docs = `# 账本相关���口
 
 ## 创建账本
 \`\`\`
@@ -984,7 +997,7 @@ Content-Type: multipart/form-data
 
 Request Body:
 {
-  "amount": number?,         // 金额（可选）
+  "amount": number?,         // 金额（可��）
   "type": ItemType?,        // 类型（可选）
   "category": string?,      // 分类（可选）
   "shop": string?,         // 商家（可选）
@@ -1060,7 +1073,7 @@ Request Body: Array<{
   "type": ItemType,         // 类型：EXPENSE-支出，INCOME-收入
   "category": string,       // 分类
   "shop": string?,         // 商家（可选）
-  "description": string?,   // 描述（可选）
+  "description": string?,   // 描述���可选）
   "accountDate": Date      // 记账日期
 }>
 

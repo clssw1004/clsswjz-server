@@ -215,7 +215,7 @@ Content-Type: multipart/form-data
 
 Request Body:
 {
-  "amount": number?,         // 金额（可选）
+  "amount": number?,         // 金额（可��）
   "type": ItemType?,        // 类型（可选）
   "category": string?,      // 分类（可选）
   "shop": string?,         // 商家（可选）
@@ -291,7 +291,7 @@ Request Body: Array<{
   "type": ItemType,         // 类型：EXPENSE-支出，INCOME-收入
   "category": string,       // 分类
   "shop": string?,         // 商家（可选）
-  "description": string?,   // 描述（可选）
+  "description": string?,   // 描述���可选）
   "accountDate": Date      // 记账日期
 }>
 

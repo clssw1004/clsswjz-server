@@ -21,7 +21,7 @@ Response:
 
 ## 检查Token有效性
 ```
-GET /api/auth/check
+GET /api/auth/validate
 
 Headers:
 {
@@ -38,7 +38,20 @@ Response:
       "sub": string,        // 用户ID
       "username": string,   // 用户名
       "iat": number,       // token签发时间
-      "exp": number        // token过期时间
+      "exp": number,       // token过期时间
+      "nickname": string,  // 用户昵称
+      "email": string,    // 邮箱
+      "phone": string,    // 手机号
+      "inviteCode": string, // 邀请码
+      "language": string,   // 语言设置
+      "timezone": string,   // 时区设置
+      "stats": {
+        "totalItems": number,    // 总记账笔数
+        "totalDays": number,     // 总记账天数
+        "totalIncome": number,   // 总收入
+        "totalExpense": number,  // 总支出
+        "netAssets": number      // 净资产（总收入-总支出）
+      }
     }
   }
 }

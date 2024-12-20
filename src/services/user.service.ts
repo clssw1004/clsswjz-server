@@ -9,6 +9,8 @@ import { User } from '../pojo/entities/user.entity';
 import { UserDataInitService } from './user-data-init.service';
 import { generateUid } from '../utils/id.util';
 import { UpdateUserDto } from '../pojo/dto/user/update-user.dto';
+import { AccountItem } from '../pojo/entities/account-item.entity';
+import { ItemType } from '../pojo/enums/item-type.enum';
 
 @Injectable()
 export class UserService {
@@ -16,7 +18,9 @@ export class UserService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private userDataInitService: UserDataInitService,
-  ) {}
+    @InjectRepository(AccountItem)
+    private accountItemRepository: Repository<AccountItem>,
+  ) { }
 
   async create(userData: Partial<User>): Promise<User> {
     // 检查用户名是否存在
@@ -167,5 +171,49 @@ export class UserService {
 
     // 返回更新后的用户信息
     return this.getCurrentUser(userId);
+  }
+
+  /**
+   * 获取用户统计信息
+   */
+  async getUserStats(userId: string) {
+    // 获取用户所有账目
+    const itemsQuery = this.accountItemRepository
+      .createQueryBuilder('item')
+      .where('item.created_by = :userId', { userId });
+
+    // 获取账目总数
+    const totalItems = await itemsQuery.getCount();
+
+    // 获取记账天数（不重复的账目日期数）
+    const daysQuery = await this.accountItemRepository
+      .createQueryBuilder('item')
+      .select('COUNT(DISTINCT DATE(item.account_date))', 'days')
+      .where('item.created_by = :userId', { userId })
+      .getRawOne();
+
+    // 计算净资产（所有收入 - 所有支出）
+    const assetsQuery = await this.accountItemRepository
+      .createQueryBuilder('item')
+      .select([
+        'SUM(CASE WHEN item.type = :incomeType THEN item.amount ELSE 0 END) totalIncome',
+        'SUM(CASE WHEN item.type = :expenseType THEN item.amount ELSE 0 END) totalExpense',
+      ])
+      .where('item.created_by = :userId', {
+        userId,
+        incomeType: ItemType.INCOME,
+        expenseType: ItemType.EXPENSE,
+      })
+      .getRawOne();
+
+    const totalIncome = Number(assetsQuery.totalIncome) || 0;
+    const totalExpense = Number(assetsQuery.totalExpense) || 0;
+    const totalFunds = totalIncome - totalExpense;
+
+    return {
+      totalItems,                              // 总记账笔数
+      totalDays: Number(daysQuery.days) || 0,  // 总记账天数
+      totalFunds,                               // 净资产
+    };
   }
 }
