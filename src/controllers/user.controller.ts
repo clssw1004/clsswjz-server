@@ -47,7 +47,7 @@ export class UserController {
     return {
       ...user,
       userId: user?.id,
-      ststs:userStars
+      stats: userStars
     };
   }
 
