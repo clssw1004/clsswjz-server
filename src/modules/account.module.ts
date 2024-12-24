@@ -31,6 +31,8 @@ import { AttachmentModule } from './attachment.module';
 import { AccountSymbol } from '../pojo/entities/account-symbol.entity';
 import { AccountSymbolController } from '../controllers/account-symbol.controller';
 import { AccountSymbolService } from '../services/account-symbol.service';
+import { SyncController } from '../controllers/sync.controller';
+import { SyncService } from '../services/sync.service';
 
 @Module({
   imports: [
@@ -57,6 +59,7 @@ import { AccountSymbolService } from '../services/account-symbol.service';
     HealthController,
     ImportController,
     AccountSymbolController,
+    SyncController,
   ],
   providers: [
     AccountItemService,
@@ -70,6 +73,7 @@ import { AccountSymbolService } from '../services/account-symbol.service';
     HealthService,
     ImportService,
     AccountSymbolService,
+    SyncService,
   ],
 })
 export class AccountModule {}

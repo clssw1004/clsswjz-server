@@ -1,7 +1,7 @@
 import { Entity, Column, BeforeInsert } from 'typeorm';
 import { ItemType } from '../enums/item-type.enum';
 import { BaseBusinessEntity } from './base.entity';
-import { now } from '../../utils/date.util';
+import { now, nowDateString } from '../../utils/date.util';
 
 @Entity('account_items')
 export class AccountItem extends BaseBusinessEntity {
@@ -83,7 +83,7 @@ export class AccountItem extends BaseBusinessEntity {
   @BeforeInsert()
   setDefaultDate() {
     if (!this.accountDate) {
-      this.accountDate = now();
+      this.accountDate = nowDateString();
     }
   }
 }

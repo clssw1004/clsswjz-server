@@ -3,7 +3,7 @@ import { ItemType } from '../enums/item-type.enum';
 import { BaseAccountNameSymbol } from './basse-account.entity';
 
 @Entity('account_categories')
-@Unique(['accountBookId', 'name'])
+@Unique('unique_accountbook_category', ['accountBookId', 'name'])
 export class AccountCategory extends BaseAccountNameSymbol {
   @Column({
     type: 'varchar',

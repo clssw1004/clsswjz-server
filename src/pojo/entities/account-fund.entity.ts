@@ -1,5 +1,6 @@
 import { Entity, Column, Unique } from 'typeorm';
 import { BaseBusinessEntity } from './base.entity';
+import { ColumnNumericTransformer } from '../transformers';
 
 export enum FundType {
   CASH = 'CASH', // 现金
@@ -15,7 +16,7 @@ export enum FundType {
 }
 
 @Entity('account_funds')
-@Unique(['createdBy', 'name'])
+@Unique('unique_fund_createby_name', ['createdBy', 'name'])
 export class AccountFund extends BaseBusinessEntity {
   @Column({
     length: 50,
@@ -47,6 +48,7 @@ export class AccountFund extends BaseBusinessEntity {
     default: 0,
     name: 'fund_balance',
     comment: '余额',
+    transformer: new ColumnNumericTransformer(),
   })
   fundBalance: number;
 }

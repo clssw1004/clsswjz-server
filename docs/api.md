@@ -5,10 +5,11 @@
 - [用户相关](api/user.md)
 - [账本相关](api/account-book.md)
 - [资金账户相关](api/account-fund.md)
-- [��账相关](api/account-item.md)
+- [记账相关](api/account-item.md)
 - [分类相关](api/category.md)
 - [商家相关](api/shop.md)
 - [附件相关](api/attachment.md)
+- [数据同步](api/sync.md)
 - [健康检查](api/health.md)
 
 ## 数据结构

@@ -5,6 +5,7 @@ import {
   BeforeInsert,
   BeforeUpdate,
 } from 'typeorm';
+import { Transform } from 'class-transformer';
 import { generatePrimaryKey } from '../../utils/id.util';
 import { now } from '../../utils/date.util';
 
@@ -16,21 +17,21 @@ export abstract class BaseEntity extends TypeOrmBaseEntity {
   })
   id: string;
 
+  @Transform(({ value }) => Number(value))
   @Column({
-    type: 'varchar',
-    length: 32,
+    type: 'bigint',
     name: 'created_at',
     comment: '创建时间',
   })
-  createdAt: string;
+  createdAt: number;
 
+  @Transform(({ value }) => Number(value))
   @Column({
-    type: 'varchar',
-    length: 32,
+    type: 'bigint',
     name: 'updated_at',
     comment: '更新时间',
   })
-  updatedAt: string;
+  updatedAt: number;
 
   @BeforeInsert()
   init() {
@@ -44,6 +45,7 @@ export abstract class BaseEntity extends TypeOrmBaseEntity {
       this.updatedAt = now();
     }
   }
+
   @BeforeUpdate()
   update() {
     this.updatedAt = now();

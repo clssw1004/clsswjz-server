@@ -2,17 +2,17 @@ import { Entity, Column, Unique } from 'typeorm';
 import { BaseEntity } from './base.entity';
 
 @Entity('rel_accountbook_funds')
-@Unique(['accountBookId', 'fundId'])
+@Unique('unique_accountbook_fund', ['accountBookId', 'fundId'])
 export class AccountBookFund extends BaseEntity {
-  @Column({ 
+  @Column({
     name: 'account_book_id',
-    comment: '账本ID' 
+    comment: '账本ID',
   })
   accountBookId: string;
 
-  @Column({ 
+  @Column({
     name: 'fund_id',
-    comment: '资产ID' 
+    comment: '资产ID',
   })
   fundId: string;
 

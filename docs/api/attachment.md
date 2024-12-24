@@ -24,8 +24,8 @@ enum BusinessCode {
   businessId: string;      // 业务ID
   createdBy: string;       // 创建人ID
   updatedBy: string;       // 更新人ID
-  createdAt: Date;         // 创建时间
-  updatedAt: Date;         // 更新时间
+  createdAt: number;       // 创建时间（时间戳）
+  updatedAt: number;       // 更新时间（时间戳）
 }
 ```
 

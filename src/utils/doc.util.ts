@@ -26,6 +26,7 @@ export const generateApiDocs = () => {
   generateShopDocs();
   generateHealthDocs();
   generateAttachmentDocs();
+  generateSyncDocs();
   generateEntitiesDocs();
   generateMainDocs();
   generateEnumDocs();
@@ -145,8 +146,8 @@ Response: {
     "inviteCode": string,  // 邀请码
     "language": Language,  // 语言设置
     "timezone": string,    // 时区设置
-    "createdAt": string,   // 创建时间
-    "updatedAt": string    // 更新时间
+    "createdAt": number,   // 创建时间（时间戳）
+    "updatedAt": number    // 更新时间（时间戳）
   }
 }
 
@@ -178,8 +179,8 @@ Response: {
     "inviteCode": string,  // 邀请码
     "language": Language,  // 语言设置
     "timezone": string,    // 时区设置
-    "createdAt": string,   // 创建时间
-    "updatedAt": string    // 更新时间
+    "createdAt": number,   // 创建时间（时间戳）
+    "updatedAt": number    // 更新时间（时间戳）
   }
 }
 
@@ -268,7 +269,7 @@ GET /api/health
 
 Response:
 {
-  "status": "ok",        // 服务状��
+  "status": "ok",        // 服务状态
   "timestamp": string,   // 当前时间戳
   "uptime": number,      // 服务运行时间（秒）
   "memory": {
@@ -302,8 +303,8 @@ const generateEntitiesDocs = () => {
   fundBalance: number;     // 余额
   createdBy: string;       // 创建人ID
   updatedBy: string;       // 更新人ID
-  createdAt: Date;         // 创建时间
-  updatedAt: Date;         // 更新时间
+  createdAt: number;       // 创建时间（时间戳）
+  updatedAt: number;       // 更新时间（时间戳）
 }
 \`\`\`
 
@@ -317,8 +318,8 @@ const generateEntitiesDocs = () => {
   icon: string;           // 账本图标
   createdBy: string;      // 创建人ID
   updatedBy: string;      // 更新人ID
-  createdAt: Date;        // 创建时间
-  updatedAt: Date;        // 更新时间
+  createdAt: number;      // 创建时间（时间戳）
+  updatedAt: number;      // 更新时间（时间戳）
 }
 \`\`\`
 
@@ -333,8 +334,8 @@ const generateEntitiesDocs = () => {
   lastAccountItemAt: Date; // 最近账目创建时间
   createdBy: string;       // 创建人ID
   updatedBy: string;      // 更新人ID
-  createdAt: Date;        // 创建时间
-  updatedAt: Date;        // 更新时间
+  createdAt: number;      // 创建时间（时间戳）
+  updatedAt: number;      // 更新时间（时间戳）
 }
 \`\`\`
 
@@ -347,8 +348,8 @@ const generateEntitiesDocs = () => {
   accountBookId: string;   // 所属账本ID
   createdBy: string;       // 创建人ID
   updatedBy: string;      // 更新人ID
-  createdAt: Date;        // 创建时间
-  updatedAt: Date;        // 更新时间
+  createdAt: number;      // 创建时间（时间戳）
+  updatedAt: number;      // 更新时间（时间戳）
 }
 \`\`\`
 
@@ -366,8 +367,19 @@ const generateEntitiesDocs = () => {
   code: string;       // 商家编码
   createdBy: string;      // 创建人ID
   updatedBy: string;      // 更新人ID
-  createdAt: Date;        // 创建时间
-  updatedAt: Date;        // 更新时间
+  createdAt: number;      // 创建时间（时间戳）
+  updatedAt: number;      // 更新时间（时间戳）
+  attachments: Array<{    // 附件列表
+    id: string;           // 附件ID
+    originName: string;   // 原始文件名
+    fileLength: number;   // 文件大小
+    extension: string;    // 文件扩展名
+    contentType: string;  // 文件类型
+    businessCode: string; // 业务类型
+    businessId: string;   // 业务ID
+    createdAt: string;    // 创建时间
+    updatedAt: string     // 更新时间
+  }>
 }
 \`\`\`
 
@@ -383,8 +395,8 @@ const generateEntitiesDocs = () => {
   inviteCode: string;     // 邀请码
   language: Language;     // 语言设置
   timezone: string;       // 时区设置
-  createdAt: Date;        // 创建时间
-  updatedAt: Date;        // 更新时间
+  createdAt: number;      // 创建时间（时间戳）
+  updatedAt: number;      // 更新时间（时间戳）
 }
 \`\`\`
 
@@ -400,8 +412,8 @@ const generateEntitiesDocs = () => {
   canViewItem: boolean;    // 查看账目权限
   canEditItem: boolean;    // 编辑账目权限
   canDeleteItem: boolean;  // 删除账目权限
-  createdAt: Date;        // 创建时间
-  updatedAt: Date;        // 更新时间
+  createdAt: number;      // 创建时间（时间戳）
+  updatedAt: number;      // 更新时间（时间戳）
 }
 \`\`\`
 
@@ -414,8 +426,8 @@ const generateEntitiesDocs = () => {
   fundIn: boolean;        // 是否可收入
   fundOut: boolean;       // 是否可支出
   isDefault: boolean;     // 是否默认账户
-  createdAt: Date;        // 创建时间
-  updatedAt: Date;        // 更新时间
+  createdAt: number;      // 创建时间（时间戳）
+  updatedAt: number;      // 更新时间（时间戳）
 }
 \`\`\`
 
@@ -431,8 +443,8 @@ const generateEntitiesDocs = () => {
   businessId: string;      // 业务ID
   createdBy: string;       // 创建人ID
   updatedBy: string;       // 更新人ID
-  createdAt: Date;         // 创建时间
-  updatedAt: Date;         // 更新时间
+  createdAt: number;       // 创建时间（时间戳）
+  updatedAt: number;       // 更新时间（时间戳）
 }
 \`\`\`
 `;
@@ -451,10 +463,11 @@ const generateMainDocs = () => {
 - [用户相关](api/user.md)
 - [账本相关](api/account-book.md)
 - [资金账户相关](api/account-fund.md)
-- [��账相关](api/account-item.md)
+- [记账相关](api/account-item.md)
 - [分类相关](api/category.md)
 - [商家相关](api/shop.md)
 - [附件相关](api/attachment.md)
+- [数据同步](api/sync.md)
 - [健康检查](api/health.md)
 
 ## 数据结构
@@ -716,7 +729,7 @@ Errors:
  * 生成账本相关接口文档
  */
 const generateAccountBookDocs = () => {
-  const docs = `# 账本相关���口
+  const docs = `# 账本相关接口
 
 ## 创建账本
 \`\`\`
@@ -836,8 +849,7 @@ Request Body:
   "category": string,       // 分类
   "shop": string?,         // 商家（可选）
   "description": string?,   // 描述（可选）
-  "accountDate": Date,     // 记账日期
-  "attachments": File[]          // 附件文件列表（可选）
+  "accountDate": number     // 记账日期（时间戳）
 }
 
 Response: {
@@ -850,15 +862,15 @@ Response: {
     "type": ItemType,         // 类型：EXPENSE-支出，INCOME-收入
     "categoryCode": string,    // 分类编码
     "category": string,        // 分类名称
-    "accountDate": Date,      // 记账日期
+    "accountDate": number,     // 记账日期（时间戳）
     "accountBookId": string,  // 账本ID
     "fundId": string,         // 账户ID
     "code": string?,      // 商家编码
     "shop": string?,          // 商家名称
     "createdBy": string,      // 创建人ID
     "updatedBy": string,      // 更新人ID
-    "createdAt": Date,        // 创建时间
-    "updatedAt": Date,        // 更新时间
+    "createdAt": number,      // 创建时间（时间戳）
+    "updatedAt": number,      // 更新时间（时间戳）
     "attachments": Array<{    // 附件列表
       "id": string,           // 附件ID
       "originName": string,   // 原始文件名
@@ -867,8 +879,8 @@ Response: {
       "contentType": string,  // 文件类型
       "businessCode": string, // 业务类型
       "businessId": string,   // 业务ID
-      "createdAt": string,    // 创建时间
-      "updatedAt": string     // 更新时间
+      "createdAt": number,    // 创建时间（时间戳）
+      "updatedAt": number     // 更新时间（时间戳）
     }>
   }
 }
@@ -891,8 +903,8 @@ Request Body:
   "fundIds": string[]?,      // 资金账户ID列表（可选）
   "code": string?,       // 商家编码（可选）
   "codes": string[]?,    // 商家编码列表（可选）
-  "startDate": string?,      // 开始日期（可选）
-  "endDate": string?,        // 结束日期（可选）
+  "startDate": number?,      // 开始日期（可选，时间戳）
+  "endDate": number?,        // 结束日期（可选，时间戳）
   "type": ItemType?,         // 类型（可选）
   "minAmount": number?,      // 最小金额（可选）
   "maxAmount": number?,      // 最大金额（可选）
@@ -911,7 +923,7 @@ Response: {
       "type": ItemType,         // 类型：EXPENSE-支出，INCOME-收入
       "categoryCode": string,    // 分类编码
       "category": string,        // 分类名称
-      "accountDate": Date,      // 记账日期
+      "accountDate": number,     // 记账日期（时间戳）
       "accountBookId": string,  // 账本ID
       "fundId": string,         // 账户ID
       "fundName": string,       // 账户名称
@@ -919,8 +931,8 @@ Response: {
       "shop": string?,          // 商家名称
       "createdBy": string,      // 创建人ID
       "updatedBy": string,      // 更新人ID
-      "createdAt": Date,        // 创建时间
-      "updatedAt": Date,        // 更新时间
+      "createdAt": number,      // 创建时间（时间戳）
+      "updatedAt": number,      // 更新时间（时间戳）
       "attachments": Array<{    // 附件列表
         "id": string,           // 附件ID
         "originName": string,   // 原始文件名
@@ -929,8 +941,8 @@ Response: {
         "contentType": string,  // 文件类型
         "businessCode": string, // 业务类型
         "businessId": string,   // 业务ID
-        "createdAt": string,    // 创建时间
-        "updatedAt": string     // 更新时间
+        "createdAt": number,    // 创建时间（时间戳）
+        "updatedAt": number     // 更新时间（时间戳）
       }>
     }>,
     "summary": {
@@ -997,7 +1009,7 @@ Content-Type: multipart/form-data
 
 Request Body:
 {
-  "amount": number?,         // 金额（可��）
+  "amount": number?,         // 金额（可选）
   "type": ItemType?,        // 类型（可选）
   "category": string?,      // 分类（可选）
   "shop": string?,         // 商家（可选）
@@ -1073,7 +1085,7 @@ Request Body: Array<{
   "type": ItemType,         // 类型：EXPENSE-支出，INCOME-收入
   "category": string,       // 分类
   "shop": string?,         // 商家（可选）
-  "description": string?,   // 描述���可选）
+  "description": string?,   // 描述（可选）
   "accountDate": Date      // 记账日期
 }>
 
@@ -1167,7 +1179,7 @@ Response: 同"创建分类"的返回数据
 
 Errors:
 - 404 分类不存在
-- 400 分类类型不允许修改
+- 400 分类类型不允许改
 \`\`\`
 
 // ... 其他接口文档
@@ -1326,8 +1338,8 @@ enum BusinessCode {
   businessId: string;      // 业务ID
   createdBy: string;       // 创建人ID
   updatedBy: string;       // 更新人ID
-  createdAt: Date;         // 创建时间
-  updatedAt: Date;         // 更新时间
+  createdAt: number;       // 创建时间（时间戳）
+  updatedAt: number;       // 更新时间（时间戳）
 }
 \`\`\`
 
@@ -1370,4 +1382,131 @@ Response: 参考账目创建接口
 `;
 
   fs.writeFileSync(path.join(process.cwd(), 'docs/api/attachment.md'), docs);
+};
+
+/**
+ * 生成数据同步相关接口文档
+ */
+const generateSyncDocs = () => {
+  const docs = `# 数据同步接口
+
+## 数据结构
+
+### SyncDataDto 同步数据
+\`\`\`typescript
+{
+  lastSyncTime: string;      // 最后同步时间（ISO 8601格式）
+  changes?: {                // 客户端的变更数据（可选）
+    accountBooks?: AccountBook[];           // 账本变更
+    accountCategories?: AccountCategory[];   // 分类变更
+    accountItems?: AccountItem[];           // 账目变更
+    accountShops?: AccountShop[];           // 商家变更
+    accountSymbols?: AccountSymbol[];       // 标签变更
+    accountFunds?: AccountFund[];           // 资金账户变更
+    accountBookFunds?: AccountBookFund[];   // 账本资金账户关联变更
+    accountBookUsers?: AccountBookUser[];   // 账本用户关联变更
+  }
+}
+\`\`\`
+
+## 获取初始数据
+\`\`\`
+GET /api/sync/initial
+
+Response: {
+  "code": 200,
+  "message": "success",
+  "data": {
+    "data": {
+      "accountBooks": AccountBook[],           // 账本列表
+      "accountCategories": AccountCategory[],   // 分类列表
+      "accountItems": AccountItem[],           // 账目列表
+      "accountShops": AccountShop[],           // 商家列表
+      "accountSymbols": AccountSymbol[],       // 标签列表
+      "accountFunds": AccountFund[],           // 资金账户列表
+      "accountBookFunds": AccountBookFund[],   // 账本资金账户关联列表
+      "accountBookUsers": AccountBookUser[]    // 账本用户关联列表
+    },
+    "serverTime": string                       // 服务器时间（ISO 8601格式）
+  }
+}
+
+Errors:
+- 401 未授权
+\`\`\`
+
+## 批量同步数据
+\`\`\`
+POST /api/sync/batch
+
+Request Body: SyncDataDto  // 参考 SyncDataDto 数据结构
+
+Response: {
+  "code": 200,
+  "message": "success",
+  "data": {
+    "serverChanges": {                         // 服务器端的变更
+      "accountBooks": AccountBook[],           // 账本变更
+      "accountCategories": AccountCategory[],   // 分类变更
+      "accountItems": AccountItem[],           // 账目变更
+      "accountShops": AccountShop[],           // 商家变更
+      "accountSymbols": AccountSymbol[],       // 标签变更
+      "accountFunds": AccountFund[],           // 资金账户变更
+      "accountBookFunds": AccountBookFund[],   // 账本资金账户关联变更
+      "accountBookUsers": AccountBookUser[]    // 账本用户关联变更
+    },
+    "conflicts": {                             // 数据冲突（版本冲突的实体）
+      "accountBooks": AccountBook[],           // 账本冲突
+      "accountCategories": AccountCategory[],   // 分类冲突
+      "accountItems": AccountItem[],           // 账目冲突
+      "accountShops": AccountShop[],           // 商家冲突
+      "accountSymbols": AccountSymbol[],       // 标签冲突
+      "accountFunds": AccountFund[],           // 资金账户冲突
+      "accountBookFunds": AccountBookFund[],   // 账本资金账户关联冲突
+      "accountBookUsers": AccountBookUser[]    // 账本用户关联冲突
+    },
+    "serverTime": string                       // 服务器时间（ISO 8601格式）
+  }
+}
+
+Errors:
+- 401 未授权
+- 400 请求数据格式错误
+\`\`\`
+
+## 同步规则说明
+
+1. 时间戳处理
+   - 所有时间戳字段（createdAt、updatedAt）使用毫秒级时间戳存储
+   - 客户端和服务器之间的时间同步使用 ISO 8601 格式的字符串
+   - 服务器在每次响应中都会返回当前的服务器时间（serverTime）
+
+2. 数据冲突处理
+   - 当客户端提交的数据版本（updatedAt）早于服务器端的版本时，视为冲突
+   - 冲突的数据会被放入 conflicts 对象中返回
+   - 客户端需要根据业务需求决定如何处理冲突（例如：保留服务器版本、合并数据等）
+
+3. 增量同步
+   - 客户端通过 lastSyncTime 参数指定上次同步的时间
+   - 服务器会返回该时间之后发生变更的所有数据
+   - 客户端可以通过 changes 参数提交本地的变更数据
+
+4. 数据完整性
+   - 所有实体都包含基础字段（id、createdAt、updatedAt）
+   - 业务实体还包含额外的审计字段（createdBy、updatedBy）
+   - 关联实体（如 AccountBookFund）必须确保关联的实体存在
+
+5. 权限控制
+   - 只能同步当前用户有权限访问的数据
+   - 账本相关的数据需要检查用户对账本的权限
+   - 资金账户相关的数据需要检查用户的所有权
+
+6. 性能优化
+   - 建议客户端定期同步数据，避免单次同步数据量过大
+   - 可以根据业务需求调整同步的频率和策略
+   - 对于大量数据的同步，建议分批处理
+\`\`\`
+`;
+
+  fs.writeFileSync(path.join(process.cwd(), 'docs/api/sync.md'), docs);
 };

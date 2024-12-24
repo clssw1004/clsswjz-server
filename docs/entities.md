@@ -10,8 +10,8 @@
   fundBalance: number;     // 余额
   createdBy: string;       // 创建人ID
   updatedBy: string;       // 更新人ID
-  createdAt: Date;         // 创建时间
-  updatedAt: Date;         // 更新时间
+  createdAt: number;       // 创建时间（时间戳）
+  updatedAt: number;       // 更新时间（时间戳）
 }
 ```
 
@@ -25,8 +25,8 @@
   icon: string;           // 账本图标
   createdBy: string;      // 创建人ID
   updatedBy: string;      // 更新人ID
-  createdAt: Date;        // 创建时间
-  updatedAt: Date;        // 更新时间
+  createdAt: number;      // 创建时间（时间戳）
+  updatedAt: number;      // 更新时间（时间戳）
 }
 ```
 
@@ -41,8 +41,8 @@
   lastAccountItemAt: Date; // 最近账目创建时间
   createdBy: string;       // 创建人ID
   updatedBy: string;      // 更新人ID
-  createdAt: Date;        // 创建时间
-  updatedAt: Date;        // 更新时间
+  createdAt: number;      // 创建时间（时间戳）
+  updatedAt: number;      // 更新时间（时间戳）
 }
 ```
 
@@ -55,8 +55,8 @@
   accountBookId: string;   // 所属账本ID
   createdBy: string;       // 创建人ID
   updatedBy: string;      // 更新人ID
-  createdAt: Date;        // 创建时间
-  updatedAt: Date;        // 更新时间
+  createdAt: number;      // 创建时间（时间戳）
+  updatedAt: number;      // 更新时间（时间戳）
 }
 ```
 
@@ -74,8 +74,19 @@
   code: string;       // 商家编码
   createdBy: string;      // 创建人ID
   updatedBy: string;      // 更新人ID
-  createdAt: Date;        // 创建时间
-  updatedAt: Date;        // 更新时间
+  createdAt: number;      // 创建时间（时间戳）
+  updatedAt: number;      // 更新时间（时间戳）
+  attachments: Array<{    // 附件列表
+    id: string;           // 附件ID
+    originName: string;   // 原始文件名
+    fileLength: number;   // 文件大小
+    extension: string;    // 文件扩展名
+    contentType: string;  // 文件类型
+    businessCode: string; // 业务类型
+    businessId: string;   // 业务ID
+    createdAt: string;    // 创建时间
+    updatedAt: string     // 更新时间
+  }>
 }
 ```
 
@@ -91,8 +102,8 @@
   inviteCode: string;     // 邀请码
   language: Language;     // 语言设置
   timezone: string;       // 时区设置
-  createdAt: Date;        // 创建时间
-  updatedAt: Date;        // 更新时间
+  createdAt: number;      // 创建时间（时间戳）
+  updatedAt: number;      // 更新时间（时间戳）
 }
 ```
 
@@ -108,8 +119,8 @@
   canViewItem: boolean;    // 查看账目权限
   canEditItem: boolean;    // 编辑账目权限
   canDeleteItem: boolean;  // 删除账目权限
-  createdAt: Date;        // 创建时间
-  updatedAt: Date;        // 更新时间
+  createdAt: number;      // 创建时间（时间戳）
+  updatedAt: number;      // 更新时间（时间戳）
 }
 ```
 
@@ -122,8 +133,8 @@
   fundIn: boolean;        // 是否可收入
   fundOut: boolean;       // 是否可支出
   isDefault: boolean;     // 是否默认账户
-  createdAt: Date;        // 创建时间
-  updatedAt: Date;        // 更新时间
+  createdAt: number;      // 创建时间（时间戳）
+  updatedAt: number;      // 更新时间（时间戳）
 }
 ```
 
@@ -139,7 +150,7 @@
   businessId: string;      // 业务ID
   createdBy: string;       // 创建人ID
   updatedBy: string;       // 更新人ID
-  createdAt: Date;         // 创建时间
-  updatedAt: Date;         // 更新时间
+  createdAt: number;       // 创建时间（时间戳）
+  updatedAt: number;       // 更新时间（时间戳）
 }
 ```

@@ -3,7 +3,7 @@ import { Currency } from '../enums/currency.enum';
 import { BaseBusinessEntity } from './base.entity';
 
 @Entity('account_books')
-@Unique(['createdBy', 'name'])
+@Unique('unique_accountbook_createby_name', ['createdBy', 'name'])
 export class AccountBook extends BaseBusinessEntity {
   @Column({
     length: 50,

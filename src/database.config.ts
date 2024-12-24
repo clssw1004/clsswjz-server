@@ -123,6 +123,7 @@ To use MySQL/PostgreSQL, please configure the following environment variables:
   // MySQL/PostgreSQL 配置
   const datasourceConfig = {
     type: dbType as any,
+    bigNumberStrings: false,
     host: configService.get('DB_HOST'),
     port: configService.get('DB_PORT'),
     username: configService.get('DB_USERNAME'),

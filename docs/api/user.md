@@ -38,8 +38,8 @@ Response: {
     "inviteCode": string,  // 邀请码
     "language": Language,  // 语言设置
     "timezone": string,    // 时区设置
-    "createdAt": string,   // 创建时间
-    "updatedAt": string    // 更新时间
+    "createdAt": number,   // 创建时间（时间戳）
+    "updatedAt": number    // 更新时间（时间戳）
   }
 }
 
@@ -71,8 +71,8 @@ Response: {
     "inviteCode": string,  // 邀请码
     "language": Language,  // 语言设置
     "timezone": string,    // 时区设置
-    "createdAt": string,   // 创建时间
-    "updatedAt": string    // 更新时间
+    "createdAt": number,   // 创建时间（时间戳）
+    "updatedAt": number    // 更新时间（时间戳）
   }
 }
 

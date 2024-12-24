@@ -170,7 +170,7 @@ export class AccountItemService {
         const accountItem = this.accountItemRepository.create({
           ...createAccountItemDto,
           shopCode,
-          accountDate: formatDate(createAccountItemDto.accountDate),
+          accountDate: createAccountItemDto.accountDate,
           categoryCode: category.code,
           tagCode,
           projectCode,
@@ -199,8 +199,6 @@ export class AccountItemService {
             userId,
           );
         }
-
-        return this.findOne(savedAccountItem.id);
       },
     );
   }
@@ -456,9 +454,7 @@ export class AccountItemService {
           );
         }
         if (updateAccountItemDto.accountDate) {
-          accountItem.accountDate = formatDate(
-            updateAccountItemDto.accountDate,
-          );
+          accountItem.accountDate = updateAccountItemDto.accountDate;
         }
 
         // 如果更新了分类，需要处理分类逻辑

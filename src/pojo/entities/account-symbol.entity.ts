@@ -3,8 +3,8 @@ import { SymbolType } from '../enums/symbol-type.enum';
 import { BaseAccountNameSymbol } from './basse-account.entity';
 
 @Entity('account_symbols')
-@Unique(['accountBookId', 'symbolType', 'name'])
-@Index(['accountBookId', 'symbolType'])
+@Unique('unique_accountbook_symbol', ['accountBookId', 'symbolType', 'name'])
+@Index('index_accountbook_symbol', ['accountBookId', 'symbolType'])
 export class AccountSymbol extends BaseAccountNameSymbol {
   @Column({
     length: 64,

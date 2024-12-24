@@ -54,8 +54,7 @@ Request Body:
   "category": string,       // 分类
   "shop": string?,         // 商家（可选）
   "description": string?,   // 描述（可选）
-  "accountDate": Date,     // 记账日期
-  "attachments": File[]          // 附件文件列表（可选）
+  "accountDate": number     // 记账日期（时间戳）
 }
 
 Response: {
@@ -68,15 +67,15 @@ Response: {
     "type": ItemType,         // 类型：EXPENSE-支出，INCOME-收入
     "categoryCode": string,    // 分类编码
     "category": string,        // 分类名称
-    "accountDate": Date,      // 记账日期
+    "accountDate": number,     // 记账日期（时间戳）
     "accountBookId": string,  // 账本ID
     "fundId": string,         // 账户ID
     "code": string?,      // 商家编码
     "shop": string?,          // 商家名称
     "createdBy": string,      // 创建人ID
     "updatedBy": string,      // 更新人ID
-    "createdAt": Date,        // 创建时间
-    "updatedAt": Date,        // 更新时间
+    "createdAt": number,      // 创建时间（时间戳）
+    "updatedAt": number,      // 更新时间（时间戳）
     "attachments": Array<{    // 附件列表
       "id": string,           // 附件ID
       "originName": string,   // 原始文件名
@@ -85,8 +84,8 @@ Response: {
       "contentType": string,  // 文件类型
       "businessCode": string, // 业务类型
       "businessId": string,   // 业务ID
-      "createdAt": string,    // 创建时间
-      "updatedAt": string     // 更新时间
+      "createdAt": number,    // 创建时间（时间戳）
+      "updatedAt": number     // 更新时间（时间戳）
     }>
   }
 }
@@ -109,8 +108,8 @@ Request Body:
   "fundIds": string[]?,      // 资金账户ID列表（可选）
   "code": string?,       // 商家编码（可选）
   "codes": string[]?,    // 商家编码列表（可选）
-  "startDate": string?,      // 开始日期（可选）
-  "endDate": string?,        // 结束日期（可选）
+  "startDate": number?,      // 开始日期（可选，时间戳）
+  "endDate": number?,        // 结束日期（可选，时间戳）
   "type": ItemType?,         // 类型（可选）
   "minAmount": number?,      // 最小金额（可选）
   "maxAmount": number?,      // 最大金额（可选）
@@ -129,7 +128,7 @@ Response: {
       "type": ItemType,         // 类型：EXPENSE-支出，INCOME-收入
       "categoryCode": string,    // 分类编码
       "category": string,        // 分类名称
-      "accountDate": Date,      // 记账日期
+      "accountDate": number,     // 记账日期（时间戳）
       "accountBookId": string,  // 账本ID
       "fundId": string,         // 账户ID
       "fundName": string,       // 账户名称
@@ -137,8 +136,8 @@ Response: {
       "shop": string?,          // 商家名称
       "createdBy": string,      // 创建人ID
       "updatedBy": string,      // 更新人ID
-      "createdAt": Date,        // 创建时间
-      "updatedAt": Date,        // 更新时间
+      "createdAt": number,      // 创建时间（时间戳）
+      "updatedAt": number,      // 更新时间（时间戳）
       "attachments": Array<{    // 附件列表
         "id": string,           // 附件ID
         "originName": string,   // 原始文件名
@@ -147,8 +146,8 @@ Response: {
         "contentType": string,  // 文件类型
         "businessCode": string, // 业务类型
         "businessId": string,   // 业务ID
-        "createdAt": string,    // 创建时间
-        "updatedAt": string     // 更新时间
+        "createdAt": number,    // 创建时间（时间戳）
+        "updatedAt": number     // 更新时间（时间戳）
       }>
     }>,
     "summary": {
@@ -215,7 +214,7 @@ Content-Type: multipart/form-data
 
 Request Body:
 {
-  "amount": number?,         // 金额（可��）
+  "amount": number?,         // 金额（可选）
   "type": ItemType?,        // 类型（可选）
   "category": string?,      // 分类（可选）
   "shop": string?,         // 商家（可选）
@@ -291,7 +290,7 @@ Request Body: Array<{
   "type": ItemType,         // 类型：EXPENSE-支出，INCOME-收入
   "category": string,       // 分类
   "shop": string?,         // 商家（可选）
-  "description": string?,   // 描述���可选）
+  "description": string?,   // 描述（可选）
   "accountDate": Date      // 记账日期
 }>
 

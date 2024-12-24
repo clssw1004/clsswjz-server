@@ -1,4 +1,4 @@
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, Index } from 'typeorm';
 import { BaseBusinessEntity } from './base.entity';
 
 export enum BusinessCode {
@@ -9,7 +9,8 @@ export enum BusinessCode {
 }
 
 @Entity('attachment')
-export class  AttachmentEntity extends BaseBusinessEntity {
+@Index('index_business_code', ['businessCode', 'businessId'])
+export class AttachmentEntity extends BaseBusinessEntity {
   @Column({ name: 'origin_name', comment: '源文件名' })
   originName: string;
 
@@ -32,4 +33,4 @@ export class  AttachmentEntity extends BaseBusinessEntity {
 
   @Column({ name: 'business_id', comment: '文件所属数据ID' })
   businessId: string;
-} 
+}
