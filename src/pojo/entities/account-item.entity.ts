@@ -2,6 +2,7 @@ import { Entity, Column, BeforeInsert } from 'typeorm';
 import { ItemType } from '../enums/item-type.enum';
 import { BaseBusinessEntity } from './base.entity';
 import { now, nowDateString } from '../../utils/date.util';
+import { ColumnNumericTransformer } from '../transformers';
 
 @Entity('account_items')
 export class AccountItem extends BaseBusinessEntity {
@@ -11,6 +12,7 @@ export class AccountItem extends BaseBusinessEntity {
     scale: 2,
     name: 'amount',
     comment: '金额',
+    transformer: new ColumnNumericTransformer(),
   })
   amount: number;
 

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan } from 'typeorm';
+import { Repository, In, MoreThan } from 'typeorm';
 import { BaseEntity } from '../pojo/entities/base.entity';
 import { AccountBook } from '../pojo/entities/account-book.entity';
 import { AccountCategory } from '../pojo/entities/account-category.entity';
@@ -12,6 +12,7 @@ import { AccountBookFund } from '../pojo/entities/account-book-fund.entity';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
 import { SyncDataDto, SyncChangesDto } from '../pojo/dto/sync/sync-data.dto';
 import { parseTimestamp } from '../utils/date.util';
+import { User } from '../pojo/entities/user.entity';
 
 @Injectable()
 export class SyncService {
@@ -32,47 +33,70 @@ export class SyncService {
     private accountBookFundRepository: Repository<AccountBookFund>,
     @InjectRepository(AccountBookUser)
     private accountBookUserRepository: Repository<AccountBookUser>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
   ) {}
 
   /**
    * 获取初始数据
    */
   async getInitialData(userId: string) {
+    // 1. 首先获取用户有权限的账本关联
+    const accountBookUsers = await this.accountBookUserRepository.find({
+      where: { userId },
+    });
+
+    // 2. 获取有权限的账本ID列表
+    const accountBookIds = accountBookUsers.map((abu) => abu.accountBookId);
+
+    // 3. 获取账本信息
+    const accountBooks = await this.accountBookRepository.find({
+      where: { id: In(accountBookIds) },
+    });
+
+    // 4. 获取账本创建者信息并脱敏
+    const users = await this.userRepository.find({
+      where: {
+        id: In([...new Set(accountBooks.map((book) => book.createdBy))]),
+      },
+    });
+
+    // 6. 获取账本相关的其他数据
     const [
-      accountBooks,
       accountCategories,
       accountItems,
       accountShops,
       accountSymbols,
-      accountFunds,
       accountBookFunds,
-      accountBookUsers,
     ] = await Promise.all([
-      this.accountBookRepository.find({
-        where: { createdBy: userId },
-      }),
       this.accountCategoryRepository.find({
-        where: { createdBy: userId },
+        where: { accountBookId: In(accountBookIds) },
       }),
       this.accountItemRepository.find({
-        where: { createdBy: userId },
+        where: { accountBookId: In(accountBookIds) },
       }),
       this.accountShopRepository.find({
-        where: { createdBy: userId },
+        where: { accountBookId: In(accountBookIds) },
       }),
       this.accountSymbolRepository.find({
-        where: { createdBy: userId },
+        where: { accountBookId: In(accountBookIds) },
       }),
-      this.accountFundRepository.find({
-        where: { createdBy: userId },
-      }),
-      this.accountBookFundRepository.find(),
-      this.accountBookUserRepository.find({
-        where: { userId },
+      this.accountBookFundRepository.find({
+        where: { accountBookId: In(accountBookIds) },
       }),
     ]);
 
+    // 7. 获取关联的资金账户信息
+    const fundIds = accountBookFunds.map((abf) => abf.fundId);
+    const accountFunds = await this.accountFundRepository.find({
+      where: {
+        id: In(fundIds),
+        createdBy: userId, // 只获取用户自己创建的资金账户
+      },
+    });
+
     return {
+      users: users.map((u) => u.toSafeObject(userId)),
       accountBooks,
       accountCategories,
       accountItems,
