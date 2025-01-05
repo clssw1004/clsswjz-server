@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsDateString, IsOptional, ValidateNested } from 'class-validator';
+import { IsNumberString, IsOptional, ValidateNested } from 'class-validator';
 import { AccountBook } from '../../entities/account-book.entity';
 import { AccountCategory } from '../../entities/account-category.entity';
 import { AccountItem } from '../../entities/account-item.entity';
@@ -52,8 +52,8 @@ export class SyncChangesDto {
 }
 
 export class SyncDataDto {
-  @IsDateString()
-  lastSyncTime: string;
+  @IsNumberString()
+  lastSyncTime: number;
 
   @IsOptional()
   @ValidateNested()

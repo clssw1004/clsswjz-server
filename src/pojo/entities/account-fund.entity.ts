@@ -51,4 +51,11 @@ export class AccountFund extends BaseBusinessEntity {
     transformer: new ColumnNumericTransformer(),
   })
   fundBalance: number;
+
+  @Column({
+    name: 'is_default',
+    comment: '是否默认账户',
+    default: false,
+  })
+  isDefault: boolean;
 }

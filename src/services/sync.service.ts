@@ -11,8 +11,8 @@ import { AccountFund } from '../pojo/entities/account-fund.entity';
 import { AccountBookFund } from '../pojo/entities/account-book-fund.entity';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
 import { SyncDataDto, SyncChangesDto } from '../pojo/dto/sync/sync-data.dto';
-import { parseTimestamp } from '../utils/date.util';
 import { User } from '../pojo/entities/user.entity';
+import { now } from 'src/utils/date.util';
 
 @Injectable()
 export class SyncService {
@@ -96,32 +96,49 @@ export class SyncService {
     });
 
     return {
-      users: users.map((u) => u.toSafeObject(userId)),
-      accountBooks,
-      accountCategories,
-      accountItems,
-      accountShops,
-      accountSymbols,
-      accountFunds,
-      accountBookFunds,
-      accountBookUsers,
+      data: {
+        users: users.map((u) => u.toSafeObject(userId)),
+        accountBooks,
+        accountCategories,
+        accountItems,
+        accountShops,
+        accountSymbols,
+        accountFunds,
+        accountBookFunds,
+        accountBookUsers,
+      },
+      lasySyncTime: this.getMaxTimestamp([
+        ...users,
+        ...accountBooks,
+        ...accountCategories,
+        ...accountItems,
+        ...accountShops,
+        ...accountSymbols,
+        ...accountFunds,
+      ]),
     };
+  }
+
+  getMaxTimestamp(list: BaseEntity[]) {
+    return list.reduce((max, item) => {
+      return Math.max(max, item.updatedAt);
+    }, now());
   }
 
   /**
    * 批量同步数据
    */
   async syncBatch(syncData: SyncDataDto, userId: string) {
-    const { lastSyncTime, changes } = syncData;
-
     // 获取服务器端的变更
-    const serverChanges = await this.getServerChanges(lastSyncTime, userId);
+    const serverChanges = await this.getServerChanges(
+      syncData.lastSyncTime,
+      userId,
+    );
 
     // 处理客户端的变更
-    const conflicts = await this.processClientChanges(changes, userId);
-
+    const conflicts = await this.processClientChanges(syncData.changes);
     return {
-      serverChanges,
+      ...serverChanges,
       conflicts,
     };
   }
@@ -129,9 +146,7 @@ export class SyncService {
   /**
    * 获取服务器端的变更
    */
-  private async getServerChanges(lastSyncTime: string, userId: string) {
-    const timestamp = parseTimestamp(lastSyncTime);
-
+  private async getServerChanges(timestamp: number, userId: string) {
     const [
       accountBooks,
       accountCategories,
@@ -192,21 +207,31 @@ export class SyncService {
     ]);
 
     return {
-      accountBooks,
-      accountCategories,
-      accountItems,
-      accountShops,
-      accountSymbols,
-      accountFunds,
-      accountBookFunds,
-      accountBookUsers,
+      changes: {
+        accountBooks,
+        accountCategories,
+        accountItems,
+        accountShops,
+        accountSymbols,
+        accountFunds,
+        accountBookFunds,
+        accountBookUsers,
+      },
+      lastSyncTime: this.getMaxTimestamp([
+        ...accountBooks,
+        ...accountCategories,
+        ...accountItems,
+        ...accountShops,
+        ...accountSymbols,
+        ...accountFunds,
+      ]),
     };
   }
 
   /**
    * 处理客户端的变更
    */
-  private async processClientChanges(changes: SyncChangesDto, userId: string) {
+  private async processClientChanges(changes: SyncChangesDto) {
     const conflicts = {
       accountBooks: [],
       accountCategories: [],

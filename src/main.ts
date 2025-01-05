@@ -23,7 +23,6 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
   app.setGlobalPrefix(configService.get<string>('API_PREFIX', 'api'));
-  
   // 添加全局验证管道
   app.useGlobalPipes(
     new ValidationPipe({

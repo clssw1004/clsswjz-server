@@ -37,7 +37,7 @@ Response: {
       "accountBookFunds": AccountBookFund[],   // 账本资金账户关联列表
       "accountBookUsers": AccountBookUser[]    // 账本用户关联列表
     },
-    "serverTime": string                       // 服务器时间（ISO 8601格式）
+    "lasySyncTime": string                       // 服务器时间（ISO 8601格式）
   }
 }
 
@@ -75,7 +75,7 @@ Response: {
       "accountBookFunds": AccountBookFund[],   // 账本资金账户关联冲突
       "accountBookUsers": AccountBookUser[]    // 账本用户关联冲突
     },
-    "serverTime": string                       // 服务器时间（ISO 8601格式）
+    "lasySyncTime": string                       // 服务器时间（ISO 8601格式）
   }
 }
 
@@ -89,7 +89,7 @@ Errors:
 1. 时间戳处理
    - 所有时间戳字段（createdAt、updatedAt）使用毫秒级时间戳存储
    - 客户端和服务器之间的时间同步使用 ISO 8601 格式的字符串
-   - 服务器在每次响应中都会返回当前的服务器时间（serverTime）
+   - 服务器在每次响应中都会返回当前的服务器时间（lasySyncTime）
 
 2. 数据冲突处理
    - 当客户端提交的数据版本（updatedAt）早于服务器端的版本时，视为冲突

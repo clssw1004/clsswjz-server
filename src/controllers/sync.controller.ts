@@ -8,19 +8,11 @@ export class SyncController {
 
   @Get('initial')
   async getInitialData(@Request() req) {
-    const data = await this.syncService.getInitialData(req.user.sub);
-    return {
-      data,
-      serverTime: new Date().toISOString(),
-    };
+    return await this.syncService.getInitialData(req.user.sub);
   }
 
   @Post('batch')
   async syncBatch(@Body() syncData: SyncDataDto, @Request() req) {
-    const result = await this.syncService.syncBatch(syncData, req.user.sub);
-    return {
-      ...result,
-      serverTime: new Date().toISOString(),
-    };
+    return await this.syncService.syncBatch(syncData, req.user.sub);
   }
 }
