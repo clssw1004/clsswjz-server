@@ -4,7 +4,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../pojo/entities/user.entity';
 import * as bcrypt from 'bcrypt';
-import e from 'express';
 
 @Injectable()
 export class AuthService {

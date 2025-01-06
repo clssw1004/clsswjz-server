@@ -63,7 +63,7 @@ export class UserService {
         const savedUser = await transactionalEntityManager.save(user);
 
         // 初始化用户数据
-        await this.userDataInitService.initializeUserData(savedUser.id);
+        // await this.userDataInitService.initializeUserData(savedUser.id);
 
         return savedUser;
       },

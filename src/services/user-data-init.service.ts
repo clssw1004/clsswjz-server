@@ -23,10 +23,12 @@ export class UserDataInitService {
    * 初始化用户默认资产
    */
   private async initializeDefaultFund(
+    accountBookId: string,
     manager: EntityManager,
     userId: string,
   ): Promise<AccountFund> {
     const defaultFund = this.accountFundRepository.create({
+      accountBookId,
       name: '现金',
       fundType: FundType.CASH,
       fundBalance: 0,
@@ -82,11 +84,15 @@ export class UserDataInitService {
   async initializeUserData(userId: string): Promise<void> {
     await this.accountFundRepository.manager.transaction(
       async (transactionalEntityManager) => {
-        // 1. 创建默认资金账户
-        await this.initializeDefaultFund(transactionalEntityManager, userId);
-
-        // 2. 创建默认账本
+        // 1. 创建默认账本
         const defaultBook = await this.initializeDefaultBook(
+          transactionalEntityManager,
+          userId,
+        );
+
+        // 2. 创建默认资金账户
+        await this.initializeDefaultFund(
+          defaultBook.id,
           transactionalEntityManager,
           userId,
         );

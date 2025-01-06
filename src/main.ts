@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import * as dotenv from 'dotenv';
 import { ConfigService } from '@nestjs/config';
@@ -37,6 +38,18 @@ async function bootstrap() {
 
   // 增加请求体大小限制为10MB
   app.use(json({ limit: '50mb' }));
+
+  // Swagger配置
+  const config = new DocumentBuilder()
+    .setTitle('Classwjz Api Document')
+    .setDescription('Classwjz Api Document')
+    .setVersion('1.0')
+    // 如果有认证，添加认证配置
+    .addBearerAuth()
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api-docs', app, document);
 
   // 生成API文档
   if (configService.get<string>('NODE_ENV') === 'development') {

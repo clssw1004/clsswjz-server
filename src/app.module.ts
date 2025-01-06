@@ -7,6 +7,7 @@ import { getDatabaseConfig } from './database.config';
 import { AccountModule } from './modules/account.module';
 import { AuthModule } from './modules/auth.module';
 import { AttachmentModule } from './modules/attachment.module';
+import { SyncModule } from './modules/sync.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { AttachmentModule } from './modules/attachment.module';
     AccountModule,
     AuthModule,
     AttachmentModule,
+    SyncModule,
   ],
   providers: [
     {

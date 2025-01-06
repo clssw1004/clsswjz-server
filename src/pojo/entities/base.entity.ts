@@ -9,7 +9,7 @@ import { Transform } from 'class-transformer';
 import { generatePrimaryKey } from '../../utils/id.util';
 import { now } from '../../utils/date.util';
 
-export abstract class BaseEntity extends TypeOrmBaseEntity {
+export abstract class StringIdEntity extends TypeOrmBaseEntity {
   @PrimaryColumn('varchar', {
     length: 32,
     name: 'id',
@@ -17,6 +17,15 @@ export abstract class BaseEntity extends TypeOrmBaseEntity {
   })
   id: string;
 
+  @BeforeInsert()
+  init() {
+    if (!this.id) {
+      this.id = generatePrimaryKey();
+    }
+  }
+}
+
+export abstract class BaseEntity extends StringIdEntity {
   @Transform(({ value }) => Number(value))
   @Column({
     type: 'bigint',
