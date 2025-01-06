@@ -1,14 +1,9 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { AccountItem } from '../pojo/entities/account-item.entity';
 import { AccountCategory } from '../pojo/entities/account-category.entity';
 import { AccountBook } from '../pojo/entities/account-book.entity';
-import { AccountBookFund } from '../pojo/entities/account-book-fund.entity';
 import { CreateAccountItemDto } from '../pojo/dto/account-item/create-account-item.dto';
 import { UpdateAccountItemDto } from '../pojo/dto/account-item/update-account-item.dto';
 import { ItemType } from '../pojo/enums/item-type.enum';
@@ -22,7 +17,6 @@ import { BusinessCode } from '../pojo/entities/attachment.entity';
 import { AccountItemPageVO } from '../pojo/vo/account-item/account-item-vo';
 import { isEmpty } from 'lodash';
 import { DEFAULT_SHOP } from '../config/default-shop.config';
-import { formatDate } from '../utils/date.util';
 import { SymbolType } from '../pojo/enums/symbol-type.enum';
 import { AccountSymbolService } from './account-symbol.service';
 
@@ -38,8 +32,6 @@ export class AccountItemService {
     private categoryRepository: Repository<AccountCategory>,
     @InjectRepository(AccountBook)
     private accountBookRepository: Repository<AccountBook>,
-    @InjectRepository(AccountBookFund)
-    private accountBookFundRepository: Repository<AccountBookFund>,
     private accountSymbolService: AccountSymbolService,
   ) {}
 
@@ -60,37 +52,6 @@ export class AccountItemService {
     'item.tag_code as tagCode',
     'item.project_code as projectCode',
   ];
-
-  /**
-   * 校验账本资产权限
-   */
-  private async validateBookFundPermission(
-    accountBookId: string,
-    fundId: string,
-    type: ItemType,
-  ): Promise<void> {
-    if (fundId === DEFAULT_FUND) {
-      return;
-    }
-    const bookFund = await this.accountBookFundRepository.findOne({
-      where: {
-        accountBookId,
-        fundId,
-      },
-    });
-
-    if (!bookFund) {
-      throw new ForbiddenException('该账本未关联此账户');
-    }
-
-    if (type === ItemType.EXPENSE && !bookFund.fundOut) {
-      throw new ForbiddenException('该账户在当前账本中不允许支出');
-    }
-
-    if (type === ItemType.INCOME && !bookFund.fundIn) {
-      throw new ForbiddenException('该账户在当前账本中不允许收入');
-    }
-  }
 
   private async handleSymbol(
     name: string | undefined,
@@ -121,13 +82,6 @@ export class AccountItemService {
             `账本ID ${createAccountItemDto.accountBookId} 不存在`,
           );
         }
-
-        // 校验账本资产权限
-        await this.validateBookFundPermission(
-          createAccountItemDto.accountBookId,
-          createAccountItemDto.fundId,
-          createAccountItemDto.type,
-        );
 
         // 处理分类
         const category = await this.accountCategoryService.getOrCreateCategory(
@@ -443,15 +397,6 @@ export class AccountItemService {
         const accountItem = await this.accountItemRepository.findOneBy({ id });
         if (!accountItem) {
           throw new NotFoundException('记账条目不存在');
-        }
-
-        // 如果更新了账户或类型，需要重新校验权限
-        if (updateAccountItemDto.fundId || updateAccountItemDto.type) {
-          await this.validateBookFundPermission(
-            accountItem.accountBookId,
-            updateAccountItemDto.fundId || accountItem.fundId,
-            updateAccountItemDto.type || accountItem.type,
-          );
         }
         if (updateAccountItemDto.accountDate) {
           accountItem.accountDate = updateAccountItemDto.accountDate;

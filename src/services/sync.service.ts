@@ -8,7 +8,6 @@ import { AccountItem } from '../pojo/entities/account-item.entity';
 import { AccountShop } from '../pojo/entities/account-shop.entity';
 import { AccountSymbol } from '../pojo/entities/account-symbol.entity';
 import { AccountFund } from '../pojo/entities/account-fund.entity';
-import { AccountBookFund } from '../pojo/entities/account-book-fund.entity';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
 import { SyncDataDto, SyncChangesDto } from '../pojo/dto/sync/sync-data.dto';
 import { User } from '../pojo/entities/user.entity';
@@ -29,8 +28,6 @@ export class SyncService {
     private accountSymbolRepository: Repository<AccountSymbol>,
     @InjectRepository(AccountFund)
     private accountFundRepository: Repository<AccountFund>,
-    @InjectRepository(AccountBookFund)
-    private accountBookFundRepository: Repository<AccountBookFund>,
     @InjectRepository(AccountBookUser)
     private accountBookUserRepository: Repository<AccountBookUser>,
     @InjectRepository(User)
@@ -62,35 +59,25 @@ export class SyncService {
     });
 
     // 6. 获取账本相关的其他数据
-    const [
-      accountCategories,
-      accountItems,
-      accountShops,
-      accountSymbols,
-      accountBookFunds,
-    ] = await Promise.all([
-      this.accountCategoryRepository.find({
-        where: { accountBookId: In(accountBookIds) },
-      }),
-      this.accountItemRepository.find({
-        where: { accountBookId: In(accountBookIds) },
-      }),
-      this.accountShopRepository.find({
-        where: { accountBookId: In(accountBookIds) },
-      }),
-      this.accountSymbolRepository.find({
-        where: { accountBookId: In(accountBookIds) },
-      }),
-      this.accountBookFundRepository.find({
-        where: { accountBookId: In(accountBookIds) },
-      }),
-    ]);
+    const [accountCategories, accountItems, accountShops, accountSymbols] =
+      await Promise.all([
+        this.accountCategoryRepository.find({
+          where: { accountBookId: In(accountBookIds) },
+        }),
+        this.accountItemRepository.find({
+          where: { accountBookId: In(accountBookIds) },
+        }),
+        this.accountShopRepository.find({
+          where: { accountBookId: In(accountBookIds) },
+        }),
+        this.accountSymbolRepository.find({
+          where: { accountBookId: In(accountBookIds) },
+        }),
+      ]);
 
     // 7. 获取关联的资金账户信息
-    const fundIds = accountBookFunds.map((abf) => abf.fundId);
     const accountFunds = await this.accountFundRepository.find({
       where: {
-        id: In(fundIds),
         createdBy: userId, // 只获取用户自己创建的资金账户
       },
     });
@@ -104,7 +91,6 @@ export class SyncService {
         accountShops,
         accountSymbols,
         accountFunds,
-        accountBookFunds,
         accountBookUsers,
       },
       lasySyncTime: this.getMaxTimestamp([
@@ -155,7 +141,6 @@ export class SyncService {
       accountSymbols,
       accountFunds,
       accountBookFunds,
-      accountBookUsers,
     ] = await Promise.all([
       this.accountBookRepository.find({
         where: {
@@ -193,11 +178,6 @@ export class SyncService {
           createdBy: userId,
         },
       }),
-      this.accountBookFundRepository.find({
-        where: {
-          updatedAt: MoreThan(timestamp),
-        },
-      }),
       this.accountBookUserRepository.find({
         where: {
           updatedAt: MoreThan(timestamp),
@@ -215,7 +195,6 @@ export class SyncService {
         accountSymbols,
         accountFunds,
         accountBookFunds,
-        accountBookUsers,
       },
       lastSyncTime: this.getMaxTimestamp([
         ...accountBooks,
@@ -275,11 +254,6 @@ export class SyncService {
         changes.accountFunds,
         this.accountFundRepository,
         conflicts.accountFunds,
-      ),
-      this.processEntityChanges(
-        changes.accountBookFunds,
-        this.accountBookFundRepository,
-        conflicts.accountBookFunds,
       ),
       this.processEntityChanges(
         changes.accountBookUsers,

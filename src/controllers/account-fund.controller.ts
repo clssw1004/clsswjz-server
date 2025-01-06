@@ -5,7 +5,6 @@ import {
   Body,
   Patch,
   Param,
-  Delete,
   Request,
 } from '@nestjs/common';
 import { AccountFundService } from '../services/account-fund.service';
@@ -20,11 +19,6 @@ export class AccountFundController {
   @Post()
   create(@Body() createFundDto: CreateAccountFundDto, @Request() req) {
     return this.accountFundService.create(createFundDto, req.user.sub);
-  }
-
-  @Get('list')
-  findAll(@Request() req) {
-    return this.accountFundService.findAll(req.user.sub);
   }
 
   @Post('bookfunds')
@@ -44,11 +38,6 @@ export class AccountFundController {
     @Request() req,
   ) {
     return this.accountFundService.update(id, updateDto, req.user.sub);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string, @Request() req) {
-    return this.accountFundService.remove(id, req.user.sub);
   }
 
   @Patch(':id/balance')

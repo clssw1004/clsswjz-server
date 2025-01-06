@@ -4,7 +4,6 @@ import { Repository, EntityManager } from 'typeorm';
 import { AccountFund, FundType } from '../pojo/entities/account-fund.entity';
 import { AccountBook } from '../pojo/entities/account-book.entity';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
-import { AccountBookFund } from '../pojo/entities/account-book-fund.entity';
 import { AccountCategoryService } from './account-category.service';
 import { Currency } from '../pojo/enums/currency.enum';
 
@@ -17,8 +16,6 @@ export class UserDataInitService {
     private accountBookRepository: Repository<AccountBook>,
     @InjectRepository(AccountBookUser)
     private accountBookUserRepository: Repository<AccountBookUser>,
-    @InjectRepository(AccountBookFund)
-    private accountBookFundRepository: Repository<AccountBookFund>,
     private categoryService: AccountCategoryService,
   ) {}
 
@@ -80,34 +77,13 @@ export class UserDataInitService {
   }
 
   /**
-   * 建立账本与资金账户的关联关系
-   */
-  private async createBookFundRelation(
-    manager: EntityManager,
-    bookId: string,
-    fundId: string,
-  ): Promise<void> {
-    const bookFundRelation = this.accountBookFundRepository.create({
-      accountBookId: bookId,
-      fundId: fundId,
-      fundIn: true,
-      fundOut: true,
-      isDefault: true,
-    });
-    await manager.save(bookFundRelation);
-  }
-
-  /**
    * 执行所有用户数据初始化操作
    */
   async initializeUserData(userId: string): Promise<void> {
     await this.accountFundRepository.manager.transaction(
       async (transactionalEntityManager) => {
         // 1. 创建默认资金账户
-        const defaultFund = await this.initializeDefaultFund(
-          transactionalEntityManager,
-          userId,
-        );
+        await this.initializeDefaultFund(transactionalEntityManager, userId);
 
         // 2. 创建默认账本
         const defaultBook = await this.initializeDefaultBook(
@@ -122,14 +98,7 @@ export class UserDataInitService {
           defaultBook.id,
         );
 
-        // 4. 建立账本与资金账户的关联关系
-        await this.createBookFundRelation(
-          transactionalEntityManager,
-          defaultBook.id,
-          defaultFund.id,
-        );
-
-        // 5. 创建默认分类
+        // 4. 创建默认分类
         await this.categoryService.createDefaultCategories(
           transactionalEntityManager,
           defaultBook.id,

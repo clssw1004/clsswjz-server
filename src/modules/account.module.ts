@@ -18,7 +18,6 @@ import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
 import { AccountFundController } from '../controllers/account-fund.controller';
 import { AccountFundService } from '../services/account-fund.service';
 import { AccountFund } from '../pojo/entities/account-fund.entity';
-import { AccountBookFund } from '../pojo/entities/account-book-fund.entity';
 import { UserDataInitService } from '../services/user-data-init.service';
 import { AccountShop } from '../pojo/entities/account-shop.entity';
 import { AccountShopController } from '../controllers/account-shop.controller';
@@ -43,7 +42,6 @@ import { SyncService } from '../services/sync.service';
       User,
       AccountBookUser,
       AccountFund,
-      AccountBookFund,
       AccountShop,
       AccountSymbol,
     ]),

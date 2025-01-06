@@ -309,6 +309,7 @@ export class ImportService {
     if (!fund) {
       const createFundDto = {
         name: fundName,
+        accountBookId,
         fundType: FundType.CASH,
         fundBalance: 0,
         fundRemark: '从薄荷记账导入',
@@ -316,9 +317,6 @@ export class ImportService {
 
       fund = await this.accountFundService.create(createFundDto, userId);
     }
-
-    // 关联到账本（如果未关联）
-    await this.accountFundService.linkToBook(fund.id, accountBookId, userId);
 
     fundCache.set(cacheKey, fund.id);
     return fund.id;

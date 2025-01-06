@@ -1,11 +1,11 @@
 import { Entity, Column, BeforeInsert } from 'typeorm';
 import { ItemType } from '../enums/item-type.enum';
-import { BaseBusinessEntity } from './base.entity';
-import { now, nowDateString } from '../../utils/date.util';
+import { BaseBusinessEntityWithAccountBook } from './base.entity';
+import { nowDateString } from '../../utils/date.util';
 import { ColumnNumericTransformer } from '../transformers';
 
 @Entity('account_items')
-export class AccountItem extends BaseBusinessEntity {
+export class AccountItem extends BaseBusinessEntityWithAccountBook {
   @Column({
     type: 'decimal',
     precision: 10,
@@ -45,12 +45,6 @@ export class AccountItem extends BaseBusinessEntity {
     comment: '记账日期',
   })
   accountDate: string;
-
-  @Column({
-    name: 'account_book_id',
-    comment: '账本ID',
-  })
-  accountBookId: string;
 
   @Column({
     name: 'fund_id',

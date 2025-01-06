@@ -1,7 +1,7 @@
 import { Column } from 'typeorm';
-import { BaseBusinessEntity } from './base.entity';
+import { BaseBusinessEntityWithAccountBook } from './base.entity';
 
-export abstract class BaseAccountNameSymbol extends BaseBusinessEntity {
+export abstract class BaseAccountNameSymbol extends BaseBusinessEntityWithAccountBook {
   @Column({
     length: 128,
     name: 'name',
@@ -16,11 +16,4 @@ export abstract class BaseAccountNameSymbol extends BaseBusinessEntity {
     comment: '编码',
   })
   code: string;
-
-  @Column({
-    name: 'account_book_id',
-    comment: '所属账本ID',
-    length: 32,
-  })
-  accountBookId: string;
 }

@@ -67,3 +67,13 @@ export abstract class BaseBusinessEntity extends BaseEntity {
   })
   updatedBy: string;
 }
+
+export abstract class BaseBusinessEntityWithAccountBook extends BaseBusinessEntity {
+  @Column({
+    type: 'varchar',
+    length: 32,
+    name: 'account_book_id',
+    comment: '账本ID',
+  })
+  accountBookId: string;
+}
