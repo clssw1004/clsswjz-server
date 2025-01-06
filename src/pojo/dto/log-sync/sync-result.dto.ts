@@ -34,4 +34,7 @@ export class SyncResult {
 
   @ApiProperty({ type: [LogSync], description: '变更数据列表' })
   changes: LogSync[];
+
+  @ApiProperty({ type: Number, description: '服务器当前时间戳' })
+  serverTime: number;
 }

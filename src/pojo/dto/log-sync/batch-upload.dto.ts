@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsArray } from 'class-validator';
+import { IsArray, IsNumber, IsOptional } from 'class-validator';
 import { LogSync } from '../../entities/log-sync.entity';
 
 export class BatchUploadLogsDto {
@@ -11,4 +11,13 @@ export class BatchUploadLogsDto {
   @IsArray()
   @Type(() => LogSync)
   logs: LogSync[];
+
+  @ApiProperty({
+    type: Number,
+    description: '最后同步时间',
+    required: false,
+  })
+  @IsNumber()
+  @IsOptional()
+  lastSyncTime?: number;
 }

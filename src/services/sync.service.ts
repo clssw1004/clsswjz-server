@@ -91,6 +91,8 @@ export class SyncService {
         return transaction.getRepository(AccountFund);
       case BusinessType.USER:
         return transaction.getRepository(User);
+      case BusinessType.BOOK_MEMBER:
+        return transaction.getRepository(AccountBookUser);
       default:
         throw new Error(`不支持的业务类型: ${businessType}`);
     }

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, In, MoreThan, Repository } from 'typeorm';
 import { LogSync } from '../pojo/entities/log-sync.entity';
 import { SyncState } from '../pojo/enums/sync-state.enum';
 import { now } from '../utils/date.util';
@@ -16,62 +16,83 @@ export class LogSyncService {
   ) {}
 
   /**
-   * 批量上传日志
-   * @param logs 日志列表
-   * @returns 上传结果
+   * 处理单条日志
+   * @param log 日志对象
+   * @param currentTime 当前时间戳
+   * @param shouldRunSync 是否执行同步操作
+   * @returns 处理结果
    */
-  async syncClientLogs(logs: LogSync[]): Promise<SyncResult> {
-    // 设置日志状态为已同步
-    const results: LogResult[] = logs.map((log) => {
-      log.syncState = SyncState.SYNCED;
-      log.syncTime = now();
-      return LogResult.success(log);
-    });
-    await this.logSyncRepository.save(logs);
-    return {
-      results,
-      changes: logs,
-    };
-  }
-
-  async fetchAllLogs(userId: string): Promise<SyncResult> {
-    const logs = await this.logSyncRepository.find({
-      where: { operatorId: userId },
-      order: { operatedAt: 'ASC' },
-    });
-    return {
-      results: [],
-      changes: logs,
-    };
-  }
-
-  async pushAllLogs(logs: LogSync[]): Promise<SyncResult> {
+  private async processLog(
+    log: LogSync,
+    currentTime: number,
+  ): Promise<LogResult> {
     try {
-      return await this.logSyncRepository.manager.transaction(
+      // 需要执行同步操作
+      await this.logSyncRepository.manager.transaction(
         async (transactionalEntityManager) => {
-          const results = await Promise.all(
-            logs.map((log) =>
-              this.syncService.runLogSync(log, transactionalEntityManager),
-            ),
-          );
-          await transactionalEntityManager.save(LogSync, logs);
-          return {
-            results,
-            changes: logs,
-          };
+          log.syncTime = currentTime;
+          log.syncState = SyncState.SYNCED;
+          await this.syncService.runLogSync(log, transactionalEntityManager);
+          await transactionalEntityManager.save(LogSync, log);
         },
       );
+
+      return LogResult.success(log);
     } catch (error) {
-      // 如果事务执行失败，将所有日志标记为同步失败
-      logs.forEach((log) => {
-        log.syncState = SyncState.FAILED;
-        log.syncError = error.message;
-      });
-      await this.logSyncRepository.save(logs);
-      return {
-        results: logs.map((log) => LogResult.error(log, error.message)),
-        changes: logs,
-      };
+      // 处理失败
+      log.syncState = SyncState.FAILED;
+      log.syncError = error.message;
+      log.syncTime = currentTime;
+      await this.logSyncRepository.save(log);
+      return LogResult.error(log, error.message);
     }
+  }
+
+  /**
+   * 同步数据
+   * @param logs 客户端日志列表
+   * @param userId 用户ID
+   * @param lastSyncTime 最后同步时间
+   * @param shouldRunSync 是否执行同步操作
+   * @param shouldFetchChanges 是否获取服务器变更
+   * @returns 同步结果
+   */
+  async sync(
+    logs: LogSync[] = [],
+    userId: string,
+    lastSyncTime?: number,
+    shouldFetchChanges = true,
+  ): Promise<SyncResult> {
+    const currentTime = now();
+
+    // 1. 处理客户端上传的日志
+    const results =
+      logs.length > 0
+        ? await Promise.all(
+            logs.map((log) => this.processLog(log, currentTime)),
+          )
+        : [];
+
+    // 2. 获取服务器端变更（其他设备上传的日志）
+    const changes = shouldFetchChanges
+      ? await this.logSyncRepository.find({
+          where: {
+            operatorId: userId,
+            syncState: SyncState.SYNCED,
+            ...(lastSyncTime && { syncTime: MoreThan(lastSyncTime) }),
+            ...(logs.length > 0 && { id: Not(In(logs.map((log) => log.id))) }),
+          },
+          order: {
+            operatedAt: 'ASC',
+          },
+        })
+      : logs;
+
+    // 3. 返回结果
+    return {
+      results,
+      changes,
+      serverTime: currentTime,
+    };
   }
 }
