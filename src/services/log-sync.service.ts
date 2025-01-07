@@ -92,7 +92,7 @@ export class LogSyncService {
     return {
       results,
       changes,
-      serverTime: currentTime,
+      syncTimeStamp: currentTime,
     };
   }
 }

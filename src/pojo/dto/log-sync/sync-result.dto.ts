@@ -4,7 +4,7 @@ import { SyncState } from '../../enums/sync-state.enum';
 
 export class LogResult {
   @ApiProperty({ description: '日志ID' })
-  id: string;
+  logId: string;
 
   @ApiProperty({ description: '同步状态' })
   syncState: SyncState;
@@ -14,14 +14,14 @@ export class LogResult {
 
   static success(log: LogSync): LogResult {
     const result = new LogResult();
-    result.id = log.id;
+    result.logId = log.id;
     result.syncState = SyncState.SYNCED;
     return result;
   }
 
   static error(log: LogSync, error: string): LogResult {
     const result = new LogResult();
-    result.id = log.id;
+    result.logId = log.id;
     result.syncState = SyncState.FAILED;
     result.syncError = error;
     return result;
@@ -36,5 +36,5 @@ export class SyncResult {
   changes: LogSync[];
 
   @ApiProperty({ type: Number, description: '服务器当前时间戳' })
-  serverTime: number;
+  syncTimeStamp: number;
 }

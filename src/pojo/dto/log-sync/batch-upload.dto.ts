@@ -19,5 +19,5 @@ export class BatchUploadLogsDto {
   })
   @IsNumber()
   @IsOptional()
-  lastSyncTime?: number;
+  syncTimeStamp?: number;
 }

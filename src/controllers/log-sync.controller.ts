@@ -21,7 +21,7 @@ export class LogSyncController {
     return await this.logSyncService.sync(
       dto.logs,
       req.user.sub,
-      dto.lastSyncTime,
+      dto.syncTimeStamp,
       true,
     );
   }

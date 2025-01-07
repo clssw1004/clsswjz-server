@@ -5,4 +5,4 @@ export class UpdateAccountShopDto {
   @IsString()
   @Length(1, 100, { message: '商家名称长度必须在1-100个字符之间' })
   name: string;
-} 
+}

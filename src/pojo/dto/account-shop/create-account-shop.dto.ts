@@ -9,4 +9,4 @@ export class CreateAccountShopDto {
   @IsNotEmpty({ message: '账本ID不能为空' })
   @IsString()
   accountBookId: string;
-} 
+}

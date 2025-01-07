@@ -425,8 +425,8 @@ export class AccountItemService {
         const deleteAttachmentIds = [];
 
         // 删除指定的附件
-        if (!isEmpty(updateAccountItemDto.deleteAttachmentId)) {
-          deleteAttachmentIds.push(updateAccountItemDto.deleteAttachmentId);
+        if (!isEmpty(updateAccountItemDto.deleteAttachmentIds)) {
+          deleteAttachmentIds.push(updateAccountItemDto.deleteAttachmentIds);
         }
         // 删除指定的附件
         if (updateAccountItemDto.deleteAttachmentIds?.length > 0) {
