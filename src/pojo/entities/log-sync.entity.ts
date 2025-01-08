@@ -6,7 +6,8 @@ import { SyncState } from '../enums/sync-state.enum';
 
 @Entity('log_sync')
 @Unique('unique_log_sync', [
-  'accountBookId',
+  'parentType',
+  'parentId',
   'businessType',
   'businessId',
   'operatorId',
@@ -16,10 +17,18 @@ export class LogSync extends StringIdEntity {
   @Column({
     type: 'varchar',
     length: 32,
-    name: 'account_book_id',
-    comment: '账本ID',
+    name: 'parent_type',
+    comment: '所属类型',
   })
-  accountBookId: string;
+  parentType: string;
+
+  @Column({
+    type: 'varchar',
+    length: 32,
+    name: 'parent_id',
+    comment: '所属ID',
+  })
+  parentId: string;
 
   @Column({
     name: 'operator_id',

@@ -23,6 +23,13 @@ export class User extends BaseEntity {
   nickname: string;
 
   @Column({
+    length: 50,
+    name: 'avatar',
+    comment: '头像',
+  })
+  avatar: string;
+
+  @Column({
     name: 'password',
     comment: '密码',
   })
