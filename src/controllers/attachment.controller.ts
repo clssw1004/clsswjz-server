@@ -1,20 +1,61 @@
 import {
   Controller,
   Get,
+  Post,
   Param,
   Res,
   NotFoundException,
   StreamableFile,
   Header,
+  UseInterceptors,
+  UploadedFiles,
+  ParseFilePipe,
+  MaxFileSizeValidator,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { AttachmentService } from '../services/attachment.service';
 import { Public } from '../decorators/public';
 import { SkipInterceptors } from '../decorators/skip-interceptors.decorator';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
 
 @Controller('attachments')
 export class AttachmentController {
   constructor(private readonly attachmentService: AttachmentService) {}
+
+  @Post('upload')
+  @ApiOperation({ summary: '批量上传文件' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+        },
+      },
+    },
+  })
+  @UseInterceptors(FilesInterceptor('files'))
+  async uploadFiles(
+    @UploadedFiles(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 100 }), // 10MB
+        ],
+      }),
+    )
+    files: Express.Multer.File[],
+  ) {
+    const results = await this.attachmentService.uploadFiles(files);
+    return {
+      fileIds: results,
+    };
+  }
 
   @Get(':id')
   @Public()
@@ -25,14 +66,13 @@ export class AttachmentController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
     try {
-      const { file, attachment } = await this.attachmentService.getFile(id);
+      const { file } = await this.attachmentService.getRawFile(id);
 
       res.set({
-        'Content-Type': attachment.contentType,
+        'Content-Type': 'application/octet-stream',
         'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(
-          attachment.originName,
+          id,
         )}`,
-        'Content-Length': attachment.fileLength,
         'Cache-Control': 'no-cache',
       });
 
@@ -44,4 +84,4 @@ export class AttachmentController {
       throw new NotFoundException('文件下载失败');
     }
   }
-} 
+}

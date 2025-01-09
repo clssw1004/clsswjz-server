@@ -32,11 +32,7 @@ export class AuthService {
     }
 
     // 生成新token
-    const token = await this.tokenService.generateToken(
-      user.id,
-      loginDto.clientId,
-      loginDto.clientName,
-    );
+    const token = await this.tokenService.generateToken(user.id, loginDto);
 
     return {
       access_token: token,

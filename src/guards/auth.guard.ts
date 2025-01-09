@@ -37,7 +37,7 @@ export class JwtAuthGuard implements CanActivate {
         throw new UnauthorizedException('无效的token');
       }
 
-      request.user = { id: userId };
+      request.user = { sub: userId };
       return true;
     } catch (error: any) {
       console.log(error);

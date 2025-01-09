@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Token } from '../pojo/entities/token.entity';
 import { generateUid } from 'src/utils/id.util';
 import { now } from '../utils/date.util';
+import { LoginDto } from 'src/pojo/dto/auth/login.dto';
 
 @Injectable()
 export class TokenService {
@@ -12,11 +13,7 @@ export class TokenService {
     private tokenRepository: Repository<Token>,
   ) {}
 
-  async generateToken(
-    userId: string,
-    clientId?: string,
-    clientName?: string,
-  ): Promise<string> {
+  async generateToken(userId: string, loginDto: LoginDto): Promise<string> {
     // 生成128位随机字符串
     const token = generateUid(128);
 
@@ -24,8 +21,9 @@ export class TokenService {
     const tokenEntity = new Token();
     tokenEntity.userId = userId;
     tokenEntity.token = token;
-    tokenEntity.clientId = clientId;
-    tokenEntity.clientName = clientName;
+    tokenEntity.clientType = loginDto.clientType;
+    tokenEntity.clientId = loginDto.clientId;
+    tokenEntity.clientName = loginDto.clientName;
     tokenEntity.signAt = now();
     await this.tokenRepository.save(tokenEntity);
 

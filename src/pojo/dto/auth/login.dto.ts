@@ -18,6 +18,15 @@ export class LoginDto {
   @IsString()
   password: string;
 
+
+  @ApiProperty({
+    description: '客户端类型',
+    example: '123456',
+  })
+  @IsOptional()
+  @IsString()
+  clientType: string;
+
   @ApiProperty({
     description: '客户端ID',
     example: '123456',

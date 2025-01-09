@@ -33,6 +33,29 @@ export class AttachmentService {
     }
   }
 
+  // 写入文件并返回文件ID
+  private async writeFile(
+    file: Buffer | Express.Multer.File,
+    fileName: string,
+  ): Promise<void> {
+    const filePath = path.join(this.attachmentPath, fileName);
+    const fileBuffer = Buffer.isBuffer(file) ? file : file.buffer;
+
+    await new Promise<void>((resolve, reject) => {
+      const writeStream = fs.createWriteStream(filePath);
+      writeStream.write(fileBuffer);
+      writeStream.end();
+      writeStream.on('finish', () => resolve());
+      writeStream.on('error', reject);
+    });
+  }
+
+  async uploadFiles(files: Express.Multer.File[]): Promise<void> {
+    for (const file of files) {
+      await this.writeFile(file, file.originalname);
+    }
+  }
+
   async createBatch(
     businessCode: BusinessCode,
     businessId: string,
@@ -56,16 +79,8 @@ export class AttachmentService {
         ? await transactionalEntityManager.save(AttachmentEntity, attachment)
         : await this.attachmentRepository.save(attachment);
 
-      const filePath = path.join(this.attachmentPath, savedAttachment.id);
-
-      await new Promise<void>((resolve, reject) => {
-        const writeStream = fs.createWriteStream(filePath);
-        writeStream.write(file.buffer);
-        writeStream.end();
-        writeStream.on('finish', () => resolve());
-        writeStream.on('error', reject);
-      });
-
+      // 使用提取的写文件方法
+      await this.writeFile(file, savedAttachment.id);
       attachments.push(savedAttachment);
     }
 
@@ -88,6 +103,20 @@ export class AttachmentService {
     }
 
     return attachment;
+  }
+
+  async getRawFile(id: string): Promise<{
+    file: Readable;
+  }> {
+    const filePath = path.join(this.attachmentPath, id);
+
+    if (!fs.existsSync(filePath)) {
+      throw new NotFoundException('附件文件不存在');
+    }
+
+    // 使用 createReadStream 创建文件流而不是直接读取整个文件
+    const file = createReadStream(filePath);
+    return { file };
   }
 
   async getFile(id: string): Promise<{
@@ -124,6 +153,7 @@ export class AttachmentService {
       where: { businessId: In(businessIds) },
     });
   }
+
   async removeByIds(
     ids: string[],
     transactionalEntityManager?: EntityManager,

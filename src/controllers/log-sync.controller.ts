@@ -15,9 +15,6 @@ export class LogSyncController {
     @Body() dto: BatchUploadLogsDto,
     @Request() req,
   ): Promise<SyncResult> {
-    dto.logs.forEach((log) => {
-      log.operatorId = req.user.sub;
-    });
     return await this.logSyncService.sync(
       dto.logs,
       req.user.sub,
