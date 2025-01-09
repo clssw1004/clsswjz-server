@@ -2,20 +2,17 @@ import {
   Injectable,
   ExecutionContext,
   UnauthorizedException,
+  CanActivate,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
-import { JwtService } from '@nestjs/jwt';
-import { jwtConstants } from '../constants';
+import { TokenService } from '../services/token.service';
 
 @Injectable()
-export class JwtAuthGuard extends AuthGuard('jwt') {
+export class JwtAuthGuard implements CanActivate {
   constructor(
-    private readonly jwtService: JwtService,
+    private readonly tokenService: TokenService,
     private readonly reflector: Reflector,
-  ) {
-    super();
-  }
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const isPublic = this.reflector.getAllAndOverride<boolean>('isPublic', [
@@ -32,12 +29,15 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     if (!token) {
       throw new UnauthorizedException('未提供token');
     }
+
     try {
-      const payload = await this.jwtService.verifyAsync(token, {
-        secret: jwtConstants.secret,
-      });
-      console.log(payload);
-      request.user = payload;
+      // 验证token
+      const userId = await this.tokenService.validateToken(token);
+      if (!userId) {
+        throw new UnauthorizedException('无效的token');
+      }
+
+      request.user = { id: userId };
       return true;
     } catch (error: any) {
       console.log(error);

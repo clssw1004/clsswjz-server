@@ -30,6 +30,7 @@ import { AttachmentModule } from './attachment.module';
 import { AccountSymbol } from '../pojo/entities/account-symbol.entity';
 import { AccountSymbolController } from '../controllers/account-symbol.controller';
 import { AccountSymbolService } from '../services/account-symbol.service';
+import { AuthModule } from './auth.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { AccountSymbolService } from '../services/account-symbol.service';
       AccountSymbol,
     ]),
     AttachmentModule,
+    AuthModule,
   ],
   controllers: [
     AccountController,

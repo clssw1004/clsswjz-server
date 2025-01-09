@@ -13,7 +13,7 @@ export class AuthController {
   @Public()
   @Post('login')
   async login(@Body() loginData: LoginDto) {
-    return await this.authService.login(loginData.username, loginData.password);
+    return await this.authService.login(loginData);
   }
 
   @ApiOperation({ summary: '验证当前用户登录状态' })
