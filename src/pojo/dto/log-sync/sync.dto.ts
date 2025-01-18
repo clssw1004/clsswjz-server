@@ -3,15 +3,9 @@ import { Type } from 'class-transformer';
 import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
 import { LogSync } from '../../entities/log-sync.entity';
 import { SyncState } from 'src/pojo/enums/sync-state.enum';
+import { CreateUserDto } from '../user/create-user.dto';
 
-export class RegisterSyncDto {
-  @ApiProperty({
-    type: [LogSync],
-    description: '注册用户',
-  })
-  @Type(() => LogSync)
-  log: LogSync;
-
+export class RegisterSyncDto extends CreateUserDto {
   @ApiProperty({
     description: '客户端类型',
     example: '123456',

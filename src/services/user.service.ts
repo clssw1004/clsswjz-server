@@ -11,6 +11,10 @@ import { generateUid } from '../utils/id.util';
 import { UpdateUserDto } from '../pojo/dto/user/update-user.dto';
 import { AccountItem } from '../pojo/entities/account-item.entity';
 import { ItemType } from '../pojo/enums/item-type.enum';
+import { LogSync } from 'src/pojo/entities/log-sync.entity';
+import { OperateType } from 'src/pojo/enums/operate-type.enum';
+import { SyncState } from 'src/pojo/enums/sync-state.enum';
+import { BusinessType } from 'src/pojo/enums/business-type.enum';
 
 @Injectable()
 export class UserService {
@@ -22,7 +26,7 @@ export class UserService {
     private accountItemRepository: Repository<AccountItem>,
   ) {}
 
-  async create(userData: Partial<User>): Promise<User> {
+  async create(userData: Partial<User>): Promise<{ user: User; log: LogSync }> {
     // 检查用户名是否存在
     const existingUser = await this.userRepository.findOne({
       where: { username: userData.username },
@@ -65,9 +69,26 @@ export class UserService {
         // 初始化用户数据
         // await this.userDataInitService.initializeUserData(savedUser.id);
 
-        return savedUser;
+        return { user: savedUser, log: this.generateUserLog(savedUser) };
       },
     );
+  }
+
+  generateUserLog(user: User): LogSync {
+    return {
+      id: user.id,
+      operatorId: user.id,
+      operatedAt: user.createdAt,
+      businessType: BusinessType.USER,
+      operateType: OperateType.CREATE,
+      businessId: user.id,
+      operateData: JSON.stringify(user),
+      syncState: SyncState.SYNCED,
+      syncTime: user.createdAt,
+      syncError: null,
+      parentType: BusinessType.ROOT,
+      parentId: 'None',
+    } as LogSync;
   }
 
   async findByInviteCode(

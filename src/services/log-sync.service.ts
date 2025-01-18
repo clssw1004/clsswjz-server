@@ -26,25 +26,23 @@ export class LogSyncService {
     private readonly tokenService: TokenService,
   ) {}
 
-  async syncRegister(registerLog: RegisterSyncDto) {
-    const log = registerLog.log;
-    // 1. 获取用户信息
-    const userCreateDto = JSON.parse(log.operateData) as CreateUserDto;
-
+  async syncRegister(createUserLog: RegisterSyncDto) {
     // 2. 创建用户
-    const newUser = await this.userService.create(userCreateDto);
-
+    const { user, log } = await this.userService.create(createUserLog);
+    await this.logSyncRepository.save(log);
     // 3. 签发token
-    const token = await this.tokenService.generateToken(newUser.id, {
-      ...userCreateDto,
-      clientType: registerLog.clientType,
-      clientId: registerLog.clientId,
-      clientName: registerLog.clientName,
+    const token = await this.tokenService.generateToken(user.id, {
+      ...user,
+      clientType: createUserLog.clientType,
+      clientId: createUserLog.clientId,
+      clientName: createUserLog.clientName,
     });
     // 4. 返回结果
     return {
-      token,
-      user: newUser,
+      access_token: token,
+      userId: user.id,
+      username: user.username,
+      nickname: user.nickname,
     };
   }
 

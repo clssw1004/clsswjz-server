@@ -25,6 +25,7 @@ export class User extends BaseEntity {
   @Column({
     length: 50,
     name: 'avatar',
+    default: 'default_avatar',
     comment: '头像',
   })
   avatar: string;

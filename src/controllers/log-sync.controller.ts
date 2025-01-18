@@ -6,7 +6,6 @@ import {
   SyncResult,
 } from '../pojo/dto/log-sync/sync.dto';
 import { LogSyncService } from '../services/log-sync.service';
-import { LogSync } from 'src/pojo/entities/log-sync.entity';
 import { Public } from 'src/decorators/public';
 
 @ApiTags('客户端同步')
@@ -25,7 +24,9 @@ export class LogSyncController {
     );
   }
 
+  @ApiOperation({ summary: '注册用户(日志)' })
   @Public()
+  @Post('register')
   async syncRegister(@Body() registerLog: RegisterSyncDto) {
     return await this.logSyncService.syncRegister(registerLog);
   }

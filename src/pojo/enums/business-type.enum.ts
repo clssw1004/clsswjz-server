@@ -28,4 +28,6 @@ export enum BusinessType {
 
   /** 附件 */
   ATTACHMENT = 'attachment',
+
+  ROOT = 'root',
 }
