@@ -20,7 +20,7 @@ export class UserService {
     private userDataInitService: UserDataInitService,
     @InjectRepository(AccountItem)
     private accountItemRepository: Repository<AccountItem>,
-  ) { }
+  ) {}
 
   async create(userData: Partial<User>): Promise<User> {
     // 检查用户名是否存在
@@ -211,9 +211,9 @@ export class UserService {
     const totalFunds = totalIncome - totalExpense;
 
     return {
-      totalItems,                              // 总记账笔数
-      totalDays: Number(daysQuery.days) || 0,  // 总记账天数
-      totalFunds,                               // 净资产
+      totalItems, // 总记账笔数
+      totalDays: Number(daysQuery.days) || 0, // 总记账天数
+      totalFunds, // 净资产
     };
   }
 }

@@ -4,8 +4,17 @@ import { Not, In, MoreThan, Repository } from 'typeorm';
 import { LogSync } from '../pojo/entities/log-sync.entity';
 import { SyncState } from '../pojo/enums/sync-state.enum';
 import { now } from '../utils/date.util';
-import { LogResult, SyncResult } from '../pojo/dto/log-sync/sync-result.dto';
 import { SyncService } from './sync.service';
+import { BusinessType } from 'src/pojo/enums/business-type.enum';
+import { OperateType } from 'src/pojo/enums/operate-type.enum';
+import { CreateUserDto } from 'src/pojo/dto/user/create-user.dto';
+import { UserService } from './user.service';
+import { TokenService } from './token.service';
+import {
+  LogResult,
+  RegisterSyncDto,
+  SyncResult,
+} from 'src/pojo/dto/log-sync/sync.dto';
 
 @Injectable()
 export class LogSyncService {
@@ -13,7 +22,31 @@ export class LogSyncService {
     @InjectRepository(LogSync)
     private readonly logSyncRepository: Repository<LogSync>,
     private readonly syncService: SyncService,
+    private readonly userService: UserService,
+    private readonly tokenService: TokenService,
   ) {}
+
+  async syncRegister(registerLog: RegisterSyncDto) {
+    const log = registerLog.log;
+    // 1. 获取用户信息
+    const userCreateDto = JSON.parse(log.operateData) as CreateUserDto;
+
+    // 2. 创建用户
+    const newUser = await this.userService.create(userCreateDto);
+
+    // 3. 签发token
+    const token = await this.tokenService.generateToken(newUser.id, {
+      ...userCreateDto,
+      clientType: registerLog.clientType,
+      clientId: registerLog.clientId,
+      clientName: registerLog.clientName,
+    });
+    // 4. 返回结果
+    return {
+      token,
+      user: newUser,
+    };
+  }
 
   /**
    * 处理单条日志
@@ -87,12 +120,44 @@ export class LogSyncService {
           },
         })
       : logs;
-
+    await this.desensitize(changes, userId);
     // 3. 返回结果
     return {
       results,
       changes,
       syncTimeStamp: currentTime,
     };
+  }
+
+  private async desensitize(logs: LogSync[], userId: string) {
+    return logs.forEach((log) => {
+      // 如果不是用户相关的日志或者操作人是当前用户,直接返回原始日志
+      if (log.businessType !== BusinessType.USER || log.operatorId === userId) {
+        return;
+      }
+
+      // 只处理新增和更新操作
+      if (![OperateType.CREATE, OperateType.UPDATE].includes(log.operateType)) {
+        return;
+      }
+
+      // 解析操作数据
+      const operateData = JSON.parse(log.operateData);
+
+      // 脱敏敏感信息
+      if (operateData.password) {
+        delete operateData.password;
+      }
+      if (operateData.phone) {
+        operateData.phone = '***********';
+      }
+      if (operateData.email) {
+        operateData.email = `*******@*******`;
+      }
+
+      // 更新操作数据
+      log.operateData = JSON.stringify(operateData);
+      return log;
+    });
   }
 }

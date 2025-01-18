@@ -40,4 +40,4 @@ export class CreateUserDto {
   @IsString()
   @Matches(/^[A-Za-z]+\/[A-Za-z_]+$/, { message: '时区格式不正确' })
   timezone?: string;
-} 
+}

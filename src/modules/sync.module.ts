@@ -5,9 +5,10 @@ import { LogSyncController } from '../controllers/log-sync.controller';
 import { LogSyncService } from '../services/log-sync.service';
 import { SyncService } from '../services/sync.service';
 import { AccountModule } from './account.module';
+import { AuthModule } from './auth.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([LogSync]), AccountModule],
+  imports: [TypeOrmModule.forFeature([LogSync]), AccountModule, AuthModule],
   controllers: [LogSyncController],
   providers: [LogSyncService, SyncService],
   exports: [LogSyncService, SyncService],

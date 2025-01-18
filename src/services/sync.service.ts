@@ -10,9 +10,9 @@ import { AccountFund } from '../pojo/entities/account-fund.entity';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
 import { User } from '../pojo/entities/user.entity';
 import { LogSync } from '../pojo/entities/log-sync.entity';
-import { LogResult } from '../pojo/dto/log-sync/sync-result.dto';
 import { BusinessType } from 'src/pojo/enums/business-type.enum';
 import { OperateType } from 'src/pojo/enums/operate-type.enum';
+import { LogResult } from 'src/pojo/dto/log-sync/sync.dto';
 
 @Injectable()
 export class SyncService {
@@ -54,6 +54,7 @@ export class SyncService {
           break;
         case OperateType.UPDATE:
         case OperateType.BATCH_UPDATE:
+          operateData.id = log.businessId;
           await repository.save(operateData);
           break;
         case OperateType.DELETE:
