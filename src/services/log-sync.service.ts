@@ -105,19 +105,27 @@ export class LogSyncService {
         : [];
 
     // 2. 获取服务器端变更（其他设备上传的日志）
-    const changes = shouldFetchChanges
-      ? await this.logSyncRepository.find({
-          where: {
-            operatorId: userId,
-            syncState: SyncState.SYNCED,
-            ...(lastSyncTime && { syncTime: MoreThan(lastSyncTime) }),
-            ...(logs.length > 0 && { id: Not(In(logs.map((log) => log.id))) }),
-          },
-          order: {
-            operatedAt: 'ASC',
-          },
-        })
-      : logs;
+    const commonConditions = {
+      syncState: SyncState.SYNCED,
+      ...(lastSyncTime && { syncTime: MoreThan(lastSyncTime) }),
+      ...(logs.length > 0 && { id: Not(In(logs.map((log) => log.id))) }),
+    };
+
+    const changes = await this.logSyncRepository.find({
+      where: [
+        {
+          ...commonConditions,
+          operatorId: userId,
+        },
+        {
+          ...commonConditions,
+          businessType: BusinessType.USER,
+        },
+      ],
+      order: {
+        operatedAt: 'ASC',
+      },
+    });
     await this.desensitize(changes, userId);
     // 3. 返回结果
     return {
@@ -143,14 +151,17 @@ export class LogSyncService {
       const operateData = JSON.parse(log.operateData);
 
       // 脱敏敏感信息
+      if (operateData.username) {
+        operateData.username = '<secret>';
+      }
       if (operateData.password) {
-        delete operateData.password;
+        operateData.password = '<secret>';
       }
       if (operateData.phone) {
-        operateData.phone = '***********';
+        operateData.phone = '<secret>';
       }
       if (operateData.email) {
-        operateData.email = `*******@*******`;
+        operateData.email = '<secret>';
       }
 
       // 更新操作数据
