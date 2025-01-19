@@ -1,13 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, In, MoreThan, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { LogSync } from '../pojo/entities/log-sync.entity';
 import { SyncState } from '../pojo/enums/sync-state.enum';
 import { now } from '../utils/date.util';
 import { SyncService } from './sync.service';
 import { BusinessType } from 'src/pojo/enums/business-type.enum';
 import { OperateType } from 'src/pojo/enums/operate-type.enum';
-import { CreateUserDto } from 'src/pojo/dto/user/create-user.dto';
 import { UserService } from './user.service';
 import { TokenService } from './token.service';
 import {
@@ -92,7 +91,6 @@ export class LogSyncService {
     logs: LogSync[] = [],
     userId: string,
     lastSyncTime?: number,
-    shouldFetchChanges = true,
   ): Promise<SyncResult> {
     const currentTime = now();
 
@@ -105,27 +103,70 @@ export class LogSyncService {
         : [];
 
     // 2. 获取服务器端变更（其他设备上传的日志）
-    const commonConditions = {
-      syncState: SyncState.SYNCED,
-      ...(lastSyncTime && { syncTime: MoreThan(lastSyncTime) }),
-      ...(logs.length > 0 && { id: Not(In(logs.map((log) => log.id))) }),
-    };
+    const commonWhere = [
+      'sync_state = ?',
+      lastSyncTime ? 'sync_time > ?' : null,
+      logs.length > 0 ? 'id NOT IN (?)' : null,
+    ]
+      .filter(Boolean)
+      .join(' AND ');
 
-    const changes = await this.logSyncRepository.find({
-      where: [
-        {
-          ...commonConditions,
-          operatorId: userId,
-        },
-        {
-          ...commonConditions,
-          businessType: BusinessType.USER,
-        },
-      ],
-      order: {
-        operatedAt: 'ASC',
-      },
-    });
+    const commonParams = [
+      SyncState.SYNCED,
+      ...(lastSyncTime ? [lastSyncTime] : []),
+      ...(logs.length > 0 ? [logs.map((log) => log.id)] : []),
+    ];
+
+    // 构建三个独立的查询
+    const userLogsQuery = `
+      SELECT log.* FROM log_sync log 
+      WHERE operator_id = ? AND ${commonWhere}
+    `;
+
+    const userTypeLogsQuery = `
+      SELECT log.* FROM log_sync log 
+      WHERE business_type = ? AND ${commonWhere}
+    `;
+
+    const bookLogsQuery = `
+      SELECT log.* FROM log_sync log 
+      INNER JOIN rel_accountbook_user abu 
+        ON log.parent_type = ? 
+        AND log.parent_id = abu.account_book_id 
+        AND abu.user_id = ? 
+        AND abu.can_view_book = true 
+      WHERE ${commonWhere}
+    `;
+
+    // 合并查询
+    const rawQuery = `
+      SELECT DISTINCT t.* FROM (
+        (${userLogsQuery})
+        UNION ALL
+        (${userTypeLogsQuery})
+        UNION ALL
+        (${bookLogsQuery})
+      ) as t
+      ORDER BY t.operated_at ASC
+    `;
+
+    // 合并所有参数
+    const allParams = [
+      // 用户日志参数
+      userId,
+      ...commonParams,
+      // 用户类型日志参数
+      BusinessType.USER,
+      ...commonParams,
+      // 账本日志参数
+      'book',
+      userId,
+      ...commonParams,
+    ];
+
+    // 执行查询
+    const changes = await this.logSyncRepository.query(rawQuery, allParams);
+
     await this.desensitize(changes, userId);
     // 3. 返回结果
     return {

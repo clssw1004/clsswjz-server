@@ -20,7 +20,6 @@ export class LogSyncController {
       dto.logs,
       req.user.sub,
       dto.syncTimeStamp,
-      true,
     );
   }
 
