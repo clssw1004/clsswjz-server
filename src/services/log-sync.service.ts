@@ -104,70 +104,62 @@ export class LogSyncService {
 
     // 2. 获取服务器端变更（其他设备上传的日志）
     const commonWhere = [
-      'sync_state = ?',
-      lastSyncTime ? 'sync_time > ?' : null,
-      logs.length > 0 ? 'id NOT IN (?)' : null,
+      'sync_state = :syncState',
+      lastSyncTime ? 'sync_time > :lastSyncTime' : null,
+      logs.length > 0 ? 'id NOT IN (:...logIds)' : null,
     ]
       .filter(Boolean)
       .join(' AND ');
 
-    const commonParams = [
-      SyncState.SYNCED,
-      ...(lastSyncTime ? [lastSyncTime] : []),
-      ...(logs.length > 0 ? [logs.map((log) => log.id)] : []),
-    ];
+    const commonParams = {
+      syncState: SyncState.SYNCED,
+      ...(lastSyncTime && { lastSyncTime }),
+      ...(logs.length > 0 && { logIds: logs.map((log) => log.id) }),
+    };
 
-    // 构建三个独立的查询
-    const userLogsQuery = `
-      SELECT log.* FROM log_sync log 
-      WHERE operator_id = ? AND ${commonWhere}
-    `;
+    // 使用QueryBuilder构建查询
+    const query = this.logSyncRepository
+      .createQueryBuilder('log')
+      .select([
+        'log.id',
+        'log.businessType',
+        'log.operateType',
+        'log.parentType',
+        'log.parentId',
+        'log.operatorId',
+        'log.operatedAt',
+        'log.businessId',
+        'log.operateData',
+        'log.syncState',
+        'log.syncTime',
+        'log.syncError',
+      ])
+      .where(
+        `(
+          (log.operatorId = :userId) OR 
+          (log.businessType = :userType) OR 
+          (
+            log.parentType = :bookType AND 
+            EXISTS (
+              SELECT 1 FROM rel_accountbook_user abu 
+              WHERE abu.account_book_id = log.parentId 
+              AND abu.user_id = :userId 
+              AND abu.can_view_book = true
+            )
+          )
+        )`,
+        {
+          userId,
+          userType: BusinessType.USER,
+          bookType: 'book',
+        },
+      )
+      .andWhere(commonWhere, commonParams)
+      .orderBy('log.operatedAt', 'ASC');
 
-    const userTypeLogsQuery = `
-      SELECT log.* FROM log_sync log 
-      WHERE business_type = ? AND ${commonWhere}
-    `;
-
-    const bookLogsQuery = `
-      SELECT log.* FROM log_sync log 
-      INNER JOIN rel_accountbook_user abu 
-        ON log.parent_type = ? 
-        AND log.parent_id = abu.account_book_id 
-        AND abu.user_id = ? 
-        AND abu.can_view_book = true 
-      WHERE ${commonWhere}
-    `;
-
-    // 合并查询
-    const rawQuery = `
-      SELECT DISTINCT t.* FROM (
-        (${userLogsQuery})
-        UNION ALL
-        (${userTypeLogsQuery})
-        UNION ALL
-        (${bookLogsQuery})
-      ) as t
-      ORDER BY t.operated_at ASC
-    `;
-
-    // 合并所有参数
-    const allParams = [
-      // 用户日志参数
-      userId,
-      ...commonParams,
-      // 用户类型日志参数
-      BusinessType.USER,
-      ...commonParams,
-      // 账本日志参数
-      'book',
-      userId,
-      ...commonParams,
-    ];
-
-    // 执行查询
-    const changes = await this.logSyncRepository.query(rawQuery, allParams);
-
+    const changes = await query.getMany();
     await this.desensitize(changes, userId);
+
     // 3. 返回结果
     return {
       results,
