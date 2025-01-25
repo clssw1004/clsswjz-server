@@ -95,12 +95,13 @@ export class LogSyncService {
     const currentTime = now();
 
     // 1. 处理客户端上传的日志
-    const results =
-      logs.length > 0
-        ? await Promise.all(
-            logs.map((log) => this.processLog(log, currentTime)),
-          )
-        : [];
+    const results = [];
+    if (logs.length > 0) {
+      for (const log of logs) {
+        const result = await this.processLog(log, currentTime);
+        results.push(result);
+      }
+    }
 
     // 2. 获取服务器端变更（其他设备上传的日志）
     const commonWhere = [
