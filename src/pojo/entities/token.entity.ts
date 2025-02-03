@@ -23,8 +23,7 @@ export class Token extends StringIdEntity {
 
   @Column({
     name: 'client_type',
-    type: 'varchar',
-    length: 32,
+    type: 'text',
     comment: '客户端类型',
     nullable: true,
   })
@@ -32,8 +31,7 @@ export class Token extends StringIdEntity {
 
   @Column({
     name: 'client_id',
-    type: 'varchar',
-    length: 32,
+    type: 'text',
     comment: '客户端ID',
     nullable: true,
   })
@@ -41,8 +39,7 @@ export class Token extends StringIdEntity {
 
   @Column({
     name: 'client_name',
-    type: 'varchar',
-    length: 128,
+    type: 'text',
     comment: '客户端名称',
     nullable: true,
   })
