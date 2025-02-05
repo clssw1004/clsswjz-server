@@ -135,27 +135,7 @@ export class LogSyncService {
         'log.syncTime',
         'log.syncError',
       ])
-      .where(
-        `(
-          (log.operatorId = :userId) OR 
-          (log.businessType = :userType) OR 
-          (
-            log.parentType = :bookType AND 
-            EXISTS (
-              SELECT 1 FROM rel_accountbook_user abu 
-              WHERE abu.account_book_id = log.parentId 
-              AND abu.user_id = :userId 
-              AND abu.can_view_book = true
-            )
-          )
-        )`,
-        {
-          userId,
-          userType: BusinessType.USER,
-          bookType: 'book',
-        },
-      )
-      .andWhere(commonWhere, commonParams)
+      .where(commonWhere, commonParams)
       .orderBy('log.operatedAt', 'ASC');
 
     const changes = await query.getMany();
