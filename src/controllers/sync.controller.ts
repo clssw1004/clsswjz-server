@@ -1,18 +1,32 @@
-// import { Controller, Post, Body, Request, Get } from '@nestjs/common';
-// import { SyncService } from '../services/sync.service';
-// import { SyncDataDto } from '../pojo/dto/sync/sync-data.dto';
+import { Body, Controller, Post, Request } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  RegisterSyncDto,
+  SyncDto,
+  SyncResult,
+} from '../pojo/dto/log-sync/sync.dto';
+import { LogSyncService } from '../services/log-sync.service';
+import { Public } from 'src/decorators/public';
 
-// @Controller('sync')
-// export class SyncController {
-//   constructor(private readonly syncService: SyncService) {}
+@ApiTags('客户端同步')
+@Controller('sync')
+export class SyncController {
+  constructor(private readonly logSyncService: LogSyncService) {}
 
-//   @Get('initial')
-//   async getInitialData(@Request() req) {
-//     return await this.syncService.getInitialData(req.user.sub);
-//   }
+  @ApiOperation({ summary: '客户端同步' })
+  @Post('changes')
+  async syncChanges(@Body() dto: SyncDto, @Request() req): Promise<SyncResult> {
+    return await this.logSyncService.sync(
+      dto.logs,
+      req.user.sub,
+      dto.syncTimeStamp,
+    );
+  }
 
-//   @Post('batch')
-//   async syncBatch(@Body() syncData: SyncDataDto, @Request() req) {
-//     return await this.syncService.syncBatch(syncData, req.user.sub);
-//   }
-// }
+  @ApiOperation({ summary: '注册用户(日志)' })
+  @Public()
+  @Post('register')
+  async syncRegister(@Body() registerLog: RegisterSyncDto) {
+    return await this.logSyncService.syncRegister(registerLog);
+  }
+}
