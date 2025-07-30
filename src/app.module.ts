@@ -8,6 +8,7 @@ import { AccountModule } from './modules/account.module';
 import { AuthModule } from './modules/auth.module';
 import { AttachmentModule } from './modules/attachment.module';
 import { SyncModule } from './modules/sync.module';
+import { SimpleLoggerInterceptor } from './interceptors/logger.interceptor';
 
 @Module({
   imports: [
@@ -30,7 +31,10 @@ import { SyncModule } from './modules/sync.module';
     {
       provide: APP_INTERCEPTOR,
       useClass: TransformInterceptor,
+    }, {
+      provide: APP_INTERCEPTOR,
+      useClass: SimpleLoggerInterceptor,
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

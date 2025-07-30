@@ -11,15 +11,10 @@ import { Reflector } from '@nestjs/core';
 import { SKIP_INTERCEPTORS_KEY } from '../decorators/skip-interceptors.decorator';
 
 @Injectable()
-export class TransformInterceptor<T>
-  implements NestInterceptor<T, any>
-{
+export class TransformInterceptor<T> implements NestInterceptor<T, any> {
   constructor(private reflector: Reflector) {}
 
-  intercept(
-    context: ExecutionContext,
-    next: CallHandler,
-  ): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const skipInterceptors = this.reflector.get<boolean>(
       SKIP_INTERCEPTORS_KEY,
       context.getHandler(),
