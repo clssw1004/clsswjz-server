@@ -5,18 +5,18 @@ import {
   SyncDto,
   SyncResult,
 } from '../pojo/dto/log-sync/sync.dto';
-import { LogSyncService } from '../services/log-sync.service';
+import { SyncService } from '../services/sync.service';
 import { Public } from 'src/decorators/public';
 
 @ApiTags('客户端同步')
 @Controller('sync')
 export class SyncController {
-  constructor(private readonly logSyncService: LogSyncService) {}
+  constructor(private readonly syncService: SyncService) {}
 
   @ApiOperation({ summary: '客户端同步' })
   @Post('changes')
   async syncChanges(@Body() dto: SyncDto, @Request() req): Promise<SyncResult> {
-    return await this.logSyncService.sync(
+    return await this.syncService.sync(
       dto.logs,
       req.user.sub,
       dto.syncTimeStamp,
@@ -27,6 +27,6 @@ export class SyncController {
   @Public()
   @Post('register')
   async syncRegister(@Body() registerLog: RegisterSyncDto) {
-    return await this.logSyncService.syncRegister(registerLog);
+    return await this.syncService.syncRegister(registerLog);
   }
 }
