@@ -8,6 +8,7 @@ import { AccountModule } from './modules/account.module';
 import { AuthModule } from './modules/auth.module';
 import { AttachmentModule } from './modules/attachment.module';
 import { SyncModule } from './modules/sync.module';
+import { CacheModule } from './modules/cache.module';
 import { SimpleLoggerInterceptor } from './interceptors/logger.interceptor';
 
 @Module({
@@ -26,6 +27,7 @@ import { SimpleLoggerInterceptor } from './interceptors/logger.interceptor';
     AuthModule,
     AttachmentModule,
     SyncModule,
+    CacheModule,
   ],
   providers: [
     {
