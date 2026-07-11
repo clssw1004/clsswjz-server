@@ -96,3 +96,61 @@ export class SyncResult {
   @ApiProperty({ type: Number, description: '服务器当前时间戳' })
   syncTimeStamp: number;
 }
+
+// Push 响应
+export class SyncPushResult {
+  @ApiProperty({ type: [LogResult], description: '同步结果列表' })
+  results: LogResult[];
+
+  @ApiProperty({ type: Number, description: '服务器当前时间戳' })
+  syncTimeStamp: number;
+
+  @ApiProperty({ type: Number, description: '待拉取变更总数' })
+  totalChanges: number;
+
+  @ApiProperty({ type: String, description: '本次 push 的 commit ID' })
+  commitId: string;
+}
+
+// Pull 请求
+export class SyncPullDto {
+  @ApiProperty({ type: Number, description: '最后同步时间' })
+  @IsNumber()
+  syncTimeStamp: number;
+
+  @ApiProperty({ type: [String], description: '按业务类型过滤', required: false })
+  @IsArray()
+  @IsOptional()
+  businessTypes?: string[];
+
+  @ApiProperty({ type: Number, description: '页码', default: 1 })
+  @IsNumber()
+  page: number;
+
+  @ApiProperty({ type: Number, description: '每页条数', default: 1000 })
+  @IsNumber()
+  pageSize: number;
+
+  @ApiProperty({ type: String, description: 'commit ID，排除已 push 的日志', required: false })
+  @IsString()
+  @IsOptional()
+  commitId?: string;
+}
+
+// Pull 响应
+export class SyncPullResult {
+  @ApiProperty({ type: [LogSync], description: '变更数据列表' })
+  changes: LogSync[];
+
+  @ApiProperty({ type: Number, description: '总条数' })
+  total: number;
+
+  @ApiProperty({ type: Number, description: '当前页码' })
+  page: number;
+
+  @ApiProperty({ type: Number, description: '每页条数' })
+  pageSize: number;
+
+  @ApiProperty({ type: Number, description: '服务器当前时间戳' })
+  syncTimeStamp: number;
+}

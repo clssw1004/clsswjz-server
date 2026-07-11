@@ -5,5 +5,5 @@ export const setCache = (key:string, value:string) => {
 }
 
 export const getCache = (key:string) => {
-    return cache[key];
+    return cache[key] ?? null;
 }

@@ -3,7 +3,9 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   RegisterSyncDto,
   SyncDto,
-  SyncResult,
+  SyncPullDto,
+  SyncPushResult,
+  SyncPullResult,
 } from '../pojo/dto/log-sync/sync.dto';
 import { SyncService } from '../services/sync.service';
 import { Public } from 'src/decorators/public';
@@ -16,15 +18,16 @@ export class SyncController {
 
   constructor(private readonly syncService: SyncService) {}
 
-  @ApiOperation({ summary: '客户端同步' })
-  @Post('changes')
-  async syncChanges(@Body() dto: SyncDto, @Request() req): Promise<SyncResult> {
-    return await this.syncService.sync(
-      dto.logs,
-      req.user.sub,
-      dto.syncTimeStamp,
-      dto.businessTypes,
-    );
+  @ApiOperation({ summary: '推送本地变更到服务端' })
+  @Post('push')
+  async push(@Body() dto: SyncDto, @Request() req): Promise<SyncPushResult> {
+    return await this.syncService.push(dto.logs, req.user.sub, dto.syncTimeStamp);
+  }
+
+  @ApiOperation({ summary: '拉取服务端变更（支持分页）' })
+  @Post('pull')
+  async pull(@Body() dto: SyncPullDto, @Request() req): Promise<SyncPullResult> {
+    return await this.syncService.pull(dto, req.user.sub);
   }
 
   @ApiOperation({ summary: '注册用户(日志)' })
