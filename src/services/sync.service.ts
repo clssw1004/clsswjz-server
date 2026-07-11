@@ -17,7 +17,7 @@ import {
   SyncPullDto,
   SyncPullResult,
 } from 'src/pojo/dto/log-sync/sync.dto';
-import { setCache, getCache } from 'src/utils/cache.util';
+import { BaseCacheService } from './cache.service';
 
 @Injectable()
 export class SyncService {
@@ -28,6 +28,7 @@ export class SyncService {
     private readonly logRunner: LogRunner,
     private readonly userService: UserService,
     private readonly tokenService: TokenService,
+    private readonly cacheService: BaseCacheService,
   ) {}
 
   async syncRegister(createUserLog: RegisterSyncDto) {
@@ -131,7 +132,7 @@ export class SyncService {
     const { nanoid } = await import('nanoid');
     const commitId = nanoid();
     if (processedIds.length > 0) {
-      setCache(`commit:${commitId}`, JSON.stringify(processedIds));
+      await this.cacheService.set(`commit:${commitId}`, JSON.stringify(processedIds));
     }
 
     // 4. 统计待拉取变更总数
@@ -188,7 +189,7 @@ export class SyncService {
 
     // CommitId 排除已 push 的日志
     if (dto.commitId) {
-      const cached = getCache(`commit:${dto.commitId}`);
+      const cached = await this.cacheService.get(`commit:${dto.commitId}`);
       if (cached) {
         const excludeIds = JSON.parse(cached) as string[];
         qb.andWhere('log.id NOT IN (:...excludeIds)', { excludeIds });
