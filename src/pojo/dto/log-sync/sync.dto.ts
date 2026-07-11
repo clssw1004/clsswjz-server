@@ -48,6 +48,16 @@ export class SyncDto {
   @IsNumber()
   @IsOptional()
   syncTimeStamp?: number;
+
+  @ApiProperty({
+    type: [String],
+    description: '按业务类型过滤返回的变更数据，为空则返回全量',
+    required: false,
+    example: ['user', 'book', 'bookMember'],
+  })
+  @IsArray()
+  @IsOptional()
+  businessTypes?: string[];
 }
 
 export class LogResult {

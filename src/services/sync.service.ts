@@ -96,6 +96,7 @@ export class SyncService {
     logs: LogSync[] = [],
     userId: string,
     lastSyncTime?: number,
+    businessTypes?: string[],
   ): Promise<SyncResult> {
     const currentTime = now();
 
@@ -113,6 +114,7 @@ export class SyncService {
       'sync_state = :syncState',
       lastSyncTime ? 'sync_time > :lastSyncTime' : null,
       logs.length > 0 ? 'id NOT IN (:...logIds)' : null,
+      businessTypes?.length > 0 ? 'log.businessType IN (:...businessTypes)' : null,
     ]
       .filter(Boolean)
       .join(' AND ');
@@ -121,6 +123,7 @@ export class SyncService {
       syncState: SyncState.SYNCED,
       ...(lastSyncTime && { lastSyncTime }),
       ...(logs.length > 0 && { logIds: logs.map((log) => log.id) }),
+      ...(businessTypes?.length > 0 && { businessTypes }),
     };
 
     // 使用QueryBuilder构建查询

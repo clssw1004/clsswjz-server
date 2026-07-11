@@ -23,6 +23,7 @@ export class SyncController {
       dto.logs,
       req.user.sub,
       dto.syncTimeStamp,
+      dto.businessTypes,
     );
   }
 
