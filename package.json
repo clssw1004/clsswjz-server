@@ -43,6 +43,7 @@
     "dotenv": "^16.4.5",
     "ioredis": "^5.7.0",
     "lodash": "^4.17.21",
+    "lru-cache": "^11.5.2",
     "mysql2": "^3.11.4",
     "nanoid": "^3.3.8",
     "passport": "^0.7.0",

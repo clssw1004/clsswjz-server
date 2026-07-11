@@ -13,8 +13,11 @@ import _ from 'lodash'
 import {
   LogResult,
   RegisterSyncDto,
-  SyncResult,
+  SyncPushResult,
+  SyncPullDto,
+  SyncPullResult,
 } from 'src/pojo/dto/log-sync/sync.dto';
+import { setCache, getCache } from 'src/utils/cache.util';
 
 @Injectable()
 export class SyncService {
@@ -84,75 +87,129 @@ export class SyncService {
   }
 
   /**
-   * 同步数据
+   * 推送本地变更到服务端
    * @param logs 客户端日志列表
    * @param userId 用户ID
    * @param lastSyncTime 最后同步时间
-   * @param shouldRunSync 是否执行同步操作
-   * @param shouldFetchChanges 是否获取服务器变更
-   * @returns 同步结果
+   * @returns 推送结果
    */
-  async sync(
+  async push(
     logs: LogSync[] = [],
     userId: string,
     lastSyncTime?: number,
-    businessTypes?: string[],
-  ): Promise<SyncResult> {
+  ): Promise<SyncPushResult> {
     const currentTime = now();
+    const results: LogResult[] = [];
+    const processedIds: string[] = [];
 
-    // 1. 处理客户端上传的日志
-    const results = [];
+    // 1. 批量检查哪些 logId 已存在（支持幂等性：前端切换后端后重新 push 不会产生重复）
+    const existingIds: string[] = [];
+    if (logs.length > 0) {
+      const existingLogs = await this.logSyncRepository
+        .createQueryBuilder('log')
+        .select('log.id')
+        .where('log.id IN (:...ids)', { ids: logs.map(l => l.id) })
+        .getMany();
+      existingIds.push(...existingLogs.map(l => l.id));
+    }
+
+    // 2. 处理日志，跳过已存在的
     if (logs.length > 0) {
       for (const log of logs) {
+        if (existingIds.includes(log.id)) {
+          // 已存在，直接返回已同步状态
+          results.push(LogResult.success(log));
+          continue;
+        }
         const result = await this.processLog(log, currentTime);
         results.push(result);
+        processedIds.push(log.id);
       }
     }
 
-    // 2. 获取服务器端变更（其他设备上传的日志）
+    // 3. 生成 commitId 并缓存已处理的 ID
+    const { nanoid } = await import('nanoid');
+    const commitId = nanoid();
+    if (processedIds.length > 0) {
+      setCache(`commit:${commitId}`, JSON.stringify(processedIds));
+    }
+
+    // 4. 统计待拉取变更总数
+    let totalChanges = 0;
     const commonWhere = [
       'sync_state = :syncState',
       lastSyncTime ? 'sync_time > :lastSyncTime' : null,
       logs.length > 0 ? 'id NOT IN (:...logIds)' : null,
-      businessTypes?.length > 0 ? 'log.businessType IN (:...businessTypes)' : null,
     ]
       .filter(Boolean)
       .join(' AND ');
 
-    const commonParams = {
-      syncState: SyncState.SYNCED,
-      ...(lastSyncTime && { lastSyncTime }),
-      ...(logs.length > 0 && { logIds: logs.map((log) => log.id) }),
-      ...(businessTypes?.length > 0 && { businessTypes }),
-    };
+    const countQuery = this.logSyncRepository
+      .createQueryBuilder('log')
+      .where(commonWhere, {
+        syncState: SyncState.SYNCED,
+        ...(lastSyncTime && { lastSyncTime }),
+        ...(logs.length > 0 && { logIds: processedIds }),
+      });
 
-    // 使用QueryBuilder构建查询
-    const query = this.logSyncRepository
+    totalChanges = await countQuery.getCount();
+
+    return { results, syncTimeStamp: currentTime, totalChanges, commitId };
+  }
+
+  /**
+   * 拉取服务端变更（支持分页）
+   * @param dto 拉取请求参数
+   * @param userId 用户ID
+   * @returns 拉取结果
+   */
+  async pull(
+    dto: SyncPullDto,
+    userId: string,
+  ): Promise<SyncPullResult> {
+    const currentTime = now();
+
+    // 构建查询
+    const qb = this.logSyncRepository
       .createQueryBuilder('log')
       .select([
-        'log.id',
-        'log.businessType',
-        'log.operateType',
-        'log.parentType',
-        'log.parentId',
-        'log.operatorId',
-        'log.operatedAt',
-        'log.businessId',
-        'log.operateData',
-        'log.syncState',
-        'log.syncTime',
-        'log.syncError',
+        'log.id', 'log.businessType', 'log.operateType',
+        'log.parentType', 'log.parentId', 'log.operatorId',
+        'log.operatedAt', 'log.businessId', 'log.operateData',
+        'log.syncState', 'log.syncTime', 'log.syncError',
       ])
-      .where(commonWhere, commonParams)
-      .orderBy('log.operatedAt', 'ASC');
+      .where('sync_state = :syncState', { syncState: SyncState.SYNCED })
+      .andWhere('sync_time > :syncTime', { syncTime: dto.syncTimeStamp });
 
-    const changes = await query.getMany();
+    // 业务类型过滤
+    if (dto.businessTypes?.length) {
+      qb.andWhere('log.businessType IN (:...businessTypes)', { businessTypes: dto.businessTypes });
+    }
+
+    // CommitId 排除已 push 的日志
+    if (dto.commitId) {
+      const cached = getCache(`commit:${dto.commitId}`);
+      if (cached) {
+        const excludeIds = JSON.parse(cached) as string[];
+        qb.andWhere('log.id NOT IN (:...excludeIds)', { excludeIds });
+      }
+    }
+
+    // 分页
+    const [changes, total] = await qb
+      .orderBy('log.operatedAt', 'ASC')
+      .skip((dto.page - 1) * dto.pageSize)
+      .take(dto.pageSize)
+      .getManyAndCount();
+
+    // 脱敏
     await this.desensitize(changes, userId);
 
-    // 3. 返回结果
     return {
-      results,
       changes,
+      total,
+      page: dto.page,
+      pageSize: dto.pageSize,
       syncTimeStamp: currentTime,
     };
   }
