@@ -63,18 +63,21 @@ export class SyncService {
     currentTime: number,
   ): Promise<LogResult> {
     try {
-      // 需要执行同步操作
-      await this.logSyncRepository.manager.transaction(
-        async (transactionalEntityManager) => {
-          log.syncTime = currentTime;
-          log.syncState = SyncState.SYNCED;
-          if (log.businessType === BusinessType.USER) {
-            // 目前只有用户信息是需要的,其他业务类型不需要同步到库
+      log.syncTime = currentTime;
+      log.syncState = SyncState.SYNCED;
+
+      if (log.businessType === BusinessType.USER) {
+        // USER 类型需要在事务中执行同步操作（创建用户实体 + 记录同步日志）
+        await this.logSyncRepository.manager.transaction(
+          async (transactionalEntityManager) => {
             await this.logRunner.runLogSync(log, transactionalEntityManager);
-          }
-          await transactionalEntityManager.save(LogSync, log);
-        },
-      );
+            await transactionalEntityManager.save(LogSync, log);
+          },
+        );
+      } else {
+        // 非 USER 类型只需保存日志记录，直接写入避免 SQLite SAVEPOINT 兼容问题
+        await this.logSyncRepository.save(log);
+      }
 
       return LogResult.success(log);
     } catch (error) {
