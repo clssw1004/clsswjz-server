@@ -7,6 +7,8 @@ import { LogSync } from '../pojo/entities/log-sync.entity';
 import { AccountBook } from '../pojo/entities/account-book.entity';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
 import { AdminController } from '../controllers/admin.controller';
+import { AdminUserController } from '../controllers/admin-user.controller';
+import { AdminLogController } from '../controllers/admin-log.controller';
 import { AdminService } from '../services/admin.service';
 import { AdminAuthGuard } from '../guards/admin-auth.guard';
 import { SyncModule } from './sync.module';
@@ -31,7 +33,7 @@ import { SyncModule } from './sync.module';
     // 提供 MaterializeService（管理台手动触发回放）
     SyncModule,
   ],
-  controllers: [AdminController],
+  controllers: [AdminController, AdminUserController, AdminLogController],
   providers: [AdminService, AdminAuthGuard],
 })
 export class AdminModule {}

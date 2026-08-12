@@ -160,4 +160,124 @@ describe('AdminService', () => {
     expect(items[0].logCount).toBe(1);
     expect(items[0].password).toBeUndefined();
   });
+
+  it('listLogs filters by operatorId and returns only matching logs', async () => {
+    const alice = await makeUser('alice');
+    await makeUser('bob');
+    const t = Date.now();
+    await logSyncRepo.save(
+      logSyncRepo.create({
+        id: 'log-a1',
+        businessType: BusinessType.ITEM,
+        operateType: OperateType.CREATE,
+        parentType: 'book',
+        parentId: 'b1',
+        operatorId: alice.id,
+        operatedAt: t,
+        businessId: 'i1',
+        operateData: '{}',
+        syncState: SyncState.SYNCED,
+        syncTime: t,
+      }),
+    );
+    await logSyncRepo.save(
+      logSyncRepo.create({
+        id: 'log-b1',
+        businessType: BusinessType.BOOK,
+        operateType: OperateType.CREATE,
+        parentType: 'book',
+        parentId: 'b2',
+        operatorId: 'user-bob',
+        operatedAt: t,
+        businessId: 'b2',
+        operateData: '{}',
+        syncState: SyncState.SYNCED,
+        syncTime: t,
+      }),
+    );
+
+    const { items, total } = await service.listLogs({
+      page: 1,
+      pageSize: 10,
+      operatorId: alice.id,
+    });
+
+    expect(total).toBe(1);
+    expect(items[0].id).toBe('log-a1');
+  });
+
+  it('listUserLogs returns a specific user\'s logs', async () => {
+    const alice = await makeUser('alice');
+    const t = Date.now();
+    await logSyncRepo.save(
+      logSyncRepo.create({
+        id: 'log-a2',
+        businessType: BusinessType.ITEM,
+        operateType: OperateType.CREATE,
+        parentType: 'book',
+        parentId: 'b1',
+        operatorId: alice.id,
+        operatedAt: t,
+        businessId: 'i2',
+        operateData: '{}',
+        syncState: SyncState.SYNCED,
+        syncTime: t,
+      }),
+    );
+
+    const { items } = await service.listUserLogs(alice.id, {
+      page: 1,
+      pageSize: 10,
+    });
+
+    expect(items.length).toBe(1);
+    expect(items[0].businessId).toBe('i2');
+  });
+
+  it('getLogDetail returns the log with parsed operateData', async () => {
+    await logSyncRepo.save(
+      logSyncRepo.create({
+        id: 'log-detail',
+        businessType: BusinessType.ITEM,
+        operateType: OperateType.CREATE,
+        parentType: 'book',
+        parentId: 'b1',
+        operatorId: 'u1',
+        operatedAt: Date.now(),
+        businessId: 'i1',
+        operateData: JSON.stringify({ id: 'i1', amount: 50 }),
+        syncState: SyncState.SYNCED,
+        syncTime: Date.now(),
+      }),
+    );
+
+    const detail = await service.getLogDetail('log-detail');
+
+    expect(detail.operateData).toEqual({ id: 'i1', amount: 50 });
+  });
+
+  it('getUserDetail returns user stats without sensitive fields', async () => {
+    const alice = await makeUser('alice');
+    await logSyncRepo.save(
+      logSyncRepo.create({
+        id: 'log-a3',
+        businessType: BusinessType.ITEM,
+        operateType: OperateType.CREATE,
+        parentType: 'book',
+        parentId: 'b1',
+        operatorId: alice.id,
+        operatedAt: Date.now(),
+        businessId: 'i1',
+        operateData: '{}',
+        syncState: SyncState.SYNCED,
+        syncTime: Date.now(),
+      }),
+    );
+
+    const detail = await service.getUserDetail(alice.id);
+
+    expect(detail.user.username).toBe('alice');
+    expect(detail.stats.logCount).toBe(1);
+    expect(detail.user).not.toHaveProperty('password');
+  });
 });

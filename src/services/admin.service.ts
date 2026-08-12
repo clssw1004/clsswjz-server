@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -122,5 +126,105 @@ export class AdminService {
     }
 
     return { items, total, page: params.page, pageSize: params.pageSize };
+  }
+
+  /** 日志审计列表：多条件过滤（操作人/业务类型/操作类型/状态/时间范围） */
+  async listLogs(params: {
+    page: number;
+    pageSize: number;
+    operatorId?: string;
+    businessType?: string;
+    operateType?: string;
+    syncState?: string;
+    startTime?: number;
+    endTime?: number;
+  }) {
+    const qb = this.logSyncRepository.createQueryBuilder('log');
+    if (params.operatorId) {
+      qb.andWhere('log.operatorId = :operatorId', {
+        operatorId: params.operatorId,
+      });
+    }
+    if (params.businessType) {
+      qb.andWhere('log.businessType = :businessType', {
+        businessType: params.businessType,
+      });
+    }
+    if (params.operateType) {
+      qb.andWhere('log.operateType = :operateType', {
+        operateType: params.operateType,
+      });
+    }
+    if (params.syncState) {
+      qb.andWhere('log.syncState = :syncState', {
+        syncState: params.syncState,
+      });
+    }
+    if (params.startTime) {
+      qb.andWhere('log.operatedAt >= :startTime', {
+        startTime: params.startTime,
+      });
+    }
+    if (params.endTime) {
+      qb.andWhere('log.operatedAt <= :endTime', {
+        endTime: params.endTime,
+      });
+    }
+    const [items, total] = await qb
+      .orderBy('log.operatedAt', 'DESC')
+      .skip((params.page - 1) * params.pageSize)
+      .take(params.pageSize)
+      .getManyAndCount();
+    return { items, total, page: params.page, pageSize: params.pageSize };
+  }
+
+  /** 某用户的操作日志列表 */
+  async listUserLogs(
+    userId: string,
+    params: { page: number; pageSize: number; businessType?: string },
+  ) {
+    return this.listLogs({ ...params, operatorId: userId });
+  }
+
+  /** 单条日志详情，operateData 解析为对象 */
+  async getLogDetail(id: string) {
+    const log = await this.logSyncRepository.findOneBy({ id });
+    if (!log) {
+      throw new NotFoundException('日志不存在');
+    }
+    let operateData: any = {};
+    try {
+      operateData = JSON.parse(log.operateData || '{}');
+    } catch {
+      operateData = log.operateData;
+    }
+    return { ...log, operateData };
+  }
+
+  /** 用户详情 + 日志统计（不含密码等敏感字段） */
+  async getUserDetail(userId: string) {
+    const user = await this.userRepository.findOneBy({ id: userId });
+    if (!user) {
+      throw new NotFoundException('用户不存在');
+    }
+    const stats = await this.logSyncRepository
+      .createQueryBuilder('log')
+      .select('COUNT(*)', 'logCount')
+      .addSelect('MAX(log.syncTime)', 'lastSyncTime')
+      .where('log.operatorId = :uid', { uid: userId })
+      .getRawOne();
+    return {
+      user: {
+        id: user.id,
+        username: user.username,
+        nickname: user.nickname,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+      stats: {
+        logCount: Number(stats?.logCount ?? 0),
+        lastSyncTime: stats?.lastSyncTime ?? null,
+      },
+    };
   }
 }
