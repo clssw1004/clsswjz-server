@@ -142,6 +142,20 @@ export class SyncService {
           );
           continue;
         }
+        // 数据隔离：book 作用域日志要求操作者是该账本创建者/成员，防止向他人账本投毒。
+        // 例外：新建账本（businessType=book && create，parentId=businessId，账本尚不存在）
+        const isBookCreate =
+          log.businessType === BusinessType.BOOK &&
+          log.operateType === OperateType.CREATE;
+        if (log.parentType === 'book' && !isBookCreate) {
+          const allowed = await this.canOperateBook(log.parentId, userId);
+          if (!allowed) {
+            results.push(
+              LogResult.error(log, `无权操作账本 ${log.parentId}，拒绝同步`),
+            );
+            continue;
+          }
+        }
         const result = await this.processLog(log, currentTime);
         results.push(result);
         processedIds.push(log.id);
@@ -297,6 +311,22 @@ export class SyncService {
         ...memberships.map((r) => r.accountBookId),
       ]),
     ];
+  }
+
+  /**
+   * 操作者是否可向某账本写入日志 = 该账本存在且操作者是创建者/成员。
+   * 账本尚不存在（未落库或未知 id）时乐观放行，避免新建账本后立即记账被误拒。
+   */
+  private async canOperateBook(
+    bookId: string,
+    operatorId: string,
+  ): Promise<boolean> {
+    const exists = await this.accountBookRepository.existsBy({ id: bookId });
+    if (!exists) {
+      return true;
+    }
+    const myBookIds = await this.getMyBookIds(operatorId);
+    return myBookIds.includes(bookId);
   }
 
   private async desensitize(logs: LogSync[], userId: string) {

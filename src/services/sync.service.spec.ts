@@ -263,6 +263,53 @@ describe('SyncService', () => {
       expect(await logSyncRepo.count()).toBe(1);
       expect(cacheMock.set).not.toHaveBeenCalled();
     });
+
+    it('rejects a book-scoped log when the operator is not a member of that book', async () => {
+      // u2 创建账本 b2 并已落库；u1 与之无关
+      await insertSynced(bookCreate('b2', 'u2'));
+      await materializeService.flush();
+
+      const log = buildLog({
+        businessType: BusinessType.ITEM,
+        operateType: OperateType.CREATE,
+        parentId: 'b2',
+        businessId: 'item-x',
+      });
+      const result = await service.push([log], 'u1');
+
+      expect(result.results[0].syncState).toBe(SyncState.FAILED);
+      expect(result.results[0].syncError).toContain('无权');
+      // 被拒的日志未落库（b2 的创建日志仍在，但 item-x 不应出现）
+      const pushed = await logSyncRepo.findOneBy({ id: log.id });
+      expect(pushed).toBeNull();
+    });
+
+    it('allows a book create log for a new book (self-referential parent)', async () => {
+      const result = await service.push([buildLog()], 'u1');
+      await materializeService.flush();
+
+      expect(result.results[0].syncState).toBe(SyncState.SYNCED);
+    });
+
+    it('allows pushing to a book the user created', async () => {
+      await service.push(
+        [buildLog({ id: 'log-b1', parentId: 'b1', businessId: 'b1' })],
+        'u1',
+      );
+      await materializeService.flush();
+
+      const log = buildLog({
+        id: 'log-item-b1',
+        businessType: BusinessType.ITEM,
+        operateType: OperateType.CREATE,
+        parentId: 'b1',
+        businessId: 'item-1',
+      });
+      const result = await service.push([log], 'u1');
+      await materializeService.flush();
+
+      expect(result.results[0].syncState).toBe(SyncState.SYNCED);
+    });
   });
 
   describe('pull isolation', () => {
