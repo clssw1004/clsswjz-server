@@ -5,6 +5,7 @@ import { LogSync } from '../pojo/entities/log-sync.entity';
 import { SyncState } from '../pojo/enums/sync-state.enum';
 import { now } from '../utils/date.util';
 import { LogRunner } from './log-runner';
+import { MaterializeService } from './materialize.service';
 import { BusinessType } from 'src/pojo/enums/business-type.enum';
 import { OperateType } from 'src/pojo/enums/operate-type.enum';
 import { UserService } from './user.service';
@@ -26,6 +27,7 @@ export class SyncService {
     @InjectRepository(LogSync)
     private readonly logSyncRepository: Repository<LogSync>,
     private readonly logRunner: LogRunner,
+    private readonly materializeService: MaterializeService,
     private readonly userService: UserService,
     private readonly tokenService: TokenService,
     private readonly cacheService: BaseCacheService,
@@ -157,6 +159,13 @@ export class SyncService {
       });
 
     totalChanges = await countQuery.getCount();
+
+    // 5. 异步触发日志回放落库（不阻塞 push 响应；回放由 MaterializeService 独立处理）
+    if (processedIds.length > 0) {
+      void this.materializeService.flush().catch((error: any) => {
+        this.logger.error(`日志回放后台任务失败: ${error?.message}`);
+      });
+    }
 
     return { results, syncTimeStamp: currentTime, totalChanges, commitId };
   }

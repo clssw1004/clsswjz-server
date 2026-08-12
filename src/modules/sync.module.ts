@@ -4,6 +4,7 @@ import { LogSync } from '../pojo/entities/log-sync.entity';
 import { SyncController } from '../controllers/sync.controller';
 import { SyncService } from '../services/sync.service';
 import { LogRunner } from '../services/log-runner';
+import { MaterializeService } from '../services/materialize.service';
 import { BaseCacheService } from '../services/cache.service';
 import { LruCacheService } from '../services/lru-cache.service';
 import { AccountModule } from './account.module';
@@ -15,8 +16,9 @@ import { AuthModule } from './auth.module';
   providers: [
     SyncService,
     LogRunner,
+    MaterializeService,
     { provide: BaseCacheService, useClass: LruCacheService },
   ],
-  exports: [SyncService, LogRunner],
+  exports: [SyncService, LogRunner, MaterializeService],
 })
 export class SyncModule {}
