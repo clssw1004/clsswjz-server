@@ -127,6 +127,16 @@ export class SyncService {
           results.push(LogResult.success(log));
           continue;
         }
+        // 数据隔离：拒绝 operatorId 与当前登录用户不符的日志（防止冒充他人身份写日志）
+        if (log.operatorId !== userId) {
+          results.push(
+            LogResult.error(
+              log,
+              `operatorId(${log.operatorId}) 与当前登录用户(${userId})不符，拒绝同步`,
+            ),
+          );
+          continue;
+        }
         const result = await this.processLog(log, currentTime);
         results.push(result);
         processedIds.push(log.id);
