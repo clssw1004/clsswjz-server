@@ -1,7 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 import { LogSync } from '../pojo/entities/log-sync.entity';
+import { AccountBook } from '../pojo/entities/account-book.entity';
+import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
 import { SyncState } from '../pojo/enums/sync-state.enum';
 import { now } from '../utils/date.util';
 import { LogRunner } from './log-runner';
@@ -10,7 +12,6 @@ import { BusinessType } from 'src/pojo/enums/business-type.enum';
 import { OperateType } from 'src/pojo/enums/operate-type.enum';
 import { UserService } from './user.service';
 import { TokenService } from './token.service';
-import _ from 'lodash'
 import {
   LogResult,
   RegisterSyncDto,
@@ -22,7 +23,7 @@ import { BaseCacheService } from './cache.service';
 
 @Injectable()
 export class SyncService {
-    private readonly logger = new Logger(SyncService.name, { timestamp: true });
+  private readonly logger = new Logger(SyncService.name, { timestamp: true });
   constructor(
     @InjectRepository(LogSync)
     private readonly logSyncRepository: Repository<LogSync>,
@@ -31,6 +32,10 @@ export class SyncService {
     private readonly userService: UserService,
     private readonly tokenService: TokenService,
     private readonly cacheService: BaseCacheService,
+    @InjectRepository(AccountBook)
+    private readonly accountBookRepository: Repository<AccountBook>,
+    @InjectRepository(AccountBookUser)
+    private readonly accountBookUserRepository: Repository<AccountBookUser>,
   ) {}
 
   async syncRegister(createUserLog: RegisterSyncDto) {
@@ -114,9 +119,9 @@ export class SyncService {
       const existingLogs = await this.logSyncRepository
         .createQueryBuilder('log')
         .select('log.id')
-        .where('log.id IN (:...ids)', { ids: logs.map(l => l.id) })
+        .where('log.id IN (:...ids)', { ids: logs.map((l) => l.id) })
         .getMany();
-      existingIds.push(...existingLogs.map(l => l.id));
+      existingIds.push(...existingLogs.map((l) => l.id));
     }
 
     // 2. 处理日志，跳过已存在的
@@ -147,7 +152,10 @@ export class SyncService {
     const { nanoid } = await import('nanoid');
     const commitId = nanoid();
     if (processedIds.length > 0) {
-      await this.cacheService.set(`commit:${commitId}`, JSON.stringify(processedIds));
+      await this.cacheService.set(
+        `commit:${commitId}`,
+        JSON.stringify(processedIds),
+      );
     }
 
     // 4. 统计待拉取变更总数
@@ -186,27 +194,58 @@ export class SyncService {
    * @param userId 用户ID
    * @returns 拉取结果
    */
-  async pull(
-    dto: SyncPullDto,
-    userId: string,
-  ): Promise<SyncPullResult> {
+  async pull(dto: SyncPullDto, userId: string): Promise<SyncPullResult> {
     const currentTime = now();
+
+    // 数据隔离前置：先回放待处理日志，保证账本成员关系是最新的
+    // （新成员加入的 bookMember 日志在邀请者 push 时落库，这里确保已被回放到成员关系表）
+    await this.materializeService.flush();
 
     // 构建查询
     const qb = this.logSyncRepository
       .createQueryBuilder('log')
       .select([
-        'log.id', 'log.businessType', 'log.operateType',
-        'log.parentType', 'log.parentId', 'log.operatorId',
-        'log.operatedAt', 'log.businessId', 'log.operateData',
-        'log.syncState', 'log.syncTime', 'log.syncError',
+        'log.id',
+        'log.businessType',
+        'log.operateType',
+        'log.parentType',
+        'log.parentId',
+        'log.operatorId',
+        'log.operatedAt',
+        'log.businessId',
+        'log.operateData',
+        'log.syncState',
+        'log.syncTime',
+        'log.syncError',
       ])
       .where('sync_state = :syncState', { syncState: SyncState.SYNCED })
       .andWhere('sync_time > :syncTime', { syncTime: dto.syncTimeStamp });
 
+    // 数据隔离：可见范围 = 自己的日志 + 自己参与账本（创建/成员）下的日志 + 关于自己的成员事件
+    const myBookIds = await this.getMyBookIds(userId);
+    qb.andWhere(
+      new Brackets((sub) => {
+        sub.where('log.operator_id = :userId', { userId });
+        if (myBookIds.length > 0) {
+          sub.orWhere(
+            "log.parent_type = 'book' AND log.parent_id IN (:...myBookIds)",
+            { myBookIds },
+          );
+        }
+        // 关于我的 bookMember 事件（加入/移除）常驻可见，即使我已不是成员，
+        // 使被移除者能收到"自己被移除"的通知（依赖客户端在 delete 日志携带 userId）
+        sub.orWhere(
+          "log.business_type = 'bookMember' AND json_extract(log.operate_data, '$.userId') = :userId",
+          { userId },
+        );
+      }),
+    );
+
     // 业务类型过滤
     if (dto.businessTypes?.length) {
-      qb.andWhere('log.businessType IN (:...businessTypes)', { businessTypes: dto.businessTypes });
+      qb.andWhere('log.businessType IN (:...businessTypes)', {
+        businessTypes: dto.businessTypes,
+      });
     }
 
     // CommitId 排除已 push 的日志
@@ -235,6 +274,29 @@ export class SyncService {
       pageSize: dto.pageSize,
       syncTimeStamp: currentTime,
     };
+  }
+
+  /**
+   * 用户参与的账本 ID 集合 = 创建的账本（account_books.created_by）∪ 作为成员加入的账本
+   * （rel_accountbook_user.user_id）。成员关系来自日志回放落库，pull 前已 flush 保证最新。
+   */
+  private async getMyBookIds(userId: string): Promise<string[]> {
+    const created = await this.accountBookRepository
+      .createQueryBuilder('book')
+      .select('book.id')
+      .where('book.created_by = :userId', { userId })
+      .getMany();
+    const memberships = await this.accountBookUserRepository
+      .createQueryBuilder('rel')
+      .select('rel.accountBookId')
+      .where('rel.user_id = :userId', { userId })
+      .getMany();
+    return [
+      ...new Set([
+        ...created.map((b) => b.id),
+        ...memberships.map((r) => r.accountBookId),
+      ]),
+    ];
   }
 
   private async desensitize(logs: LogSync[], userId: string) {

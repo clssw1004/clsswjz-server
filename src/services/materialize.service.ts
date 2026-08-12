@@ -27,7 +27,7 @@ export class MaterializeService {
   private readonly logger = new Logger(MaterializeService.name, {
     timestamp: true,
   });
-  private flushing = false;
+  private flushPromise: Promise<FlushResult> | null = null;
 
   constructor(
     @InjectRepository(LogSync)
@@ -37,44 +37,50 @@ export class MaterializeService {
 
   /**
    * 回放所有待处理日志，直到没有待处理或本轮无进展。
+   * 若已在回放中，返回同一个 in-flight Promise（并发调用共享一次回放，调用方可等待其完成）。
    * @returns 本次回放的统计结果
    */
   async flush(opts: { limit?: number } = {}): Promise<FlushResult> {
-    if (this.flushing) {
-      return { processed: 0, failed: 0 };
+    if (this.flushPromise) {
+      return this.flushPromise;
     }
-    this.flushing = true;
+    const promise = this.doFlush(opts);
+    this.flushPromise = promise;
+    try {
+      return await promise;
+    } finally {
+      this.flushPromise = null;
+    }
+  }
+
+  private async doFlush(opts: { limit?: number }): Promise<FlushResult> {
     const limit = opts.limit ?? 200;
     const result: FlushResult = { processed: 0, failed: 0 };
     const attempted = new Set<string>();
-    try {
-      while (true) {
-        const pending = (
-          await this.logSyncRepository.find({
-            where: { syncState: SyncState.SYNCED, materializedAt: IsNull() },
-            order: { operatedAt: 'ASC' },
-            take: limit,
-          })
-        ).filter((log) => !attempted.has(log.id));
-        if (pending.length === 0) {
-          break;
-        }
-        let progressed = 0;
-        for (const log of pending) {
-          attempted.add(log.id);
-          const before = result.processed;
-          await this.applyOne(log, result);
-          if (result.processed > before) {
-            progressed++;
-          }
-        }
-        // 本轮无任何日志被落库（全是失败/跳过）时停止，避免对永久失败日志无限重试
-        if (progressed === 0) {
-          break;
+    while (true) {
+      const pending = (
+        await this.logSyncRepository.find({
+          where: { syncState: SyncState.SYNCED, materializedAt: IsNull() },
+          order: { operatedAt: 'ASC' },
+          take: limit,
+        })
+      ).filter((log) => !attempted.has(log.id));
+      if (pending.length === 0) {
+        break;
+      }
+      let progressed = 0;
+      for (const log of pending) {
+        attempted.add(log.id);
+        const before = result.processed;
+        await this.applyOne(log, result);
+        if (result.processed > before) {
+          progressed++;
         }
       }
-    } finally {
-      this.flushing = false;
+      // 本轮无任何日志被落库（全是失败/跳过）时停止，避免对永久失败日志无限重试
+      if (progressed === 0) {
+        break;
+      }
     }
     return result;
   }

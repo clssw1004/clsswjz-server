@@ -201,14 +201,14 @@ describe('MaterializeService', () => {
     expect(await accountBookRepo.findOneBy({ id: 'book4' })).not.toBeNull();
   });
 
-  it('guards against concurrent flushes to avoid double replay', async () => {
+  it('shares one in-flight flush across concurrent calls to avoid double replay', async () => {
     await insertLog(bookCreateLog('book5', 1000));
     await insertLog(bookCreateLog('book6', 1000));
 
     const [a, b] = await Promise.all([service.flush(), service.flush()]);
 
-    // 并发下总数不能超过待处理日志数（2），且不会重复落库
-    expect(a.processed + b.processed).toBeLessThanOrEqual(2);
+    // 并发调用共享同一次回放，返回同一结果；不会重复落库
+    expect(a.processed).toBe(b.processed);
     expect(await accountBookRepo.count()).toBe(2);
   });
 });
