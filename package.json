@@ -22,7 +22,8 @@
     "docker:run": "docker run -p 3000:3000 clsswjz-server",
     "docker:compose": "docker-compose up -d",
     "docker:compose:build": "docker-compose up -d --build",
-    "mock:data": "ts-node src/scripts/mock-data.ts"
+    "mock:data": "ts-node src/scripts/mock-data.ts",
+    "materialize": "ts-node src/scripts/materialize.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.9",
