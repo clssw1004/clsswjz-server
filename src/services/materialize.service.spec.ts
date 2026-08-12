@@ -61,6 +61,7 @@ describe('MaterializeService', () => {
       dataSource.getRepository(AccountFund),
       dataSource.getRepository(AccountBookUser),
       userRepo,
+      dataSource.getRepository(AttachmentEntity),
     );
     service = new MaterializeService(logSyncRepo, logRunner);
   });
@@ -176,7 +177,7 @@ describe('MaterializeService', () => {
     expect(log!.materializedAt).not.toBeNull();
   });
 
-  it('records materialize_error for unsupported business types without blocking others', async () => {
+  it('skips unsupported business types (marks materialized) without blocking others', async () => {
     await insertLog({
       id: 'log-note',
       businessType: 'note' as unknown as BusinessType, // 服务端枚举不支持的扩展类型
@@ -190,12 +191,12 @@ describe('MaterializeService', () => {
 
     const result = await service.flush();
 
-    expect(result.failed).toBe(1);
-    expect(result.processed).toBe(1);
-    // 失败日志保留 pending（materialized_at 为 null）并记录错误
-    const failedLog = await logSyncRepo.findOneBy({ id: 'log-note' });
-    expect(failedLog!.materializedAt).toBeNull();
-    expect(failedLog!.materializeError).toContain('不支持的业务类型');
+    expect(result.failed).toBe(0);
+    expect(result.processed).toBe(2);
+    // 不支持的日志被跳过：打上 materialized_at（不再重试）并记录原因
+    const skippedLog = await logSyncRepo.findOneBy({ id: 'log-note' });
+    expect(skippedLog!.materializedAt).not.toBeNull();
+    expect(skippedLog!.materializeError).toContain('不支持的业务类型');
     // 后续日志不受阻塞
     expect(await accountBookRepo.findOneBy({ id: 'book4' })).not.toBeNull();
   });

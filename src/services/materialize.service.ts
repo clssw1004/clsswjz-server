@@ -87,6 +87,19 @@ export class MaterializeService {
       return;
     }
 
+    // 服务端不支持的扩展类型（如 note/debt），跳过并打标，避免无限重试
+    if (!this.logRunner.supports(log.businessType)) {
+      await this.logSyncRepository.update(
+        { id: log.id },
+        {
+          materializedAt: now(),
+          materializeError: `不支持的业务类型: ${log.businessType}（已跳过）`,
+        },
+      );
+      result.processed++;
+      return;
+    }
+
     try {
       await this.logSyncRepository.manager.transaction(async (em) => {
         const replay = await this.logRunner.runLogSync(log, em);

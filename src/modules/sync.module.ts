@@ -9,9 +9,15 @@ import { BaseCacheService } from '../services/cache.service';
 import { LruCacheService } from '../services/lru-cache.service';
 import { AccountModule } from './account.module';
 import { AuthModule } from './auth.module';
+import { AttachmentModule } from './attachment.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([LogSync]), AccountModule, AuthModule],
+  imports: [
+    TypeOrmModule.forFeature([LogSync]),
+    AccountModule,
+    AuthModule,
+    AttachmentModule,
+  ],
   controllers: [SyncController],
   providers: [
     SyncService,

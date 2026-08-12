@@ -9,6 +9,7 @@ import { AccountSymbol } from '../pojo/entities/account-symbol.entity';
 import { AccountFund } from '../pojo/entities/account-fund.entity';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
 import { User } from '../pojo/entities/user.entity';
+import { AttachmentEntity } from '../pojo/entities/attachment.entity';
 import { LogSync } from '../pojo/entities/log-sync.entity';
 import { BusinessType } from 'src/pojo/enums/business-type.enum';
 import { OperateType } from 'src/pojo/enums/operate-type.enum';
@@ -33,13 +34,46 @@ export class LogRunner {
     private accountBookUserRepository: Repository<AccountBookUser>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(AttachmentEntity)
+    private attachmentRepository: Repository<AttachmentEntity>,
   ) {}
+
+  /**
+   * 该业务类型是否可在服务端回放落库（含伪类型/暂跳过类型）。
+   * MaterializeService 用它区分"可回放但失败（应重试）"与"不支持（应跳过）"。
+   */
+  supports(businessType: BusinessType): boolean {
+    switch (businessType) {
+      case BusinessType.BOOK:
+      case BusinessType.CATEGORY:
+      case BusinessType.ITEM:
+      case BusinessType.SHOP:
+      case BusinessType.SYMBOL:
+      case BusinessType.FUND:
+      case BusinessType.USER:
+      case BusinessType.BOOK_MEMBER:
+      case BusinessType.ATTACHMENT:
+      case BusinessType.ROOT:
+      case BusinessType.FUND_BOOK:
+        return true;
+      default:
+        return false;
+    }
+  }
 
   async runLogSync(
     log: LogSync,
     transaction: EntityManager,
   ): Promise<LogResult> {
     try {
+      // ROOT 为伪类型；FUND_BOOK 服务端暂无对应实体，先跳过（不落库不报错）
+      if (
+        log.businessType === BusinessType.ROOT ||
+        log.businessType === BusinessType.FUND_BOOK
+      ) {
+        return LogResult.success(log);
+      }
+
       // 解析操作数据
       const operateData = JSON.parse(log.operateData);
 
@@ -94,6 +128,8 @@ export class LogRunner {
         return transaction.getRepository(User);
       case BusinessType.BOOK_MEMBER:
         return transaction.getRepository(AccountBookUser);
+      case BusinessType.ATTACHMENT:
+        return transaction.getRepository(AttachmentEntity);
       default:
         throw new Error(`不支持的业务类型: ${businessType}`);
     }
