@@ -6,10 +6,14 @@ import { User } from '../pojo/entities/user.entity';
 import { LogSync } from '../pojo/entities/log-sync.entity';
 import { AccountBook } from '../pojo/entities/account-book.entity';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
+import { AccountItem } from '../pojo/entities/account-item.entity';
+import { AccountCategory } from '../pojo/entities/account-category.entity';
 import { AdminController } from '../controllers/admin.controller';
 import { AdminUserController } from '../controllers/admin-user.controller';
 import { AdminLogController } from '../controllers/admin-log.controller';
+import { AdminStatsController } from '../controllers/admin-stats.controller';
 import { AdminService } from '../services/admin.service';
+import { AdminStatsService } from '../services/admin-stats.service';
 import { AdminAuthGuard } from '../guards/admin-auth.guard';
 import { SyncModule } from './sync.module';
 
@@ -19,7 +23,14 @@ import { SyncModule } from './sync.module';
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, LogSync, AccountBook, AccountBookUser]),
+    TypeOrmModule.forFeature([
+      User,
+      LogSync,
+      AccountBook,
+      AccountBookUser,
+      AccountItem,
+      AccountCategory,
+    ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -33,7 +44,12 @@ import { SyncModule } from './sync.module';
     // 提供 MaterializeService（管理台手动触发回放）
     SyncModule,
   ],
-  controllers: [AdminController, AdminUserController, AdminLogController],
-  providers: [AdminService, AdminAuthGuard],
+  controllers: [
+    AdminController,
+    AdminUserController,
+    AdminLogController,
+    AdminStatsController,
+  ],
+  providers: [AdminService, AdminStatsService, AdminAuthGuard],
 })
 export class AdminModule {}

@@ -1,6 +1,6 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString } from 'class-validator';
 
 export class PageQueryDto {
   @ApiPropertyOptional({ default: 1 })
@@ -55,4 +55,26 @@ export class AdminLogQueryDto extends PageQueryDto {
   @Type(() => Number)
   @IsInt()
   endTime?: number;
+}
+
+export class TrendQueryDto {
+  @ApiProperty({ enum: ['day', 'month'], default: 'day' })
+  @IsIn(['day', 'month'])
+  granularity: 'day' | 'month' = 'day';
+
+  @ApiPropertyOptional({ description: '起始日期 yyyy-MM-dd' })
+  @IsOptional()
+  @IsString()
+  from?: string;
+
+  @ApiPropertyOptional({ description: '结束日期 yyyy-MM-dd' })
+  @IsOptional()
+  @IsString()
+  to?: string;
+}
+
+export class CategoriesQueryDto {
+  @ApiProperty({ enum: ['EXPENSE', 'INCOME'] })
+  @IsIn(['EXPENSE', 'INCOME'])
+  type: 'EXPENSE' | 'INCOME';
 }
