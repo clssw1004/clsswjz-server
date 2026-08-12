@@ -4,7 +4,9 @@ import {
   Post,
   Param,
   Res,
+  Request,
   NotFoundException,
+  ForbiddenException,
   StreamableFile,
   Header,
   UseInterceptors,
@@ -14,7 +16,6 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { AttachmentService } from '../services/attachment.service';
-import { Public } from '../decorators/public';
 import { SkipInterceptors } from '../decorators/skip-interceptors.decorator';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
@@ -58,13 +59,21 @@ export class AttachmentController {
   }
 
   @Get(':id')
-  @Public()
   @Header('Accept-Ranges', 'bytes')
   @SkipInterceptors()
   async downloadFile(
     @Param('id') id: string,
+    @Request() req,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
+    // 数据隔离：需登录，且请求者须是附件归属账本的成员（或附件本人）
+    const allowed = await this.attachmentService.authorizeDownload(
+      id,
+      req.user.sub,
+    );
+    if (!allowed) {
+      throw new ForbiddenException('无权下载该附件');
+    }
     try {
       const { file } = await this.attachmentService.getRawFile(id);
 
