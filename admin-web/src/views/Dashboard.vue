@@ -16,13 +16,21 @@
     <el-button type="primary" style="margin-top: 16px" @click="materialize">
       立即回放日志
     </el-button>
+    <el-button
+      type="danger"
+      plain
+      style="margin-top: 16px; margin-left: 12px"
+      @click="materializeReset"
+    >
+      重头回放（清空业务表重建）
+    </el-button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import * as echarts from 'echarts';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import { adminApi } from '../api/admin';
 
 const trendRef = ref<HTMLDivElement>();
@@ -64,6 +72,18 @@ function renderTrend(data: { period: string; expense: number; income: number }[]
 async function materialize() {
   await adminApi.materialize();
   ElMessage.success('日志回放已触发');
+}
+
+async function materializeReset() {
+  await ElMessageBox.confirm(
+    '将清空全部业务表（账本/记账/分类/账户等）并从日志完整重建。' +
+      '用户与日志数据不受影响，但重建期间报表数据为空。确定继续？',
+    '重头回放',
+    { type: 'warning', confirmButtonText: '确定清空并重建', cancelButtonText: '取消' },
+  );
+  await adminApi.materializeReset();
+  ElMessage.success('已清空业务表并从日志完整重建');
+  await load();
 }
 
 onMounted(load);
