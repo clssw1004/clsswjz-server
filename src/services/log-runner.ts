@@ -87,9 +87,21 @@ export class LogRunner {
           await repository.save(operateData);
           break;
         case OperateType.UPDATE:
+          // 真实 UPDATE：目标行不存在则 no-op，避免用部分字段 upsert 出残缺行
+          // （客户端部分更新日志可能只带 updatedAt/updatedBy，甚至缺失 businessId）
+          delete operateData.id;
+          if (log.businessId) {
+            await repository.update(log.businessId, operateData);
+          }
+          break;
         case OperateType.BATCH_UPDATE:
-          operateData.id = log.businessId;
-          await repository.save(operateData);
+          for (const item of operateData as any[]) {
+            const id = item?.id;
+            delete item?.id;
+            if (id) {
+              await repository.update(id, item);
+            }
+          }
           break;
         case OperateType.DELETE:
           await repository.delete(log.businessId);

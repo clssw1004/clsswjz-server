@@ -30,6 +30,7 @@ describe('LogRunner', () => {
 
   let dataSource: DataSource;
   let logRunner: LogRunner;
+  let itemRepo: Repository<AccountItem>;
   let attachmentRepo: Repository<AttachmentEntity>;
 
   beforeAll(async () => {
@@ -41,6 +42,7 @@ describe('LogRunner', () => {
     });
     await dataSource.initialize();
 
+    itemRepo = dataSource.getRepository(AccountItem);
     attachmentRepo = dataSource.getRepository(AttachmentEntity);
     logRunner = new LogRunner(
       dataSource.getRepository(AccountBook),
@@ -61,6 +63,7 @@ describe('LogRunner', () => {
 
   beforeEach(async () => {
     await attachmentRepo.clear();
+    await itemRepo.clear();
   });
 
   function makeLog(partial: {
@@ -151,5 +154,76 @@ describe('LogRunner', () => {
 
     expect(result.syncState).toBe(SyncState.FAILED);
     expect(result.syncError).toContain('不支持的业务类型');
+  });
+
+  function itemCreateLog(itemId: string, at = 1000) {
+    return makeLog({
+      businessType: BusinessType.ITEM,
+      businessId: itemId,
+      operateData: JSON.stringify({
+        id: itemId,
+        amount: 10,
+        type: 'EXPENSE',
+        accountBookId: 'book-1',
+        categoryCode: 'c1',
+        fundId: 'f1',
+        accountDate: '2026-08-01 12:00:00',
+        createdBy: 'u1',
+        updatedBy: 'u1',
+        createdAt: at,
+        updatedAt: at,
+      }),
+    });
+  }
+
+  it('applies an UPDATE log to an existing row without inserting a new one', async () => {
+    await logRunner.runLogSync(itemCreateLog('item-1'), dataSource.manager);
+
+    const updateLog = makeLog({
+      businessType: BusinessType.ITEM,
+      operateType: OperateType.UPDATE,
+      businessId: 'item-1',
+      operateData: JSON.stringify({
+        amount: 99,
+        updatedAt: 2000,
+        updatedBy: 'u1',
+      }),
+    });
+
+    const result = await logRunner.runLogSync(updateLog, dataSource.manager);
+
+    expect(result.syncState).toBe(SyncState.SYNCED);
+    const items = await itemRepo.find();
+    expect(items).toHaveLength(1);
+    expect(items[0].amount).toBe(99);
+  });
+
+  it('does not insert a broken row when an UPDATE log has no matching row', async () => {
+    const updateLog = makeLog({
+      businessType: BusinessType.ITEM,
+      operateType: OperateType.UPDATE,
+      businessId: 'ghost-item',
+      operateData: JSON.stringify({ updatedAt: 2000, updatedBy: 'u1' }),
+    });
+
+    const result = await logRunner.runLogSync(updateLog, dataSource.manager);
+
+    expect(result.syncState).toBe(SyncState.SYNCED);
+    expect(await itemRepo.count()).toBe(0);
+  });
+
+  it('no-ops an UPDATE log with empty businessId instead of inserting', async () => {
+    // 客户端部分更新日志可能缺失 businessId（旧版本），必须 no-op 而非插入残缺行
+    const updateLog = makeLog({
+      businessType: BusinessType.ITEM,
+      operateType: OperateType.UPDATE,
+      businessId: '',
+      operateData: JSON.stringify({ updatedAt: 2000, updatedBy: 'u1' }),
+    });
+
+    const result = await logRunner.runLogSync(updateLog, dataSource.manager);
+
+    expect(result.syncState).toBe(SyncState.SYNCED);
+    expect(await itemRepo.count()).toBe(0);
   });
 });
