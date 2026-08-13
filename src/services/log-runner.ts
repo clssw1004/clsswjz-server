@@ -107,6 +107,26 @@ export class LogRunner {
     }
   }
 
+  /**
+   * 清空全部业务表（账本/分类/记账/账户/商家/标识/成员/附件）。
+   * 用于"重头回放"：清空后从日志重新落库。不触碰 users / log_sync。
+   */
+  async clearAllBusinessData(transaction: EntityManager): Promise<void> {
+    const entityClasses = [
+      AccountBook,
+      AccountCategory,
+      AccountItem,
+      AccountShop,
+      AccountSymbol,
+      AccountFund,
+      AccountBookUser,
+      AttachmentEntity,
+    ];
+    for (const cls of entityClasses) {
+      await transaction.getRepository(cls).clear();
+    }
+  }
+
   private getRepository(
     businessType: BusinessType,
     transaction: EntityManager,

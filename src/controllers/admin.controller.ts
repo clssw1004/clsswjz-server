@@ -36,4 +36,15 @@ export class AdminController {
   async materialize() {
     return this.materializeService.flush();
   }
+
+  @ApiOperation({
+    summary: '重头回放：清空业务表并全量重建（危险操作，仅紧急修复时用）',
+  })
+  @Public()
+  @UseGuards(AdminAuthGuard)
+  @Post('materialize/reset')
+  async materializeReset() {
+    await this.materializeService.reset();
+    return this.materializeService.flush();
+  }
 }

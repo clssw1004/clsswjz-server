@@ -23,7 +23,8 @@
     "docker:compose": "docker-compose up -d",
     "docker:compose:build": "docker-compose up -d --build",
     "mock:data": "ts-node src/scripts/mock-data.ts",
-    "materialize": "ts-node src/scripts/materialize.ts"
+    "materialize": "ts-node src/scripts/materialize.ts",
+    "materialize:reset": "ts-node src/scripts/materialize.ts --reset"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.9",

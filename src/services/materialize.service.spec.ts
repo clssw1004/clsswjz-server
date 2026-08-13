@@ -37,6 +37,7 @@ describe('MaterializeService', () => {
   let service: MaterializeService;
   let logSyncRepo: Repository<LogSync>;
   let accountBookRepo: Repository<AccountBook>;
+  let itemRepo: Repository<AccountItem>;
   let userRepo: Repository<User>;
 
   beforeAll(async () => {
@@ -50,6 +51,7 @@ describe('MaterializeService', () => {
 
     logSyncRepo = dataSource.getRepository(LogSync);
     accountBookRepo = dataSource.getRepository(AccountBook);
+    itemRepo = dataSource.getRepository(AccountItem);
     userRepo = dataSource.getRepository(User);
 
     const logRunner = new LogRunner(
@@ -210,5 +212,87 @@ describe('MaterializeService', () => {
     // 并发调用共享同一次回放，返回同一结果；不会重复落库
     expect(a.processed).toBe(b.processed);
     expect(await accountBookRepo.count()).toBe(2);
+  });
+
+  function itemCreateLog(itemId: string, bookId: string, at: number) {
+    return {
+      id: `log-${itemId}-create`,
+      businessType: BusinessType.ITEM,
+      operateType: OperateType.CREATE,
+      parentId: bookId,
+      businessId: itemId,
+      operatedAt: at,
+      operateData: JSON.stringify({
+        id: itemId,
+        amount: 10,
+        type: 'EXPENSE',
+        accountBookId: bookId,
+        categoryCode: 'c1',
+        fundId: 'f1',
+        accountDate: '2026-08-01 12:00:00',
+        createdBy: 'u1',
+        updatedBy: 'u1',
+        createdAt: at,
+        updatedAt: at,
+      }),
+    };
+  }
+
+  it('reset clears business tables and replay markers, then flush rebuilds everything from logs', async () => {
+    // 先正常回放 book + item
+    await insertLog(bookCreateLog('book1', 1000));
+    await insertLog(itemCreateLog('item1', 'book1', 2000));
+    await service.flush();
+    expect(await accountBookRepo.count()).toBe(1);
+    expect(await itemRepo.count()).toBe(1);
+
+    // 重置：业务表清空 + 回放标记清除
+    await service.reset();
+    expect(await accountBookRepo.count()).toBe(0);
+    expect(await itemRepo.count()).toBe(0);
+    const marked = await logSyncRepo.findOneBy({ id: 'log-book1-create' });
+    expect(marked!.materializedAt).toBeNull();
+
+    // 重新回放：从日志完整重建
+    const result = await service.flush();
+    expect(result.processed).toBe(2);
+    expect(await accountBookRepo.count()).toBe(1);
+    const item = await itemRepo.findOneBy({ id: 'item1' });
+    expect(item).not.toBeNull();
+    expect(item!.accountBookId).toBe('book1');
+  });
+
+  it('reset does not clear users or non-synced logs', async () => {
+    // USER 日志已回放标记；用户表不受 reset 影响
+    await insertLog({
+      id: 'log-user-reset',
+      businessType: BusinessType.USER,
+      parentType: 'root',
+      parentId: 'NONE',
+      businessId: 'user-1',
+      operateData: JSON.stringify({
+        id: 'user-1',
+        username: 'a',
+        password: 'x',
+      }),
+    });
+    // 一个 failed 日志（不属于 synced，不应被清除标记）
+    await insertLog({
+      id: 'log-failed-reset',
+      businessType: BusinessType.BOOK,
+      operateType: OperateType.CREATE,
+      parentId: 'book-f',
+      businessId: 'book-f',
+      operateData: '{}',
+      syncState: SyncState.FAILED,
+    });
+    await service.flush();
+    expect(await userRepo.count()).toBe(0);
+
+    await service.reset();
+
+    expect(await userRepo.count()).toBe(0);
+    const failed = await logSyncRepo.findOneBy({ id: 'log-failed-reset' });
+    expect(failed!.materializedAt).toBeNull();
   });
 });

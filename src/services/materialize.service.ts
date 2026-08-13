@@ -85,6 +85,22 @@ export class MaterializeService {
     return result;
   }
 
+  /**
+   * 重头回放：清空业务表 + 清除全部 synced 日志的回放标记，使所有日志进入待回放。
+   * 之后调用 flush() 即从日志完整重建业务数据。不触碰 users / log_sync 记录本身。
+   * 用于：业务表结构变更、回放逻辑升级、需要推倒重建业务数据时。
+   */
+  async reset(): Promise<void> {
+    await this.logSyncRepository.manager.transaction(async (em) => {
+      await this.logRunner.clearAllBusinessData(em);
+      // 只重置 synced 日志的标记；failed/unsynced 不参与回放
+      await em.query(
+        'UPDATE log_sync SET materialized_at = NULL, materialize_error = NULL WHERE sync_state = ?',
+        [SyncState.SYNCED],
+      );
+    });
+  }
+
   private async applyOne(log: LogSync, result: FlushResult): Promise<void> {
     // USER 类型已在 processLog 事务内落库，这里只打标
     if (log.businessType === BusinessType.USER) {
