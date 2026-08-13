@@ -8,6 +8,8 @@ import { AccountBook } from '../pojo/entities/account-book.entity';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
 import { AccountItem } from '../pojo/entities/account-item.entity';
 import { AccountCategory } from '../pojo/entities/account-category.entity';
+import { AccountShop } from '../pojo/entities/account-shop.entity';
+import { AccountFund } from '../pojo/entities/account-fund.entity';
 import { AdminController } from '../controllers/admin.controller';
 import { AdminUserController } from '../controllers/admin-user.controller';
 import { AdminLogController } from '../controllers/admin-log.controller';
@@ -30,6 +32,8 @@ import { SyncModule } from './sync.module';
       AccountBookUser,
       AccountItem,
       AccountCategory,
+      AccountShop,
+      AccountFund,
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],

@@ -6,7 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { MoreThanOrEqual, Repository } from 'typeorm';
+import { In, MoreThanOrEqual, Repository } from 'typeorm';
 import { User } from '../pojo/entities/user.entity';
 import { LogSync } from '../pojo/entities/log-sync.entity';
 import { AccountBook } from '../pojo/entities/account-book.entity';
@@ -175,7 +175,38 @@ export class AdminService {
       .skip((params.page - 1) * params.pageSize)
       .take(params.pageSize)
       .getManyAndCount();
-    return { items, total, page: params.page, pageSize: params.pageSize };
+
+    // 解析显示名称：操作人 username、账本 name（管理台展示用，不暴露敏感字段）
+    const operatorIds = [...new Set(items.map((i) => i.operatorId))];
+    const bookIds = [
+      ...new Set(
+        items.filter((i) => i.parentType === 'book').map((i) => i.parentId),
+      ),
+    ];
+    const [users, books] = await Promise.all([
+      operatorIds.length
+        ? this.userRepository.findBy({ id: In(operatorIds) })
+        : Promise.resolve([]),
+      bookIds.length
+        ? this.accountBookRepository.findBy({ id: In(bookIds) })
+        : Promise.resolve([]),
+    ]);
+    const userMap = new Map(users.map((u) => [u.id, u.username]));
+    const bookMap = new Map(books.map((b) => [b.id, b.name]));
+    const enriched = items.map((item) => ({
+      ...item,
+      operatorName: userMap.get(item.operatorId) ?? item.operatorId,
+      parentBookName:
+        item.parentType === 'book'
+          ? (bookMap.get(item.parentId) ?? item.parentId)
+          : undefined,
+    }));
+    return {
+      items: enriched,
+      total,
+      page: params.page,
+      pageSize: params.pageSize,
+    };
   }
 
   /** 某用户的操作日志列表 */

@@ -31,7 +31,21 @@
         <el-table-column prop="accountDate" label="日期" width="180" />
         <el-table-column prop="type" label="类型" width="90" />
         <el-table-column prop="amount" label="金额" />
-        <el-table-column prop="categoryCode" label="分类" />
+        <el-table-column label="分类">
+          <template #default="{ row }">
+            {{ row.categoryName ?? row.categoryCode }}
+          </template>
+        </el-table-column>
+        <el-table-column label="商户">
+          <template #default="{ row }">
+            {{ row.shopName ?? row.shopCode ?? '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="账户">
+          <template #default="{ row }">
+            {{ row.fundName ?? row.fundId ?? '-' }}
+          </template>
+        </el-table-column>
         <el-table-column prop="description" label="描述" />
       </el-table>
       <el-pagination

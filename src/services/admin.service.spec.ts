@@ -206,7 +206,42 @@ describe('AdminService', () => {
     expect(items[0].id).toBe('log-a1');
   });
 
-  it('listUserLogs returns a specific user\'s logs', async () => {
+  it('listLogs resolves operatorName and parentBookName for display', async () => {
+    const alice = await makeUser('alice');
+    await dataSource.getRepository(AccountBook).save(
+      dataSource.getRepository(AccountBook).create({
+        id: 'b1',
+        name: '家庭账本',
+        createdBy: alice.id,
+        updatedBy: alice.id,
+        createdAt: 1000,
+        updatedAt: 1000,
+      }),
+    );
+    const t = Date.now();
+    await logSyncRepo.save(
+      logSyncRepo.create({
+        id: 'log-n1',
+        businessType: BusinessType.ITEM,
+        operateType: OperateType.CREATE,
+        parentType: 'book',
+        parentId: 'b1',
+        operatorId: alice.id,
+        operatedAt: t,
+        businessId: 'i1',
+        operateData: '{}',
+        syncState: SyncState.SYNCED,
+        syncTime: t,
+      }),
+    );
+
+    const { items } = await service.listLogs({ page: 1, pageSize: 10 });
+
+    expect(items[0].operatorName).toBe('alice');
+    expect(items[0].parentBookName).toBe('家庭账本');
+  });
+
+  it("listUserLogs returns a specific user's logs", async () => {
     const alice = await makeUser('alice');
     const t = Date.now();
     await logSyncRepo.save(

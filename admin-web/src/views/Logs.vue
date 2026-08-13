@@ -22,10 +22,18 @@
       <el-table-column prop="operatedAt" label="操作时间" width="190">
         <template #default="{ row }">{{ fmt(row.operatedAt) }}</template>
       </el-table-column>
-      <el-table-column prop="operatorId" label="操作人" width="210" />
+      <el-table-column label="操作人" width="150">
+        <template #default="{ row }">
+          <span :title="row.operatorId">{{ row.operatorName ?? row.operatorId }}</span>
+        </template>
+      </el-table-column>
       <el-table-column prop="businessType" label="业务类型" width="110" />
       <el-table-column prop="operateType" label="操作" width="100" />
-      <el-table-column prop="parentId" label="账本" width="210" />
+      <el-table-column label="账本" width="180">
+        <template #default="{ row }">
+          <span :title="row.parentId">{{ row.parentBookName ?? row.parentId }}</span>
+        </template>
+      </el-table-column>
       <el-table-column prop="syncState" label="状态" width="90" />
     </el-table>
 

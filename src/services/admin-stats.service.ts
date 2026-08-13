@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { AccountBook } from '../pojo/entities/account-book.entity';
 import { AccountItem } from '../pojo/entities/account-item.entity';
 import { AccountCategory } from '../pojo/entities/account-category.entity';
+import { AccountShop } from '../pojo/entities/account-shop.entity';
+import { AccountFund } from '../pojo/entities/account-fund.entity';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
 
 /**
@@ -19,6 +21,10 @@ export class AdminStatsService {
     private readonly accountItemRepository: Repository<AccountItem>,
     @InjectRepository(AccountCategory)
     private readonly accountCategoryRepository: Repository<AccountCategory>,
+    @InjectRepository(AccountShop)
+    private readonly accountShopRepository: Repository<AccountShop>,
+    @InjectRepository(AccountFund)
+    private readonly accountFundRepository: Repository<AccountFund>,
     @InjectRepository(AccountBookUser)
     private readonly accountBookUserRepository: Repository<AccountBookUser>,
   ) {}
@@ -156,6 +162,43 @@ export class AdminStatsService {
       .skip((params.page - 1) * params.pageSize)
       .take(params.pageSize)
       .getManyAndCount();
-    return { items, total, page: params.page, pageSize: params.pageSize };
+
+    // 解析显示名称：分类/商户/账户（管理台展示用）
+    const categoryCodes = [
+      ...new Set(items.map((i) => i.categoryCode).filter(Boolean)),
+    ];
+    const shopCodes = [
+      ...new Set(items.map((i) => i.shopCode).filter(Boolean)),
+    ];
+    const fundIds = [...new Set(items.map((i) => i.fundId).filter(Boolean))];
+    const [categories, shops, funds] = await Promise.all([
+      categoryCodes.length
+        ? this.accountCategoryRepository.findBy({ code: In(categoryCodes) })
+        : Promise.resolve([]),
+      shopCodes.length
+        ? this.accountShopRepository.findBy({ code: In(shopCodes) })
+        : Promise.resolve([]),
+      fundIds.length
+        ? this.accountFundRepository.findBy({ id: In(fundIds) })
+        : Promise.resolve([]),
+    ]);
+    const categoryMap = new Map(categories.map((c) => [c.code, c.name]));
+    const shopMap = new Map(shops.map((s) => [s.code, s.name]));
+    const fundMap = new Map(funds.map((f) => [f.id, f.name]));
+
+    const enriched = items.map((item) => ({
+      ...item,
+      categoryName: item.categoryCode
+        ? categoryMap.get(item.categoryCode)
+        : undefined,
+      shopName: item.shopCode ? shopMap.get(item.shopCode) : undefined,
+      fundName: item.fundId ? fundMap.get(item.fundId) : undefined,
+    }));
+    return {
+      items: enriched,
+      total,
+      page: params.page,
+      pageSize: params.pageSize,
+    };
   }
 }

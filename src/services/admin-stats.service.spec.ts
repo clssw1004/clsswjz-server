@@ -3,6 +3,8 @@ import { AdminStatsService } from './admin-stats.service';
 import { AccountBook } from '../pojo/entities/account-book.entity';
 import { AccountItem } from '../pojo/entities/account-item.entity';
 import { AccountCategory } from '../pojo/entities/account-category.entity';
+import { AccountShop } from '../pojo/entities/account-shop.entity';
+import { AccountFund } from '../pojo/entities/account-fund.entity';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
 import { User } from '../pojo/entities/user.entity';
 
@@ -19,6 +21,8 @@ describe('AdminStatsService', () => {
         AccountBook,
         AccountItem,
         AccountCategory,
+        AccountShop,
+        AccountFund,
         AccountBookUser,
         User,
       ],
@@ -30,6 +34,8 @@ describe('AdminStatsService', () => {
       dataSource.getRepository(AccountBook),
       itemRepo,
       dataSource.getRepository(AccountCategory),
+      dataSource.getRepository(AccountShop),
+      dataSource.getRepository(AccountFund),
       dataSource.getRepository(AccountBookUser),
     );
   });
@@ -42,6 +48,8 @@ describe('AdminStatsService', () => {
     await dataSource.getRepository(AccountBook).clear();
     await itemRepo.clear();
     await dataSource.getRepository(AccountCategory).clear();
+    await dataSource.getRepository(AccountShop).clear();
+    await dataSource.getRepository(AccountFund).clear();
     await dataSource.getRepository(AccountBookUser).clear();
   });
 
@@ -276,5 +284,52 @@ describe('AdminStatsService', () => {
     const { items } = await service.userItems('u1', { page: 1, pageSize: 10 });
     expect(items.map((i) => i.id)).toContain('i1');
     expect(items.map((i) => i.id)).toContain('i2');
+  });
+
+  it('userItems enriches category/shop/fund names for display', async () => {
+    await makeBook('b1', 'u1');
+    await makeCategory('c1', '餐饮', 'EXPENSE');
+    const shop = new AccountShop();
+    Object.assign(shop, {
+      id: 'shop-1',
+      name: '沃尔玛',
+      code: 'S1',
+      accountBookId: 'b1',
+      createdBy: 'u1',
+      updatedBy: 'u1',
+      createdAt: 1000,
+      updatedAt: 1000,
+    });
+    await dataSource.getRepository(AccountShop).save(shop);
+    const fund = new AccountFund();
+    Object.assign(fund, {
+      id: 'f1',
+      name: '现金',
+      fundType: 'CASH',
+      accountBookId: 'b1',
+      createdBy: 'u1',
+      updatedBy: 'u1',
+      createdAt: 1000,
+      updatedAt: 1000,
+    });
+    await dataSource.getRepository(AccountFund).save(fund);
+    await makeItem({
+      id: 'i1',
+      bookId: 'b1',
+      amount: 50,
+      type: 'EXPENSE',
+      categoryCode: 'c1',
+      accountDate: '2026-08-01 10:00:00',
+      createdBy: 'u1',
+    });
+    await dataSource
+      .getRepository(AccountItem)
+      .update({ id: 'i1' }, { shopCode: 'S1', fundId: 'f1' });
+
+    const { items } = await service.userItems('u1', { page: 1, pageSize: 10 });
+
+    expect(items[0].categoryName).toBe('餐饮');
+    expect(items[0].shopName).toBe('沃尔玛');
+    expect(items[0].fundName).toBe('现金');
   });
 });
