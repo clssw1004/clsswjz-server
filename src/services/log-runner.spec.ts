@@ -31,6 +31,7 @@ describe('LogRunner', () => {
   let dataSource: DataSource;
   let logRunner: LogRunner;
   let itemRepo: Repository<AccountItem>;
+  let shopRepo: Repository<AccountShop>;
   let attachmentRepo: Repository<AttachmentEntity>;
 
   beforeAll(async () => {
@@ -43,6 +44,7 @@ describe('LogRunner', () => {
     await dataSource.initialize();
 
     itemRepo = dataSource.getRepository(AccountItem);
+    shopRepo = dataSource.getRepository(AccountShop);
     attachmentRepo = dataSource.getRepository(AttachmentEntity);
     logRunner = new LogRunner(
       dataSource.getRepository(AccountBook),
@@ -64,6 +66,7 @@ describe('LogRunner', () => {
   beforeEach(async () => {
     await attachmentRepo.clear();
     await itemRepo.clear();
+    await shopRepo.clear();
   });
 
   function makeLog(partial: {
@@ -225,5 +228,80 @@ describe('LogRunner', () => {
 
     expect(result.syncState).toBe(SyncState.SYNCED);
     expect(await itemRepo.count()).toBe(0);
+  });
+
+  it('applies a shop UPDATE log carrying an unknown field (lastAccountItemAt) without failing', async () => {
+    // 客户端 shop 表有 lastAccountItemAt，但服务端实体没有 → 回放需剥离未知字段
+    const createLog = makeLog({
+      businessType: BusinessType.SHOP,
+      businessId: 'shop-1',
+      operateData: JSON.stringify({
+        id: 'shop-1',
+        name: '老店',
+        code: 'S1',
+        accountBookId: 'book-1',
+        createdBy: 'u1',
+        updatedBy: 'u1',
+        createdAt: 1000,
+        updatedAt: 1000,
+      }),
+    });
+    await logRunner.runLogSync(createLog, dataSource.manager);
+
+    const updateLog = makeLog({
+      businessType: BusinessType.SHOP,
+      operateType: OperateType.UPDATE,
+      businessId: 'shop-1',
+      operateData: JSON.stringify({
+        name: '新店',
+        lastAccountItemAt: '2026-08-01 12:00:00',
+        updatedAt: 2000,
+        updatedBy: 'u1',
+      }),
+    });
+
+    const result = await logRunner.runLogSync(updateLog, dataSource.manager);
+
+    expect(result.syncState).toBe(SyncState.SYNCED);
+    const shops = await shopRepo.find();
+    expect(shops).toHaveLength(1);
+    expect(shops[0].name).toBe('新店');
+  });
+
+  it('applies a fund UPDATE log carrying an unknown field without failing', async () => {
+    const createLog = makeLog({
+      businessType: BusinessType.FUND,
+      businessId: 'fund-1',
+      operateData: JSON.stringify({
+        id: 'fund-1',
+        name: '现金',
+        fundType: 'CASH',
+        accountBookId: 'book-1',
+        createdBy: 'u1',
+        updatedBy: 'u1',
+        createdAt: 1000,
+        updatedAt: 1000,
+      }),
+    });
+    await logRunner.runLogSync(createLog, dataSource.manager);
+
+    const updateLog = makeLog({
+      businessType: BusinessType.FUND,
+      operateType: OperateType.UPDATE,
+      businessId: 'fund-1',
+      operateData: JSON.stringify({
+        fundBalance: 88.5,
+        lastAccountItemAt: '2026-08-01 12:00:00',
+        updatedAt: 2000,
+        updatedBy: 'u1',
+      }),
+    });
+
+    const result = await logRunner.runLogSync(updateLog, dataSource.manager);
+
+    expect(result.syncState).toBe(SyncState.SYNCED);
+    const funds = await dataSource.getRepository(AccountFund).find();
+    expect(funds).toHaveLength(1);
+    expect(funds[0].fundBalance).toBe(88.5);
   });
 });

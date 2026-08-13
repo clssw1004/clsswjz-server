@@ -80,6 +80,10 @@ export class LogRunner {
       // 根据业务类型获取对应的Repository
       const repository = this.getRepository(log.businessType, transaction);
 
+      // 剥离实体没有的字段（客户端可能携带服务端不建模的字段，
+      // 如 shop/fund 的 lastAccountItemAt、item 的 source 等；update() 会因未知字段报错）
+      this.sanitizeAgainstEntity(repository, operateData);
+
       // 执行数据库操作
       switch (log.operateType) {
         case OperateType.CREATE:
@@ -136,6 +140,31 @@ export class LogRunner {
     ];
     for (const cls of entityClasses) {
       await transaction.getRepository(cls).clear();
+    }
+  }
+
+  /**
+   * 剥离 operateData 中实体未建模的字段（就地修改）。
+   * 客户端表可能有服务端实体没有的字段（如 lastAccountItemAt/source），
+   * save() 会忽略它们，但 update() 会因未知字段报错，故统一剥离。
+   */
+  private sanitizeAgainstEntity(repository: Repository<any>, data: any): void {
+    const columns = repository.metadata.columns.map((c) => c.propertyName);
+    const clean = (obj: Record<string, any>) => {
+      for (const key of Object.keys(obj)) {
+        if (!columns.includes(key)) {
+          delete obj[key];
+        }
+      }
+    };
+    if (Array.isArray(data)) {
+      for (const item of data) {
+        if (item && typeof item === 'object') {
+          clean(item);
+        }
+      }
+    } else if (data && typeof data === 'object') {
+      clean(data);
     }
   }
 
