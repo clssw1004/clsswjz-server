@@ -6,11 +6,12 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { In, MoreThanOrEqual, Repository } from 'typeorm';
+import { In, IsNull, MoreThanOrEqual, Not, Repository } from 'typeorm';
 import { User } from '../pojo/entities/user.entity';
 import { LogSync } from '../pojo/entities/log-sync.entity';
 import { AccountBook } from '../pojo/entities/account-book.entity';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
+import { SyncState } from '../pojo/enums/sync-state.enum';
 import { now } from '../utils/date.util';
 
 /**
@@ -256,6 +257,49 @@ export class AdminService {
         logCount: Number(stats?.logCount ?? 0),
         lastSyncTime: stats?.lastSyncTime ?? null,
       },
+    };
+  }
+
+  /** 日志回放状态统计：已回放/待回放/失败 + 最近失败明细（管理台卡片） */
+  async materializeStatus() {
+    const total = await this.logSyncRepository.count({
+      where: { syncState: SyncState.SYNCED },
+    });
+    const materialized = await this.logSyncRepository.count({
+      where: { syncState: SyncState.SYNCED, materializedAt: Not(IsNull()) },
+    });
+    const failed = await this.logSyncRepository.count({
+      where: {
+        syncState: SyncState.SYNCED,
+        materializedAt: IsNull(),
+        materializeError: Not(''),
+      },
+    });
+    const pending = total - materialized - failed;
+
+    const recentErrors = await this.logSyncRepository.find({
+      where: {
+        syncState: SyncState.SYNCED,
+        materializedAt: IsNull(),
+        materializeError: Not(''),
+      },
+      order: { operatedAt: 'DESC' },
+      take: 10,
+    });
+
+    return {
+      total,
+      materialized,
+      pending,
+      failed,
+      recentErrors: recentErrors.map((l) => ({
+        id: l.id,
+        businessType: l.businessType,
+        operateType: l.operateType,
+        businessId: l.businessId,
+        operatedAt: l.operatedAt,
+        error: l.materializeError,
+      })),
     };
   }
 }

@@ -315,4 +315,68 @@ describe('AdminService', () => {
     expect(detail.stats.logCount).toBe(1);
     expect(detail.user).not.toHaveProperty('password');
   });
+
+  it('materializeStatus reports materialized/pending/failed counts and recent errors', async () => {
+    const now = Date.now();
+    // 已回放
+    await logSyncRepo.save(
+      logSyncRepo.create({
+        id: 'mat-1',
+        businessType: BusinessType.BOOK,
+        operateType: OperateType.CREATE,
+        parentType: 'book',
+        parentId: 'b1',
+        operatorId: 'u1',
+        operatedAt: 1000,
+        businessId: 'b1',
+        operateData: '{}',
+        syncState: SyncState.SYNCED,
+        syncTime: now,
+        materializedAt: now,
+      }),
+    );
+    // 待回放
+    await logSyncRepo.save(
+      logSyncRepo.create({
+        id: 'pend-1',
+        businessType: BusinessType.BOOK,
+        operateType: OperateType.CREATE,
+        parentType: 'book',
+        parentId: 'b2',
+        operatorId: 'u1',
+        operatedAt: 2000,
+        businessId: 'b2',
+        operateData: '{}',
+        syncState: SyncState.SYNCED,
+        syncTime: now,
+      }),
+    );
+    // 回放失败
+    await logSyncRepo.save(
+      logSyncRepo.create({
+        id: 'fail-1',
+        businessType: BusinessType.ITEM,
+        operateType: OperateType.CREATE,
+        parentType: 'book',
+        parentId: 'b3',
+        operatorId: 'u1',
+        operatedAt: 3000,
+        businessId: 'i1',
+        operateData: '{}',
+        syncState: SyncState.SYNCED,
+        syncTime: now,
+        materializeError: '回放失败: boom',
+      }),
+    );
+
+    const status = await service.materializeStatus();
+
+    expect(status.total).toBe(3);
+    expect(status.materialized).toBe(1);
+    expect(status.pending).toBe(1);
+    expect(status.failed).toBe(1);
+    expect(status.recentErrors).toHaveLength(1);
+    expect(status.recentErrors[0].id).toBe('fail-1');
+    expect(status.recentErrors[0].error).toContain('boom');
+  });
 });

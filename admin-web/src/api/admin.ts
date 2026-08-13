@@ -6,6 +6,7 @@ export const adminApi = {
   overview: () => http.get('/admin/overview'),
   materialize: () => http.post('/admin/materialize'),
   materializeReset: () => http.post('/admin/materialize/reset'),
+  materializeStatus: () => http.get('/admin/materialize/status'),
   users: (params: Record<string, unknown>) => http.get('/admin/users', { params }),
   userDetail: (id: string) => http.get(`/admin/users/${id}`),
   userLogs: (id: string, params: Record<string, unknown>) =>

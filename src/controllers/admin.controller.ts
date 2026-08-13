@@ -37,6 +37,14 @@ export class AdminController {
     return this.materializeService.flush();
   }
 
+  @ApiOperation({ summary: '日志回放状态（已回放/待回放/失败）' })
+  @Public()
+  @UseGuards(AdminAuthGuard)
+  @Get('materialize/status')
+  async materializeStatus() {
+    return this.adminService.materializeStatus();
+  }
+
   @ApiOperation({
     summary: '重头回放：清空业务表并全量重建（危险操作，仅紧急修复时用）',
   })
