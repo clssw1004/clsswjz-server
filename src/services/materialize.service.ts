@@ -53,8 +53,11 @@ export class MaterializeService {
     }
   }
 
+  // 单批事务内的日志数；日志源可信，绝大多数不会失败，批量事务大幅减少提交开销
+  private static readonly BATCH_TX = 100;
+
   private async doFlush(opts: { limit?: number }): Promise<FlushResult> {
-    const limit = opts.limit ?? 200;
+    const limit = opts.limit ?? 500;
     const result: FlushResult = { processed: 0, failed: 0 };
     const attempted = new Set<string>();
     while (true) {
@@ -69,13 +72,15 @@ export class MaterializeService {
         break;
       }
       let progressed = 0;
-      for (const log of pending) {
-        attempted.add(log.id);
-        const before = result.processed;
-        await this.applyOne(log, result);
-        if (result.processed > before) {
-          progressed++;
+      // 按 BATCH_TX 分批事务处理
+      for (let i = 0; i < pending.length; i += MaterializeService.BATCH_TX) {
+        const chunk = pending.slice(i, i + MaterializeService.BATCH_TX);
+        for (const log of chunk) {
+          attempted.add(log.id);
         }
+        const before = result.processed;
+        await this.applyBatch(chunk, result);
+        progressed += result.processed - before;
       }
       // 本轮无任何日志被落库（全是失败/跳过）时停止，避免对永久失败日志无限重试
       if (progressed === 0) {
@@ -101,43 +106,66 @@ export class MaterializeService {
     });
   }
 
-  private async applyOne(log: LogSync, result: FlushResult): Promise<void> {
-    // USER 类型已在 processLog 事务内落库，这里只打标
-    if (log.businessType === BusinessType.USER) {
-      await this.markMaterialized(log.id);
-      result.processed++;
+  private async applyBatch(
+    logs: LogSync[],
+    result: FlushResult,
+  ): Promise<void> {
+    // USER 打标 / 不支持类型跳过：不参与事务，直接更新
+    const toReplay: LogSync[] = [];
+    for (const log of logs) {
+      if (log.businessType === BusinessType.USER) {
+        await this.markMaterialized(log.id);
+        result.processed++;
+      } else if (!this.logRunner.supports(log.businessType)) {
+        await this.logSyncRepository.update(
+          { id: log.id },
+          {
+            materializedAt: now(),
+            materializeError: `不支持的业务类型: ${log.businessType}（已跳过）`,
+          },
+        );
+        result.processed++;
+      } else {
+        toReplay.push(log);
+      }
+    }
+    if (toReplay.length === 0) {
       return;
     }
 
-    // 服务端不支持的扩展类型（如 note/debt），跳过并打标，避免无限重试
-    if (!this.logRunner.supports(log.businessType)) {
-      await this.logSyncRepository.update(
-        { id: log.id },
-        {
-          materializedAt: now(),
-          materializeError: `不支持的业务类型: ${log.businessType}（已跳过）`,
-        },
-      );
-      result.processed++;
-      return;
-    }
-
+    // 批量事务回放：数据源可信，通常整批成功；个别失败才降级逐条隔离
     try {
       await this.logSyncRepository.manager.transaction(async (em) => {
-        const replay = await this.logRunner.runLogSync(log, em);
-        if (replay.syncState !== SyncState.SYNCED) {
-          throw new Error(replay.syncError || '日志回放失败');
+        for (const log of toReplay) {
+          const replay = await this.logRunner.runLogSync(log, em);
+          if (replay.syncState !== SyncState.SYNCED) {
+            throw new Error(replay.syncError || '日志回放失败');
+          }
+          await em.update(LogSync, { id: log.id }, { materializedAt: now() });
         }
-        await em.update(LogSync, { id: log.id }, { materializedAt: now() });
       });
-      result.processed++;
-    } catch (error: any) {
-      result.failed++;
-      // 保留 materialized_at 为 NULL 以便下次重试
-      await this.logSyncRepository.update(
-        { id: log.id },
-        { materializeError: error?.message ?? String(error) },
-      );
+      result.processed += toReplay.length;
+    } catch {
+      // 批量失败（可能只有一条导致）→ 逐条事务，隔离失败项，其余照常落库
+      for (const log of toReplay) {
+        try {
+          await this.logSyncRepository.manager.transaction(async (em) => {
+            const replay = await this.logRunner.runLogSync(log, em);
+            if (replay.syncState !== SyncState.SYNCED) {
+              throw new Error(replay.syncError || '日志回放失败');
+            }
+            await em.update(LogSync, { id: log.id }, { materializedAt: now() });
+          });
+          result.processed++;
+        } catch (error: any) {
+          result.failed++;
+          // 保留 materialized_at 为 NULL 以便下次重试
+          await this.logSyncRepository.update(
+            { id: log.id },
+            { materializeError: error?.message ?? String(error) },
+          );
+        }
+      }
     }
   }
 

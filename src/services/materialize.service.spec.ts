@@ -295,4 +295,28 @@ describe('MaterializeService', () => {
     const failed = await logSyncRepo.findOneBy({ id: 'log-failed-reset' });
     expect(failed!.materializedAt).toBeNull();
   });
+
+  it('isolates a failing log within a batch so the rest still materialize', async () => {
+    await insertLog(bookCreateLog('book9', 1000));
+    await insertLog({
+      id: 'log-bad-json',
+      businessType: BusinessType.ITEM,
+      operateType: OperateType.CREATE,
+      parentId: 'book9',
+      businessId: 'item-bad',
+      operatedAt: 2000,
+      operateData: '{invalid json', // JSON.parse 失败 → 回放失败
+    });
+    await insertLog(bookCreateLog('book10', 3000));
+
+    const result = await service.flush();
+
+    // 批量事务失败后降级逐条：只有坏日志失败，其它照常落库
+    expect(result.failed).toBe(1);
+    expect(result.processed).toBe(2);
+    expect(await accountBookRepo.count()).toBe(2);
+    const bad = await logSyncRepo.findOneBy({ id: 'log-bad-json' });
+    expect(bad!.materializeError).toBeTruthy();
+    expect(bad!.materializedAt).toBeNull();
+  });
 });
