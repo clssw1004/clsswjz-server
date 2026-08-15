@@ -26,4 +26,16 @@ export const adminApi = {
   items: (params: Record<string, unknown>) =>
     http.get('/admin/items', { params }),
   itemDetail: (id: string) => http.get(`/admin/items/${id}`),
+  books: (params: Record<string, unknown>) =>
+    http.get('/admin/books', { params }),
+  bookDetail: (id: string) => http.get(`/admin/books/${id}`),
+  systemInfo: () => http.get('/admin/system/info'),
+  maintenanceEntities: (params: Record<string, unknown>) =>
+    http.get('/admin/maintenance/entities', { params }),
+  maintenanceRename: (data: Record<string, unknown>) =>
+    http.post('/admin/maintenance/rename', data),
+  maintenanceDelete: (data: Record<string, unknown>) =>
+    http.post('/admin/maintenance/delete', data),
+  maintenanceMerge: (data: Record<string, unknown>) =>
+    http.post('/admin/maintenance/merge', data),
 };

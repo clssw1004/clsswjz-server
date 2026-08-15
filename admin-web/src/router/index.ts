@@ -27,6 +27,21 @@ const router = createRouter({
           meta: { title: '用户详情' },
         },
         {
+          path: 'books',
+          component: () => import('../views/Books.vue'),
+          meta: { title: '账本管理' },
+        },
+        {
+          path: 'books/:id',
+          component: () => import('../views/BookDetail.vue'),
+          meta: { title: '账本详情' },
+        },
+        {
+          path: 'system',
+          component: () => import('../views/System.vue'),
+          meta: { title: '系统信息' },
+        },
+        {
           path: 'logs',
           component: () => import('../views/Logs.vue'),
           meta: { title: '日志审计' },
