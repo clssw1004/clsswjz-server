@@ -37,7 +37,7 @@ services:
       - '3000:3000'
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - SERVER_PORT=3000
       - API_PREFIX=api
       - DB_TYPE=sqlite # 或 mysql
       - DATA_PATH=/data # SQLite 数据存储路径
@@ -131,7 +131,7 @@ npm run materialize
 
 ```bash
 # 服务器配置
-PORT=3000                # 服务器端口
+SERVER_PORT=3000           # 服务器端口
 API_PREFIX=api          # API前缀
 NODE_ENV=development    # 环境：development/production
 
@@ -159,7 +159,7 @@ services:
   api:
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - SERVER_PORT=3000
       - DB_TYPE=sqlite
       - DATA_PATH=/data
 ```

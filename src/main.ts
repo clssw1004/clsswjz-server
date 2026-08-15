@@ -56,6 +56,7 @@ async function bootstrap() {
     generateApiDocs();
   }
 
-  await app.listen(configService.get<string>('PORT') ?? 3000);
+  // 端口用独立的 SERVER_PORT 命名，避免与环境中通用的 PORT 变量冲突
+  await app.listen(configService.get<string>('SERVER_PORT') ?? 3000);
 }
 bootstrap();
