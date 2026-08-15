@@ -1,0 +1,156 @@
+/**
+ * CLSSWJZ Admin — 设计令牌与 Element Plus 主题覆盖
+ * 风格：Dark Glassmorphism（深海军蓝 + 玻璃拟态 + 金色主色 / 紫色点缀）
+ * 所有页面统一引用，禁止在组件内写裸色值。
+ */
+
+/* =========================================================
+ * 1. 品牌与语义色板
+ * ========================================================= */
+:root {
+  /* 品牌色 */
+  --brand-gold: #f59e0b;
+  --brand-gold-strong: #fbbf24;
+  --brand-gold-dark: #b45309;
+  --brand-purple: #8b5cf6;
+  --brand-purple-light: #a78bfa;
+  --brand-green: #10b981;
+  --brand-green-light: #34d399;
+  --brand-red: #ef4444;
+  --brand-red-light: #f87171;
+  --brand-cyan: #06b6d4;
+  --brand-cyan-light: #22d3ee;
+
+  /* 渐变（图标底、强调） */
+  --grad-gold: linear-gradient(135deg, #f59e0b, #fbbf24);
+  --grad-purple: linear-gradient(135deg, #8b5cf6, #a78bfa);
+  --grad-green: linear-gradient(135deg, #10b981, #34d399);
+  --grad-cyan: linear-gradient(135deg, #06b6d4, #22d3ee);
+  --grad-red: linear-gradient(135deg, #ef4444, #f87171);
+  --grad-slate: linear-gradient(135deg, #334155, #475569);
+
+  /* 语义（状态） */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-info: #64748b;
+}
+
+/* =========================================================
+ * 2. 背景 / 表面 / 边框 / 文字
+ * ========================================================= */
+:root {
+  --bg-page: #0b1120;
+  --bg-deep: #070b15;
+  --bg-glow-gold: rgba(245, 158, 11, 0.14);
+  --bg-glow-purple: rgba(139, 92, 246, 0.16);
+  --bg-glow-cyan: rgba(6, 182, 212, 0.08);
+
+  /* 玻璃表面 */
+  --surface-glass: rgba(255, 255, 255, 0.045);
+  --surface-glass-strong: rgba(255, 255, 255, 0.075);
+  --surface-hover: rgba(255, 255, 255, 0.09);
+  --surface-active: rgba(255, 255, 255, 0.12);
+
+  --border-glass: rgba(255, 255, 255, 0.09);
+  --border-glass-strong: rgba(255, 255, 255, 0.18);
+
+  /* 文字层级 */
+  --text-1: #f1f5f9;
+  --text-2: #a5b4c8;
+  --text-3: #64748b;
+}
+
+/* =========================================================
+ * 3. 效果 / 圆角 / 字体
+ * ========================================================= */
+:root {
+  --shadow-card: 0 8px 32px rgba(2, 6, 23, 0.45);
+  --shadow-pop: 0 16px 48px rgba(2, 6, 23, 0.55);
+  --shadow-glow-gold: 0 6px 24px rgba(245, 158, 11, 0.35);
+  --blur-glass: blur(18px) saturate(1.35);
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+
+  --font-ui: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'PingFang SC',
+    'Microsoft YaHei', 'Noto Sans CJK SC', 'Source Han Sans SC', sans-serif;
+  --font-mono: 'Fira Code', ui-monospace, 'SFMono-Regular', 'Cascadia Code',
+    Menlo, Consolas, monospace;
+}
+
+/* =========================================================
+ * 4. Element Plus 变量覆盖（暗色玻璃主题）
+ * 注：需在 element-plus dark css-vars 之后引入本文件
+ * ========================================================= */
+:root {
+  --el-color-primary: #f59e0b;
+  --el-color-primary-dark-2: #b45309;
+  --el-color-primary-light-3: #f7b32e;
+  --el-color-primary-light-5: #f9c65c;
+  --el-color-primary-light-7: #fbd98b;
+  --el-color-primary-light-8: #fce3a6;
+  --el-color-primary-light-9: #fdf1d6;
+
+  --el-color-success: #10b981;
+  --el-color-warning: #f59e0b;
+  --el-color-danger: #ef4444;
+  --el-color-error: #ef4444;
+  --el-color-info: #64748b;
+
+  /* 表面 */
+  --el-bg-color: #0f172a;
+  --el-bg-color-page: transparent;
+  --el-bg-color-overlay: #1e293b;
+
+  /* 文字 */
+  --el-text-color-primary: #f1f5f9;
+  --el-text-color-regular: #cbd5e1;
+  --el-text-color-secondary: #94a3b8;
+  --el-text-color-placeholder: #64748b;
+  --el-text-color-disabled: #475569;
+
+  /* 边框 */
+  --el-border-color: rgba(255, 255, 255, 0.16);
+  --el-border-color-light: rgba(255, 255, 255, 0.13);
+  --el-border-color-lighter: rgba(255, 255, 255, 0.1);
+  --el-border-color-extra-light: rgba(255, 255, 255, 0.07);
+  --el-border-color-hover: rgba(255, 255, 255, 0.24);
+  --el-border-color-dark: rgba(255, 255, 255, 0.2);
+  --el-border-color-darker: rgba(255, 255, 255, 0.26);
+
+  /* 填充 */
+  --el-fill-color: rgba(255, 255, 255, 0.1);
+  --el-fill-color-light: rgba(255, 255, 255, 0.075);
+  --el-fill-color-lighter: rgba(255, 255, 255, 0.055);
+  --el-fill-color-extra-light: rgba(255, 255, 255, 0.04);
+  --el-fill-color-dark: rgba(255, 255, 255, 0.14);
+  --el-fill-color-darker: rgba(255, 255, 255, 0.18);
+  --el-fill-color-blank: transparent;
+
+  /* 遮罩 / 弹出 */
+  --el-mask-color: rgba(4, 8, 18, 0.65);
+  --el-box-shadow-light: 0 8px 32px rgba(2, 6, 23, 0.55);
+  --el-box-shadow: 0 12px 40px rgba(2, 6, 23, 0.6);
+
+  /* 字体 */
+  --el-font-family: var(--font-ui);
+
+  /* 组件级：卡片 / 表格 */
+  --el-card-bg-color: transparent;
+  --el-card-border-color: var(--border-glass);
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+  --el-table-header-bg-color: rgba(255, 255, 255, 0.035);
+  --el-table-row-hover-bg-color: rgba(255, 255, 255, 0.05);
+  --el-table-border-color: rgba(255, 255, 255, 0.06);
+  --el-table-header-text-color: var(--text-2);
+  --el-table-text-color: var(--text-1);
+
+  /* 菜单 */
+  --el-menu-bg-color: transparent;
+  --el-menu-text-color: var(--text-2);
+  --el-menu-active-color: var(--brand-gold);
+  --el-menu-hover-bg-color: rgba(255, 255, 255, 0.06);
+  --el-menu-item-height: 46px;
+}

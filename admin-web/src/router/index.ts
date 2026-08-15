@@ -32,6 +32,16 @@ const router = createRouter({
           meta: { title: '日志审计' },
         },
         {
+          path: 'items',
+          component: () => import('../views/Items.vue'),
+          meta: { title: '账目管理' },
+        },
+        {
+          path: 'items/:id',
+          component: () => import('../views/ItemDetail.vue'),
+          meta: { title: '账目详情' },
+        },
+        {
           path: 'stats',
           component: () => import('../views/Stats.vue'),
           meta: { title: '业务报表' },

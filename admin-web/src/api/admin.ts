@@ -16,9 +16,14 @@ export const adminApi = {
     http.get(`/admin/users/${id}/items`, { params }),
   logs: (params: Record<string, unknown>) => http.get('/admin/logs', { params }),
   logDetail: (id: string) => http.get(`/admin/logs/${id}`),
-  statsOverview: () => http.get('/admin/stats/overview'),
+  statsOverview: (params?: Record<string, unknown>) =>
+    http.get('/admin/stats/overview', { params }),
   statsTrend: (params: Record<string, unknown>) =>
     http.get('/admin/stats/trend', { params }),
-  statsCategories: (type: string) =>
-    http.get('/admin/stats/categories', { params: { type } }),
+  statsCategories: (type: string, params?: Record<string, unknown>) =>
+    http.get('/admin/stats/categories', { params: { type, ...params } }),
+  statsBooks: () => http.get('/admin/stats/books'),
+  items: (params: Record<string, unknown>) =>
+    http.get('/admin/items', { params }),
+  itemDetail: (id: string) => http.get(`/admin/items/${id}`),
 };
