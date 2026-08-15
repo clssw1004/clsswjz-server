@@ -14,8 +14,10 @@ import { AdminController } from '../controllers/admin.controller';
 import { AdminUserController } from '../controllers/admin-user.controller';
 import { AdminLogController } from '../controllers/admin-log.controller';
 import { AdminStatsController } from '../controllers/admin-stats.controller';
+import { AdminItemController } from '../controllers/admin-item.controller';
 import { AdminService } from '../services/admin.service';
 import { AdminStatsService } from '../services/admin-stats.service';
+import { AdminItemService } from '../services/admin-item.service';
 import { AdminAuthGuard } from '../guards/admin-auth.guard';
 import { SyncModule } from './sync.module';
 
@@ -53,7 +55,13 @@ import { SyncModule } from './sync.module';
     AdminUserController,
     AdminLogController,
     AdminStatsController,
+    AdminItemController,
   ],
-  providers: [AdminService, AdminStatsService, AdminAuthGuard],
+  providers: [
+    AdminService,
+    AdminStatsService,
+    AdminItemService,
+    AdminAuthGuard,
+  ],
 })
 export class AdminModule {}
