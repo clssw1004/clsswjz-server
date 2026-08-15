@@ -10,14 +10,21 @@ import { AccountItem } from '../pojo/entities/account-item.entity';
 import { AccountCategory } from '../pojo/entities/account-category.entity';
 import { AccountShop } from '../pojo/entities/account-shop.entity';
 import { AccountFund } from '../pojo/entities/account-fund.entity';
+import { AccountSymbol } from '../pojo/entities/account-symbol.entity';
 import { AdminController } from '../controllers/admin.controller';
 import { AdminUserController } from '../controllers/admin-user.controller';
 import { AdminLogController } from '../controllers/admin-log.controller';
 import { AdminStatsController } from '../controllers/admin-stats.controller';
 import { AdminItemController } from '../controllers/admin-item.controller';
+import { AdminBookController } from '../controllers/admin-book.controller';
+import { AdminSystemController } from '../controllers/admin-system.controller';
+import { AdminMaintenanceController } from '../controllers/admin-maintenance.controller';
 import { AdminService } from '../services/admin.service';
 import { AdminStatsService } from '../services/admin-stats.service';
 import { AdminItemService } from '../services/admin-item.service';
+import { AdminBookService } from '../services/admin-book.service';
+import { AdminSystemService } from '../services/admin-system.service';
+import { AdminMaintenanceService } from '../services/admin-maintenance.service';
 import { AdminAuthGuard } from '../guards/admin-auth.guard';
 import { SyncModule } from './sync.module';
 
@@ -36,6 +43,7 @@ import { SyncModule } from './sync.module';
       AccountCategory,
       AccountShop,
       AccountFund,
+      AccountSymbol,
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -56,11 +64,17 @@ import { SyncModule } from './sync.module';
     AdminLogController,
     AdminStatsController,
     AdminItemController,
+    AdminBookController,
+    AdminSystemController,
+    AdminMaintenanceController,
   ],
   providers: [
     AdminService,
     AdminStatsService,
     AdminItemService,
+    AdminBookService,
+    AdminSystemService,
+    AdminMaintenanceService,
     AdminAuthGuard,
   ],
 })
