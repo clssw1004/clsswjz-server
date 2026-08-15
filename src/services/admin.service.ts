@@ -11,6 +11,9 @@ import { User } from '../pojo/entities/user.entity';
 import { LogSync } from '../pojo/entities/log-sync.entity';
 import { AccountBook } from '../pojo/entities/account-book.entity';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
+import { AccountCategory } from '../pojo/entities/account-category.entity';
+import { AccountShop } from '../pojo/entities/account-shop.entity';
+import { AccountFund } from '../pojo/entities/account-fund.entity';
 import { SyncState } from '../pojo/enums/sync-state.enum';
 import { now } from '../utils/date.util';
 
@@ -31,6 +34,12 @@ export class AdminService {
     private readonly accountBookRepository: Repository<AccountBook>,
     @InjectRepository(AccountBookUser)
     private readonly accountBookUserRepository: Repository<AccountBookUser>,
+    @InjectRepository(AccountCategory)
+    private readonly accountCategoryRepository: Repository<AccountCategory>,
+    @InjectRepository(AccountShop)
+    private readonly accountShopRepository: Repository<AccountShop>,
+    @InjectRepository(AccountFund)
+    private readonly accountFundRepository: Repository<AccountFund>,
   ) {}
 
   /** 管理员登录：比对 env 账号密码，签发 role=admin 的 JWT */
@@ -218,7 +227,7 @@ export class AdminService {
     return this.listLogs({ ...params, operatorId: userId });
   }
 
-  /** 单条日志详情，operateData 解析为对象 */
+  /** 单条日志详情，operateData 解析为对象，并附带分类/商户/账户名称映射 */
   async getLogDetail(id: string) {
     const log = await this.logSyncRepository.findOneBy({ id });
     if (!log) {
@@ -230,7 +239,73 @@ export class AdminService {
     } catch {
       operateData = log.operateData;
     }
-    return { ...log, operateData };
+    const nameMap = await this.resolveLogNameMap(operateData);
+    let operatorName: string | undefined;
+    if (log.operatorId) {
+      const op = await this.userRepository.findOneBy({ id: log.operatorId });
+      operatorName = op ? op.nickname || op.username : undefined;
+    }
+    return { ...log, operateData, nameMap, operatorName };
+  }
+
+  /** 解析日志 operateData 中引用的分类/商户/账户编码 → 名称 */
+  private async resolveLogNameMap(operateData: any): Promise<{
+    categories: Record<string, string>;
+    shops: Record<string, string>;
+    funds: Record<string, string>;
+  }> {
+    const categoryCodes = new Set<string>();
+    const shopCodes = new Set<string>();
+    const fundIds = new Set<string>();
+    this.collectRefCodes(operateData, categoryCodes, shopCodes, fundIds);
+    const [categories, shops, funds] = await Promise.all([
+      categoryCodes.size
+        ? this.accountCategoryRepository.findBy({ code: In([...categoryCodes]) })
+        : Promise.resolve([]),
+      shopCodes.size
+        ? this.accountShopRepository.findBy({ code: In([...shopCodes]) })
+        : Promise.resolve([]),
+      fundIds.size
+        ? this.accountFundRepository.findBy({ id: In([...fundIds]) })
+        : Promise.resolve([]),
+    ]);
+    return {
+      categories: Object.fromEntries(categories.map((c) => [c.code, c.name])),
+      shops: Object.fromEntries(shops.map((s) => [s.code, s.name])),
+      funds: Object.fromEntries(funds.map((f) => [f.id, f.name])),
+    };
+  }
+
+  /** 递归收集引用编码（支持 batch 信封 {ids, data:[json串]}） */
+  private collectRefCodes(
+    data: any,
+    categoryCodes: Set<string>,
+    shopCodes: Set<string>,
+    fundIds: Set<string>,
+  ): void {
+    if (!data || typeof data !== 'object') return;
+    if (Array.isArray(data)) {
+      for (const d of data) {
+        this.collectRefCodes(d, categoryCodes, shopCodes, fundIds);
+      }
+      return;
+    }
+    if (data.categoryCode) categoryCodes.add(data.categoryCode);
+    if (data.shopCode) shopCodes.add(data.shopCode);
+    if (data.fundId) fundIds.add(data.fundId);
+    if (Array.isArray(data.data)) {
+      for (const d of data.data) {
+        let parsed = d;
+        if (typeof d === 'string') {
+          try {
+            parsed = JSON.parse(d);
+          } catch {
+            continue;
+          }
+        }
+        this.collectRefCodes(parsed, categoryCodes, shopCodes, fundIds);
+      }
+    }
   }
 
   /** 用户详情 + 日志统计（不含密码等敏感字段） */

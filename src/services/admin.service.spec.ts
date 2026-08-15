@@ -7,12 +7,24 @@ import { LogSync } from '../pojo/entities/log-sync.entity';
 import { AccountBook } from '../pojo/entities/account-book.entity';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
 import { AccountItem } from '../pojo/entities/account-item.entity';
+import { AccountCategory } from '../pojo/entities/account-category.entity';
+import { AccountShop } from '../pojo/entities/account-shop.entity';
+import { AccountFund } from '../pojo/entities/account-fund.entity';
 import { BusinessType } from '../pojo/enums/business-type.enum';
 import { OperateType } from '../pojo/enums/operate-type.enum';
 import { SyncState } from '../pojo/enums/sync-state.enum';
 
 describe('AdminService', () => {
-  const ENTITIES = [User, LogSync, AccountBook, AccountBookUser, AccountItem];
+  const ENTITIES = [
+    User,
+    LogSync,
+    AccountBook,
+    AccountBookUser,
+    AccountItem,
+    AccountCategory,
+    AccountShop,
+    AccountFund,
+  ];
 
   let dataSource: DataSource;
   let service: AdminService;
@@ -50,6 +62,9 @@ describe('AdminService', () => {
       logSyncRepo,
       dataSource.getRepository(AccountBook),
       dataSource.getRepository(AccountBookUser),
+      dataSource.getRepository(AccountCategory),
+      dataSource.getRepository(AccountShop),
+      dataSource.getRepository(AccountFund),
     );
   });
 
