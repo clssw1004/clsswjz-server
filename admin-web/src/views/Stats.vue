@@ -83,6 +83,37 @@
           <el-tag effect="plain" size="small">按月汇总</el-tag>
         </header>
         <div ref="trendRef" class="chart" />
+        <!-- 月度数据明细 -->
+        <div v-if="trendData.length" class="trend-table">
+          <div class="trend-table-head">月度数据明细</div>
+          <el-table
+            :data="trendData.slice().reverse()"
+            size="small"
+            max-height="260"
+            :header-cell-style="{ background: 'transparent' }"
+          >
+            <el-table-column prop="period" label="月份" width="92">
+              <template #default="{ row }"><span class="num">{{ row.period }}</span></template>
+            </el-table-column>
+            <el-table-column label="支出" min-width="110" align="right">
+              <template #default="{ row }">
+                <span class="num is-expense">−¥{{ fmtAmount(row.expense) }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="收入" min-width="110" align="right">
+              <template #default="{ row }">
+                <span class="num is-income">+¥{{ fmtAmount(row.income) }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="结余" min-width="110" align="right">
+              <template #default="{ row }">
+                <span class="num" :class="row.income - row.expense >= 0 ? 'is-income' : 'is-expense'">
+                  {{ fmtAmount(row.income - row.expense) }}
+                </span>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
       </section>
     </div>
 
@@ -177,9 +208,7 @@ function loadCategories() {
     const total = cats.reduce((s, c) => s + Number(c.amount || 0), 0);
     catTotal.value = total;
     const isExpense = catType.value === 'EXPENSE';
-    const { primary, accent } = chartColors();
-    const barColor = isExpense ? primary : accent;
-    // 分类多：只展示 Top-N，其余归入「其他」（点击查看明细）
+    // 分类多：饼图只展示 Top-N，其余归入「其他」（点击查看明细）
     const top = cats.slice(0, TOP).map((c: any) => ({
       name: c.categoryName,
       value: Number(c.amount || 0),
@@ -188,52 +217,44 @@ function loadCategories() {
       .slice(TOP)
       .reduce((s: number, c: any) => s + Number(c.amount || 0), 0);
     if (restSum > 0) top.push({ name: '其他', value: restSum });
-    // yAxis category 自下而上，反转让占比最大的排在最上面
-    const items = top.slice().reverse();
 
     setCats({
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: { type: 'shadow' },
-        formatter: (params: any) => {
-          const p = params[0];
-          const pct = total > 0 ? ((p.value / total) * 100).toFixed(1) : '0';
-          return `<span style="color:#94a3b8">${p.name}</span><br/><b style="font-family:Fira Code">¥${p.value.toLocaleString('zh-CN')}</b> · ${pct}%`;
+      title: {
+        text: `¥ ${fmtAmount(total)}`,
+        subtext: isExpense ? '支出总计' : '收入总计',
+        left: 'center',
+        top: '36%',
+        textStyle: {
+          fontSize: 22,
+          fontWeight: 700,
+          color: '#f1f5f9',
+          fontFamily: 'Fira Code, monospace',
         },
+        subtextStyle: { fontSize: 12, color: '#64748b' },
       },
-      grid: { left: 8, right: 56, top: 8, bottom: 8, containLabel: true },
-      xAxis: {
-        type: 'value',
-        splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } },
+      tooltip: {
+        trigger: 'item',
+        formatter:
+          '{b}<br/><span style="font-family:Fira Code">¥{c}</span> · {d}%',
       },
-      yAxis: {
-        type: 'category',
-        data: items.map((i) => i.name),
-        axisLabel: { color: '#94a3b8', width: 88, overflow: 'truncate' },
-        axisLine: { show: false },
-        axisTick: { show: false },
-      },
+      legend: { bottom: 0, type: 'scroll', itemGap: 12, pageIconSize: 10 },
       series: [
         {
-          type: 'bar',
-          barMaxWidth: 16,
-          data: items.map((i) => i.value),
-          itemStyle: {
-            borderRadius: [0, 6, 6, 0],
-            color: new graphic.LinearGradient(0, 0, 1, 0, [
-              { offset: 0, color: rgba(barColor, 0.35) },
-              { offset: 1, color: barColor },
-            ]),
+          type: 'pie',
+          radius: ['44%', '68%'],
+          center: ['50%', '43%'],
+          itemStyle: { borderRadius: 6, borderColor: '#0b1120', borderWidth: 2 },
+          label: { show: false },
+          emphasis: {
+            scaleSize: 6,
+            itemStyle: { shadowBlur: 20, shadowColor: 'rgba(0,0,0,0.4)' },
           },
-          label: {
-            show: true,
-            position: 'right',
-            formatter: (p: any) =>
-              total > 0 ? `${((p.value / total) * 100).toFixed(1)}%` : '',
-            color: '#a5b4c8',
-            fontSize: 11,
-            fontFamily: 'Fira Code, monospace',
-          },
+          data: top.map((i) => ({
+            name: i.name,
+            value: i.value,
+            itemStyle:
+              i.name === '其他' ? { color: '#475569' } : undefined,
+          })),
         },
       ],
     });
@@ -426,6 +447,21 @@ onMounted(async () => {
 .chart {
   height: 320px;
 }
+
+/* 月度数据明细表 */
+.trend-table {
+  margin-top: 14px;
+  border-top: 1px solid var(--border-glass);
+  padding-top: 12px;
+}
+.trend-table-head {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-bottom: 8px;
+}
+.trend-table .is-expense { color: var(--brand-red-light); }
+.trend-table .is-income { color: var(--color-success); }
 
 @media (max-width: 1200px) {
   .stat-grid {
