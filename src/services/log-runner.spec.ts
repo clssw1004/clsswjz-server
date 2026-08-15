@@ -304,4 +304,144 @@ describe('LogRunner', () => {
     expect(funds).toHaveLength(1);
     expect(funds[0].fundBalance).toBe(88.5);
   });
+
+  it('applies a BATCH_UPDATE log with the client {ids, data} envelope', async () => {
+    // 先建两条 shop
+    await logRunner.runLogSync(
+      makeLog({
+        businessType: BusinessType.SHOP,
+        businessId: 'shop-1',
+        operateData: JSON.stringify({
+          id: 'shop-1',
+          name: '店A',
+          code: 'S1',
+          accountBookId: 'book-1',
+          createdBy: 'u1',
+          updatedBy: 'u1',
+          createdAt: 1000,
+          updatedAt: 1000,
+        }),
+      }),
+      dataSource.manager,
+    );
+    await logRunner.runLogSync(
+      makeLog({
+        businessType: BusinessType.SHOP,
+        businessId: 'shop-2',
+        operateData: JSON.stringify({
+          id: 'shop-2',
+          name: '店B',
+          code: 'S2',
+          accountBookId: 'book-1',
+          createdBy: 'u1',
+          updatedBy: 'u1',
+          createdAt: 1000,
+          updatedAt: 1000,
+        }),
+      }),
+      dataSource.manager,
+    );
+
+    // 客户端 batchUpdate：{ids:[...], data:[json串...]}，含实体没有的 parentId/sortOrder
+    const batchLog = makeLog({
+      businessType: BusinessType.SHOP,
+      operateType: OperateType.BATCH_UPDATE,
+      businessId: 'shop-1',
+      operateData: JSON.stringify({
+        ids: ['shop-1', 'shop-2'],
+        data: [
+          JSON.stringify({
+            updatedAt: 2000,
+            updatedBy: 'u1',
+            parentId: 'book-x',
+            sortOrder: 1,
+          }),
+          JSON.stringify({
+            updatedAt: 2000,
+            updatedBy: 'u1',
+            parentId: 'book-x',
+            sortOrder: 2,
+          }),
+        ],
+      }),
+    });
+
+    const result = await logRunner.runLogSync(batchLog, dataSource.manager);
+
+    expect(result.syncState).toBe(SyncState.SYNCED);
+    const shops = await shopRepo.find();
+    expect(shops).toHaveLength(2);
+    expect(shops.every((s) => s.updatedAt === 2000)).toBe(true);
+  });
+
+  it('applies a BATCH_DELETE log with empty operateData by deleting businessId', async () => {
+    await logRunner.runLogSync(
+      makeLog({
+        businessType: BusinessType.CATEGORY,
+        businessId: 'cat-1',
+        operateData: JSON.stringify({
+          id: 'cat-1',
+          name: '餐饮',
+          code: 'C1',
+          categoryType: 'EXPENSE',
+          accountBookId: 'book-1',
+          createdBy: 'u1',
+          updatedBy: 'u1',
+          createdAt: 1000,
+          updatedAt: 1000,
+        }),
+      }),
+      dataSource.manager,
+    );
+    expect(await dataSource.getRepository(AccountCategory).count()).toBe(1);
+
+    // 客户端某些 batchDelete 日志 operateData 为空串，仅带 businessId
+    const deleteLog = makeLog({
+      businessType: BusinessType.CATEGORY,
+      operateType: OperateType.BATCH_DELETE,
+      businessId: 'cat-1',
+      operateData: '',
+    });
+
+    const result = await logRunner.runLogSync(deleteLog, dataSource.manager);
+
+    expect(result.syncState).toBe(SyncState.SYNCED);
+    expect(await dataSource.getRepository(AccountCategory).count()).toBe(0);
+  });
+
+  it('applies a BATCH_DELETE log with the {ids:[...]} envelope', async () => {
+    for (const id of ['cat-1', 'cat-2']) {
+      await logRunner.runLogSync(
+        makeLog({
+          businessType: BusinessType.CATEGORY,
+          businessId: id,
+          operateData: JSON.stringify({
+            id,
+            name: `分类${id}`,
+            code: `C${id}`,
+            categoryType: 'EXPENSE',
+            accountBookId: 'book-1',
+            createdBy: 'u1',
+            updatedBy: 'u1',
+            createdAt: 1000,
+            updatedAt: 1000,
+          }),
+        }),
+        dataSource.manager,
+      );
+    }
+    expect(await dataSource.getRepository(AccountCategory).count()).toBe(2);
+
+    const deleteLog = makeLog({
+      businessType: BusinessType.CATEGORY,
+      operateType: OperateType.BATCH_DELETE,
+      businessId: 'cat-1',
+      operateData: JSON.stringify({ ids: ['cat-1', 'cat-2'] }),
+    });
+
+    const result = await logRunner.runLogSync(deleteLog, dataSource.manager);
+
+    expect(result.syncState).toBe(SyncState.SYNCED);
+    expect(await dataSource.getRepository(AccountCategory).count()).toBe(0);
+  });
 });

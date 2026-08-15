@@ -74,45 +74,50 @@ export class LogRunner {
         return LogResult.success(log);
       }
 
-      // 解析操作数据
-      const operateData = JSON.parse(log.operateData);
+      // 解析操作数据。部分 batchDelete 日志 operateData 为空串（仅靠 businessId），
+      // 空串不解析，交由各分支按需退化处理
+      const operateData = log.operateData
+        ? JSON.parse(log.operateData)
+        : null;
 
       // 根据业务类型获取对应的Repository
       const repository = this.getRepository(log.businessType, transaction);
 
-      // 剥离实体没有的字段（客户端可能携带服务端不建模的字段，
-      // 如 shop/fund 的 lastAccountItemAt、item 的 source 等；update() 会因未知字段报错）
-      this.sanitizeAgainstEntity(repository, operateData);
-
-      // 执行数据库操作
+      // 执行数据库操作（字段剥离在各分支内完成，避免把 batch 信封 {ids,data} 误当实体字段清掉）
       switch (log.operateType) {
         case OperateType.CREATE:
-        case OperateType.BATCH_CREATE:
+        case OperateType.BATCH_CREATE: {
+          if (!operateData) {
+            throw new Error('CREATE 日志缺少 operateData');
+          }
+          this.sanitizeAgainstEntity(repository, operateData);
           await repository.save(operateData);
           break;
+        }
         case OperateType.UPDATE:
           // 真实 UPDATE：目标行不存在则 no-op，避免用部分字段 upsert 出残缺行
           // （客户端部分更新日志可能只带 updatedAt/updatedBy，甚至缺失 businessId）
-          delete operateData.id;
+          if (operateData && typeof operateData === 'object') {
+            this.sanitizeAgainstEntity(repository, operateData);
+            delete operateData.id;
+          }
           if (log.businessId) {
-            await repository.update(log.businessId, operateData);
+            await repository.update(log.businessId, operateData ?? {});
           }
           break;
         case OperateType.BATCH_UPDATE:
-          for (const item of operateData as any[]) {
-            const id = item?.id;
-            delete item?.id;
-            if (id) {
-              await repository.update(id, item);
-            }
-          }
+          await this.applyBatchUpdate(repository, operateData);
           break;
         case OperateType.DELETE:
           await repository.delete(log.businessId);
           break;
-        case OperateType.BATCH_DELETE:
-          await repository.delete(operateData);
+        case OperateType.BATCH_DELETE: {
+          const ids = this.extractBatchIds(operateData, log.businessId);
+          if (ids.length) {
+            await repository.delete(ids);
+          }
           break;
+        }
         default:
           throw new Error(`不支持的操作类型: ${log.operateType}`);
       }
@@ -121,6 +126,55 @@ export class LogRunner {
     } catch (error) {
       return LogResult.error(log, error.message);
     }
+  }
+
+  /**
+   * 批量更新：兼容客户端两种 operateData 结构
+   *  1) { ids: [...], data: [对象 | "JSON串"] } —— ids 与 data 按索引一一对应
+   *  2) 扁平数组 [{ id, ...字段 }]
+   */
+  private async applyBatchUpdate(
+    repository: Repository<any>,
+    data: any,
+  ): Promise<void> {
+    if (!data) return;
+    const ids = Array.isArray(data) ? undefined : data.ids;
+    const items = Array.isArray(data) ? data : data.data;
+    if (!Array.isArray(items)) return;
+    for (let i = 0; i < items.length; i++) {
+      let item = items[i];
+      if (typeof item === 'string') {
+        try {
+          item = JSON.parse(item);
+        } catch {
+          continue;
+        }
+      }
+      if (!item || typeof item !== 'object') continue;
+      const id = (ids && ids[i]) || item.id;
+      this.sanitizeAgainstEntity(repository, item);
+      delete item.id;
+      if (id) {
+        await repository.update(id, item);
+      }
+    }
+  }
+
+  /**
+   * 批量删除的 id 列表：兼容 {ids:[...]}、扁平数组；
+   * operateData 为空时退化为按 businessId 单条删除。
+   */
+  private extractBatchIds(data: any, businessId?: string): string[] {
+    if (Array.isArray(data)) {
+      return data.filter((x) => typeof x === 'string');
+    }
+    if (data && Array.isArray(data.ids)) {
+      return data.ids.filter((x: any) => typeof x === 'string');
+    }
+    if (!data && businessId) {
+      return [businessId];
+    }
+    return [];
   }
 
   /**
