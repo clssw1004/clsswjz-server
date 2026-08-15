@@ -29,13 +29,27 @@ export class AdminStatsService {
     private readonly accountBookUserRepository: Repository<AccountBookUser>,
   ) {}
 
-  /** 平台收支总览 */
-  async overview() {
-    const bookCount = await this.accountBookRepository.count();
-    const itemCount = await this.accountItemRepository.count();
-    const categoryCount = await this.accountCategoryRepository.count();
+  /** 账本列表（报表筛选用），按创建时间倒序（最新创建在前，作为默认选中） */
+  async listBooks(): Promise<
+    { id: string; name: string; createdAt: number }[]
+  > {
+    const books = await this.accountBookRepository.find({
+      order: { createdAt: 'DESC' },
+    });
+    return books.map((b) => ({ id: b.id, name: b.name, createdAt: b.createdAt }));
+  }
 
-    const sums = await this.accountItemRepository
+  /** 平台收支总览；bookId 传入时限定单个账本。
+   *  口径与移动端(Flutter)对齐：收入/支出取 |带符号求和|（客户端支出存负值），
+   *  退款（source='item' 指向原支出）计入结余。 */
+  async overview(bookId?: string) {
+    const bookCount = bookId
+      ? (await this.accountBookRepository.exist({ where: { id: bookId } })
+          ? 1
+          : 0)
+      : await this.accountBookRepository.count();
+
+    const sumQb = this.accountItemRepository
       .createQueryBuilder('i')
       .select(
         "COALESCE(SUM(CASE WHEN i.type = 'EXPENSE' THEN i.amount ELSE 0 END), 0)",
@@ -44,10 +58,31 @@ export class AdminStatsService {
       .addSelect(
         "COALESCE(SUM(CASE WHEN i.type = 'INCOME' THEN i.amount ELSE 0 END), 0)",
         'income',
-      )
-      .getRawOne();
-    const expenseTotal = Number(sums?.expense ?? 0);
-    const incomeTotal = Number(sums?.income ?? 0);
+      );
+    if (bookId) {
+      sumQb.andWhere('i.accountBookId = :bookId', { bookId });
+    }
+    const sums = await sumQb.getRawOne();
+    const expenseTotal = Math.abs(Number(sums?.expense ?? 0));
+    const incomeTotal = Math.abs(Number(sums?.income ?? 0));
+    const refundTotal = await this.refundTotal(bookId);
+
+    const itemCount = bookId
+      ? await this.accountItemRepository.count({ where: { accountBookId: bookId } })
+      : await this.accountItemRepository.count();
+
+    const categoryCount = bookId
+      ? Number(
+          (
+            await this.accountItemRepository
+              .createQueryBuilder('i')
+              .select('COUNT(DISTINCT i.categoryCode)', 'count')
+              .where('i.accountBookId = :bookId', { bookId })
+              .andWhere('i.categoryCode IS NOT NULL')
+              .getRawOne()
+          )?.count ?? 0,
+        )
+      : await this.accountCategoryRepository.count();
 
     const active = await this.accountItemRepository
       .createQueryBuilder('i')
@@ -60,16 +95,39 @@ export class AdminStatsService {
       categoryCount,
       expenseTotal,
       incomeTotal,
-      balance: incomeTotal - expenseTotal,
+      refundTotal,
+      balance: incomeTotal - expenseTotal + refundTotal,
       activeUserCount: Number(active?.count ?? 0),
     };
   }
 
-  /** 收支趋势：按日/月分桶 */
+  /** 退款总额：收入型、source='item' 且 sourceId 指向本账本支出账目的记录 */
+  private async refundTotal(bookId?: string): Promise<number> {
+    const qb = this.accountItemRepository
+      .createQueryBuilder('r')
+      .select('COALESCE(SUM(ABS(r.amount)), 0)', 'total')
+      .where(`r.source = 'item'`)
+      .andWhere(
+        `r.sourceId IN (SELECT id FROM ${this.accountItemRepository.metadata.tableName} WHERE type = 'EXPENSE')`,
+      );
+    if (bookId) {
+      qb.andWhere('r.accountBookId = :bookId', { bookId });
+    }
+    const row = await qb.getRawOne();
+    return Number(row?.total ?? 0);
+  }
+
+  /** 收入分类的退款排除条件（与移动端一致：退款不计入收入分类） */
+  private nonRefundIncomeWhere(alias: string): string {
+    return `(${alias}.source IS NULL OR ${alias}.source != 'item' OR ${alias}.sourceId IS NULL OR ${alias}.sourceId NOT IN (SELECT id FROM ${this.accountItemRepository.metadata.tableName} WHERE type = 'EXPENSE'))`;
+  }
+
+  /** 收支趋势：按日/月分桶；bookId 传入时限定单个账本 */
   async trend(params: {
     granularity: 'day' | 'month';
     from?: string;
     to?: string;
+    bookId?: string;
   }) {
     const bucket =
       params.granularity === 'month'
@@ -86,6 +144,9 @@ export class AdminStatsService {
         "COALESCE(SUM(CASE WHEN i.type = 'INCOME' THEN i.amount ELSE 0 END), 0)",
         'income',
       );
+    if (params.bookId) {
+      qb.andWhere('i.accountBookId = :bookId', { bookId: params.bookId });
+    }
     if (params.from) {
       qb.andWhere('i.accountDate >= :from', { from: params.from });
     }
@@ -97,28 +158,37 @@ export class AdminStatsService {
     const rows = await qb.groupBy(bucket).orderBy(bucket, 'ASC').getRawMany();
     return rows.map((r) => ({
       period: r.period,
-      expense: Number(r.expense),
-      income: Number(r.income),
+      expense: Math.abs(Number(r.expense)),
+      income: Math.abs(Number(r.income)),
     }));
   }
 
-  /** 分类占比：按分类聚合收支 */
-  async categories(type: 'EXPENSE' | 'INCOME') {
-    const rows = await this.accountItemRepository
+  /** 分类占比：按分类聚合收支（口径与移动端一致）。
+   *  金额取 |带符号求和|；收入分类排除退款（退款指向原支出，不计入收入）。 */
+  async categories(type: 'EXPENSE' | 'INCOME', bookId?: string) {
+    const qb = this.accountItemRepository
       .createQueryBuilder('i')
       .select('i.categoryCode', 'categoryCode')
       .addSelect('c.name', 'categoryName')
-      .addSelect('SUM(i.amount)', 'amount')
+      .addSelect('ABS(SUM(i.amount))', 'amount')
+      .addSelect('COUNT(*)', 'count')
       .innerJoin(AccountCategory, 'c', 'c.code = i.categoryCode')
       .where('i.type = :type', { type })
       .groupBy('i.categoryCode')
       .addGroupBy('c.name')
-      .orderBy('amount', 'DESC')
-      .getRawMany();
+      .orderBy('amount', 'DESC');
+    if (type === 'INCOME') {
+      qb.andWhere(this.nonRefundIncomeWhere('i'));
+    }
+    if (bookId) {
+      qb.andWhere('i.accountBookId = :bookId', { bookId });
+    }
+    const rows = await qb.getRawMany();
     return rows.map((r) => ({
       categoryCode: r.categoryCode,
       categoryName: r.categoryName,
       amount: Number(r.amount),
+      count: Number(r.count),
     }));
   }
 

@@ -57,7 +57,16 @@ export class AdminLogQueryDto extends PageQueryDto {
   endTime?: number;
 }
 
-export class TrendQueryDto {
+export class BookIdQueryDto {
+  @ApiPropertyOptional({ description: '账本 ID，缺省统计全平台' })
+  @IsOptional()
+  @IsString()
+  bookId?: string;
+}
+
+export class OverviewQueryDto extends BookIdQueryDto {}
+
+export class TrendQueryDto extends BookIdQueryDto {
   @ApiProperty({ enum: ['day', 'month'], default: 'day' })
   @IsIn(['day', 'month'])
   granularity: 'day' | 'month' = 'day';
@@ -73,8 +82,14 @@ export class TrendQueryDto {
   to?: string;
 }
 
-export class CategoriesQueryDto {
+export class CategoriesQueryDto extends BookIdQueryDto {
   @ApiProperty({ enum: ['EXPENSE', 'INCOME'] })
   @IsIn(['EXPENSE', 'INCOME'])
   type: 'EXPENSE' | 'INCOME';
+}
+
+export class ItemListQueryDto extends PageQueryDto {
+  @ApiProperty({ description: '账本 ID（必填，按账本展示账目）' })
+  @IsString()
+  bookId: string;
 }
