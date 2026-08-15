@@ -11,7 +11,6 @@ export abstract class BaseAccountNameSymbol extends BaseBusinessEntityWithAccoun
 
   @Column({
     length: 16,
-    unique: true,
     name: 'code',
     comment: '编码',
   })
