@@ -8,12 +8,16 @@
  * 1. 品牌与语义色板
  * ========================================================= */
 :root {
-  /* 品牌色 */
+  /* 品牌色（主色+辅助色，可被 themes.ts 主题切换覆盖） */
   --brand-gold: #f59e0b;
   --brand-gold-strong: #fbbf24;
   --brand-gold-dark: #b45309;
+  --brand-gold-soft: rgba(245, 158, 11, 0.12);
   --brand-purple: #8b5cf6;
   --brand-purple-light: #a78bfa;
+  --brand-purple-soft: rgba(139, 92, 246, 0.12);
+  --on-primary: #1c1204; /* 主色背景文字色（浅色主题深字/深色主题白字） */
+  --glow-primary: 0 6px 24px rgba(245, 158, 11, 0.35);
   --brand-green: #10b981;
   --brand-green-light: #34d399;
   --brand-red: #ef4444;

@@ -147,10 +147,10 @@ async function doLogin() {
   height: 56px;
   border-radius: 16px;
   background: var(--grad-gold);
-  color: #1c1204;
+  color: var(--on-primary);
   font-size: 28px;
   font-weight: 700;
-  box-shadow: 0 10px 30px rgba(245, 158, 11, 0.45);
+  box-shadow: var(--glow-primary);
 }
 .login-title {
   margin: 16px 0 4px;

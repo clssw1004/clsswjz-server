@@ -115,7 +115,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { graphic } from 'echarts/core';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
@@ -128,6 +128,7 @@ import {
 } from '@element-plus/icons-vue';
 import { adminApi } from '../api/admin';
 import { useChart } from '../composables/useChart';
+import { activeTheme, chartColors, rgba } from '../styles/themes';
 
 const cards = ref([
   { label: '总用户', value: 0, icon: User, grad: 'grad-purple' },
@@ -160,8 +161,10 @@ function formatPercent(p: number): string {
 
 const trendRef = ref<HTMLDivElement>();
 const { setOption: setTrend } = useChart(trendRef);
+const trendData = ref<{ period: string; expense: number; income: number }[]>([]);
 
 function renderTrend(data: { period: string; expense: number; income: number }[]) {
+  const { primary, accent } = chartColors();
   setTrend({
     tooltip: { trigger: 'axis' },
     legend: { data: ['支出', '收入'] },
@@ -175,12 +178,12 @@ function renderTrend(data: { period: string; expense: number; income: number }[]
         symbol: 'circle',
         symbolSize: 5,
         data: data.map((d) => d.expense),
-        lineStyle: { width: 3, color: '#f59e0b' },
-        itemStyle: { color: '#f59e0b' },
+        lineStyle: { width: 3, color: primary },
+        itemStyle: { color: primary },
         areaStyle: {
           color: new graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(245, 158, 11, 0.32)' },
-            { offset: 1, color: 'rgba(245, 158, 11, 0.02)' },
+            { offset: 0, color: rgba(primary, 0.32) },
+            { offset: 1, color: rgba(primary, 0.02) },
           ]),
         },
       },
@@ -191,18 +194,23 @@ function renderTrend(data: { period: string; expense: number; income: number }[]
         symbol: 'circle',
         symbolSize: 5,
         data: data.map((d) => d.income),
-        lineStyle: { width: 3, color: '#8b5cf6' },
-        itemStyle: { color: '#8b5cf6' },
+        lineStyle: { width: 3, color: accent },
+        itemStyle: { color: accent },
         areaStyle: {
           color: new graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(139, 92, 246, 0.28)' },
-            { offset: 1, color: 'rgba(139, 92, 246, 0.02)' },
+            { offset: 0, color: rgba(accent, 0.28) },
+            { offset: 1, color: rgba(accent, 0.02) },
           ]),
         },
       },
     ],
   });
 }
+
+// 主题切换时用缓存数据重绘图表
+watch(activeTheme, () => {
+  if (trendData.value.length) renderTrend(trendData.value);
+});
 
 async function load() {
   const o = await adminApi.overview();
@@ -213,8 +221,8 @@ async function load() {
     { label: '今日推送', value: o.todayPushCount, icon: Promotion, grad: 'grad-green' },
   ];
   replay.value = await adminApi.materializeStatus();
-  const trend = await adminApi.statsTrend({ granularity: 'month' });
-  renderTrend(trend);
+  trendData.value = await adminApi.statsTrend({ granularity: 'month' });
+  renderTrend(trendData.value);
 }
 
 async function materialize() {
@@ -282,7 +290,7 @@ onMounted(load);
   color: #fff;
   box-shadow: 0 8px 20px rgba(2, 6, 23, 0.4);
 }
-.stat-icon.grad-gold { background: var(--grad-gold); color: #1c1204; }
+.stat-icon.grad-gold { background: var(--grad-gold); color: var(--on-primary); }
 .stat-icon.grad-purple { background: var(--grad-purple); }
 .stat-icon.grad-green { background: var(--grad-green); }
 .stat-icon.grad-cyan { background: var(--grad-cyan); }

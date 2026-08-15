@@ -53,6 +53,34 @@
             <span class="pulse-dot" aria-hidden="true" />
             ADMIN
           </el-tag>
+
+          <!-- 主题颜色切换（与 App 端 Colors.primaries 一致） -->
+          <el-popover placement="bottom-end" :width="276" trigger="click" popper-class="theme-pop">
+            <template #reference>
+              <button class="theme-btn" type="button" aria-label="切换主题颜色" title="主题颜色">
+                <span class="theme-btn-dot" :style="{ background: activeTheme.primary }" aria-hidden="true" />
+                <el-icon :size="16"><Brush /></el-icon>
+              </button>
+            </template>
+            <div class="theme-picker">
+              <div class="theme-picker-title">主题颜色</div>
+              <div class="theme-swatches">
+                <button
+                  v-for="t in THEMES"
+                  :key="t.id"
+                  type="button"
+                  class="theme-swatch"
+                  :class="{ active: t.id === activeThemeId }"
+                  :style="{ background: t.primary, color: t.onPrimary }"
+                  :title="t.name"
+                  @click="setTheme(t.id)"
+                >
+                  <el-icon v-if="t.id === activeThemeId" :size="14"><Check /></el-icon>
+                </button>
+              </div>
+            </div>
+          </el-popover>
+
           <el-button text class="logout-btn" @click="logout">
             <el-icon :size="16"><SwitchButton /></el-icon>
             <span class="logout-text">退出登录</span>
@@ -82,7 +110,10 @@ import {
   Document,
   TrendCharts,
   List,
+  Brush,
+  Check,
 } from '@element-plus/icons-vue';
+import { THEMES, activeTheme, activeThemeId, setTheme } from '../styles/themes';
 
 const router = useRouter();
 const route = useRoute();
@@ -136,12 +167,12 @@ function logout() {
   height: 46px;
   border-radius: 14px;
   background: var(--grad-gold);
-  color: #1c1204;
+  color: var(--on-primary);
   font-size: 24px;
   font-weight: 700;
   display: grid;
   place-items: center;
-  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.4);
+  box-shadow: var(--glow-primary);
   margin-bottom: 10px;
 }
 .app-brand-name {
@@ -237,12 +268,12 @@ function logout() {
 }
 .side-nav-item.active {
   background: var(--grad-gold);
-  color: #1c1204;
+  color: var(--on-primary);
   font-weight: 600;
-  box-shadow: 0 6px 18px rgba(245, 158, 11, 0.32);
+  box-shadow: var(--glow-primary);
 }
 .side-nav-item.active .el-icon {
-  color: #1c1204;
+  color: var(--on-primary);
 }
 
 /* ---------- 顶栏 ---------- */
@@ -321,6 +352,75 @@ function logout() {
 .logout-btn:hover {
   color: var(--brand-red-light);
   background: rgba(239, 68, 68, 0.08);
+}
+
+/* 主题切换按钮 */
+.theme-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border-glass);
+  border-radius: 10px;
+  background: var(--surface-glass);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.theme-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text-1);
+  border-color: var(--border-glass-strong);
+}
+.theme-btn-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+
+/* 主题色板弹层（teleport 到 body，需全局可见，故用非 scoped 前缀） */
+.theme-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.theme-picker-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+.theme-swatches {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+.theme-swatch {
+  aspect-ratio: 1;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+.theme-swatch:hover {
+  transform: scale(1.12);
+}
+.theme-swatch.active {
+  box-shadow:
+    0 0 0 2px var(--bg-page),
+    0 0 0 4px var(--text-1);
+  transform: scale(1.05);
+}
+/* 让 teleport 出去的色板在暗色下可用 */
+.theme-pop.el-popover {
+  background: var(--el-bg-color-overlay);
+  border: 1px solid var(--border-glass);
+  backdrop-filter: var(--blur-glass);
+  --el-popover-padding: 14px;
 }
 
 /* ---------- 内容区 ---------- */

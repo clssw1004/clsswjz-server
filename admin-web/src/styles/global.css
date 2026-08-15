@@ -196,7 +196,7 @@ body {
 }
 .el-pagination .el-pager li.is-active {
   background: var(--grad-gold);
-  color: #1c1204;
+  color: var(--on-primary);
   font-weight: 700;
 }
 
@@ -247,11 +247,11 @@ body {
   --el-button-active-border-color: var(--brand-gold-dark);
   background-image: var(--grad-gold);
   border-color: transparent;
-  color: #1c1204;
-  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.28);
+  color: var(--on-primary);
+  box-shadow: var(--glow-primary);
 }
 .el-button--primary:hover {
-  box-shadow: 0 6px 22px rgba(245, 158, 11, 0.42);
+  box-shadow: var(--glow-primary);
 }
 .el-button.is-plain {
   background: rgba(255, 255, 255, 0.05);

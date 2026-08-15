@@ -117,7 +117,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { graphic } from 'echarts/core';
 import {
   Notebook,
@@ -131,6 +131,7 @@ import { adminApi } from '../api/admin';
 import { useChart } from '../composables/useChart';
 import { useBookFilter } from '../composables/useBookFilter';
 import { fmtAmount } from '../styles/chart-theme';
+import { activeTheme, chartColors, rgba } from '../styles/themes';
 
 const { books, bookId, loadBooks } = useBookFilter();
 
@@ -145,6 +146,8 @@ const catType = ref('EXPENSE');
 const TOP = 8;
 const catTotal = ref(0);
 const allCats = ref<any[]>([]);
+const catsData = ref<any[]>([]);
+const trendData = ref<any[]>([]);
 const restCount = computed(() => Math.max(0, allCats.value.length - TOP));
 const dialogVisible = ref(false);
 
@@ -169,10 +172,13 @@ function percent(amount: number): string {
 
 function loadCategories() {
   adminApi.statsCategories(catType.value, bookParams()).then((cats: any[]) => {
+    catsData.value = cats;
     allCats.value = cats;
     const total = cats.reduce((s, c) => s + Number(c.amount || 0), 0);
     catTotal.value = total;
     const isExpense = catType.value === 'EXPENSE';
+    const { primary, accent } = chartColors();
+    const barColor = isExpense ? primary : accent;
     // 分类多：只展示 Top-N，其余归入「其他」（点击查看明细）
     const top = cats.slice(0, TOP).map((c: any) => ({
       name: c.categoryName,
@@ -215,13 +221,8 @@ function loadCategories() {
           itemStyle: {
             borderRadius: [0, 6, 6, 0],
             color: new graphic.LinearGradient(0, 0, 1, 0, [
-              {
-                offset: 0,
-                color: isExpense
-                  ? 'rgba(245,158,11,0.35)'
-                  : 'rgba(139,92,246,0.35)',
-              },
-              { offset: 1, color: isExpense ? '#f59e0b' : '#8b5cf6' },
+              { offset: 0, color: rgba(barColor, 0.35) },
+              { offset: 1, color: barColor },
             ]),
           },
           label: {
@@ -243,6 +244,8 @@ function loadTrend() {
   adminApi
     .statsTrend({ granularity: 'month', ...bookParams() })
     .then((trend: any[]) => {
+      trendData.value = trend;
+      const { primary, accent, primaryLight, accentLight } = chartColors();
       setTrend({
         tooltip: { trigger: 'axis' },
         legend: { data: ['支出', '收入'] },
@@ -257,8 +260,8 @@ function loadTrend() {
             itemStyle: {
               borderRadius: [5, 5, 0, 0],
               color: new graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: '#fbbf24' },
-                { offset: 1, color: 'rgba(245, 158, 11, 0.35)' },
+                { offset: 0, color: primaryLight },
+                { offset: 1, color: rgba(primary, 0.35) },
               ]),
             },
           },
@@ -270,8 +273,8 @@ function loadTrend() {
             itemStyle: {
               borderRadius: [5, 5, 0, 0],
               color: new graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: '#a78bfa' },
-                { offset: 1, color: 'rgba(139, 92, 246, 0.35)' },
+                { offset: 0, color: accentLight },
+                { offset: 1, color: rgba(accent, 0.35) },
               ]),
             },
           },
@@ -279,6 +282,12 @@ function loadTrend() {
       });
     });
 }
+
+// 主题切换时用缓存数据重绘两个图表
+watch(activeTheme, () => {
+  if (catsData.value.length) loadCategories();
+  if (trendData.value.length) loadTrend();
+});
 
 async function loadOverview() {
   const o = await adminApi.statsOverview(bookParams());
@@ -367,7 +376,7 @@ onMounted(async () => {
   color: #fff;
   box-shadow: 0 8px 20px rgba(2, 6, 23, 0.4);
 }
-.stat-icon.grad-gold { background: var(--grad-gold); color: #1c1204; }
+.stat-icon.grad-gold { background: var(--grad-gold); color: var(--on-primary); }
 .stat-icon.grad-green { background: var(--grad-green); }
 .stat-icon.grad-cyan { background: var(--grad-cyan); }
 .stat-icon.grad-red { background: var(--grad-red); }
