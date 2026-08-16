@@ -71,49 +71,75 @@
         </header>
         <div v-if="catTotal > 0" class="cat-summary num">
           共 ¥{{ fmtAmount(catTotal) }} · 前 {{ TOP }} + 其他（{{ restCount }} 个）
-          <span v-if="restCount > 0" class="cat-hint">点击「其他」查看明细</span>
         </div>
         <div ref="catRef" class="chart" />
       </section>
 
-      <!-- 月度收支趋势 -->
+      <!-- 收支构成 -->
       <section class="glass panel fade-in" style="--d: 260ms">
         <header class="panel-head">
-          <div class="panel-title">月度收支趋势</div>
-          <el-tag effect="plain" size="small">按月汇总</el-tag>
+          <div class="panel-title">收支构成</div>
+          <el-tag effect="plain" size="small">本期占比</el-tag>
         </header>
-        <div ref="trendRef" class="chart" />
-        <!-- 月度数据明细 -->
-        <div v-if="trendData.length" class="trend-table">
-          <div class="trend-table-head">月度数据明细</div>
-          <el-table
-            :data="trendData.slice().reverse()"
-            size="small"
-            max-height="260"
-            :header-cell-style="{ background: 'transparent' }"
-          >
-            <el-table-column prop="period" label="月份" width="92">
-              <template #default="{ row }"><span class="num">{{ row.period }}</span></template>
-            </el-table-column>
-            <el-table-column label="支出" min-width="110" align="right">
-              <template #default="{ row }">
-                <span class="num is-expense">−¥{{ fmtAmount(row.expense) }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column label="收入" min-width="110" align="right">
-              <template #default="{ row }">
-                <span class="num is-income">+¥{{ fmtAmount(row.income) }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column label="结余" min-width="110" align="right">
-              <template #default="{ row }">
-                <span class="num" :class="row.income - row.expense >= 0 ? 'is-income' : 'is-expense'">
-                  {{ fmtAmount(row.income - row.expense) }}
-                </span>
-              </template>
-            </el-table-column>
-          </el-table>
-        </div>
+        <div ref="composeRef" class="chart" />
+      </section>
+    </div>
+
+    <!-- 月度收支趋势（全宽 + 数据表） -->
+    <section class="glass panel trend-panel fade-in" style="--d: 200ms">
+      <header class="panel-head">
+        <div class="panel-title">月度收支趋势</div>
+        <el-tag effect="plain" size="small">按月汇总</el-tag>
+      </header>
+      <div ref="trendRef" class="chart" />
+      <!-- 月度数据明细 -->
+      <div v-if="trendData.length" class="trend-table">
+        <div class="trend-table-head">月度数据明细</div>
+        <el-table
+          :data="trendData.slice().reverse()"
+          size="small"
+          max-height="260"
+          :header-cell-style="{ background: 'transparent' }"
+        >
+          <el-table-column prop="period" label="月份" width="92">
+            <template #default="{ row }"><span class="num">{{ row.period }}</span></template>
+          </el-table-column>
+          <el-table-column label="支出" min-width="110" align="right">
+            <template #default="{ row }">
+              <span class="num is-expense">−¥{{ fmtAmount(row.expense) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="收入" min-width="110" align="right">
+            <template #default="{ row }">
+              <span class="num is-income">+¥{{ fmtAmount(row.income) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="结余" min-width="110" align="right">
+            <template #default="{ row }">
+              <span class="num" :class="row.income - row.expense >= 0 ? 'is-income' : 'is-expense'">
+                {{ fmtAmount(row.income - row.expense) }}
+              </span>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </section>
+
+    <!-- 账户 / 商户 分布 -->
+    <div class="chart-row">
+      <section class="glass panel fade-in" style="--d: 260ms">
+        <header class="panel-head">
+          <div class="panel-title">账户资金分布</div>
+          <el-tag effect="plain" size="small">按支出</el-tag>
+        </header>
+        <div ref="fundRef" class="chart" />
+      </section>
+      <section class="glass panel fade-in" style="--d: 320ms">
+        <header class="panel-head">
+          <div class="panel-title">商户 Top</div>
+          <el-tag effect="plain" size="small">按支出</el-tag>
+        </header>
+        <div ref="shopRef" class="chart" />
       </section>
     </div>
 
@@ -144,12 +170,21 @@
         </el-table>
       </div>
     </el-dialog>
+
+    <!-- 通用账目明细弹窗（点击任意图表图例/切片） -->
+    <ItemListDialog
+      :visible="itemDialogVisible"
+      :book-id="bookId"
+      :title="itemDialogTitle"
+      :filters="itemDialogFilters"
+      @update:visible="itemDialogVisible = $event"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { graphic } from 'echarts/core';
+import { graphic } from 'echarts';
 import {
   Notebook,
   Tickets,
@@ -163,6 +198,9 @@ import { useChart } from '../composables/useChart';
 import { useBookFilter } from '../composables/useBookFilter';
 import { fmtAmount } from '../styles/chart-theme';
 import { activeTheme, chartColors, rgba } from '../styles/themes';
+import ItemListDialog, {
+  type ItemFilters,
+} from '../components/ItemListDialog.vue';
 
 const { books, bookId, loadBooks } = useBookFilter();
 
@@ -184,8 +222,18 @@ const dialogVisible = ref(false);
 
 const catRef = ref<HTMLDivElement>();
 const trendRef = ref<HTMLDivElement>();
-const { setOption: setCats, getChart } = useChart(catRef);
-const { setOption: setTrend } = useChart(trendRef);
+const composeRef = ref<HTMLDivElement>();
+const fundRef = ref<HTMLDivElement>();
+const shopRef = ref<HTMLDivElement>();
+const { setOption: setCats, getChart: getCatChart } = useChart(catRef);
+const { setOption: setTrend, getChart: getTrendChart } = useChart(trendRef);
+const { setOption: setCompose, getChart: getComposeChart } = useChart(composeRef);
+const { setOption: setFunds, getChart: getFundChart } = useChart(fundRef);
+const { setOption: setShops, getChart: getShopChart } = useChart(shopRef);
+
+const overviewData = ref<any>(null);
+const fundsData = ref<any[]>([]);
+const shopsData = ref<any[]>([]);
 
 const selectedBookName = computed(
   () => books.value.find((b) => b.id === bookId.value)?.name ?? '',
@@ -237,14 +285,33 @@ function loadCategories() {
         formatter:
           '{b}<br/><span style="font-family:Fira Code">¥{c}</span> · {d}%',
       },
-      legend: { bottom: 0, type: 'scroll', itemGap: 12, pageIconSize: 10 },
+      legend: {
+        show: true,
+        orient: 'vertical',
+        right: 8,
+        top: 'middle',
+        itemWidth: 10,
+        itemHeight: 10,
+        itemGap: 8,
+        textStyle: { fontSize: 12 },
+        data: top.map((i) => i.name),
+      },
       series: [
         {
+          name: '分类',
           type: 'pie',
-          radius: ['44%', '68%'],
-          center: ['50%', '43%'],
+          roseType: 'area',
+          radius: ['18%', '72%'],
+          center: ['42%', '50%'],
           itemStyle: { borderRadius: 6, borderColor: '#0b1120', borderWidth: 2 },
-          label: { show: false },
+          label: {
+            show: true,
+            formatter: '{b}\n{d}%',
+            color: '#cbd5e1',
+            fontSize: 11,
+            lineHeight: 14,
+          },
+          labelLine: { lineStyle: { color: 'rgba(255,255,255,0.25)' } },
           emphasis: {
             scaleSize: 6,
             itemStyle: { shadowBlur: 20, shadowColor: 'rgba(0,0,0,0.4)' },
@@ -304,36 +371,190 @@ function loadTrend() {
     });
 }
 
-// 主题切换时用缓存数据重绘两个图表
+// 收支构成 donut（支出 vs 收入）
+function renderCompose(o: any) {
+  const { primary, accent } = chartColors();
+  const total = (o.expenseTotal || 0) + (o.incomeTotal || 0);
+  setCompose({
+    title: {
+      text: `¥ ${fmtAmount(total)}`,
+      subtext: '总收支',
+      left: 'center',
+      top: '36%',
+      textStyle: { fontSize: 20, fontWeight: 700, color: '#f1f5f9', fontFamily: 'Fira Code, monospace' },
+      subtextStyle: { fontSize: 12, color: '#64748b' },
+    },
+    tooltip: { trigger: 'item', formatter: '{b}<br/>¥{c} · {d}%' },
+    legend: { bottom: 0 },
+    series: [
+      {
+        type: 'pie',
+        radius: ['44%', '68%'],
+        center: ['50%', '43%'],
+        itemStyle: { borderRadius: 6, borderColor: '#0b1120', borderWidth: 2 },
+        label: { show: false },
+        data: [
+          { name: '支出', value: o.expenseTotal || 0, itemStyle: { color: primary } },
+          { name: '收入', value: o.incomeTotal || 0, itemStyle: { color: accent } },
+        ],
+      },
+    ],
+  });
+}
+
+// 账户资金分布（按支出，横向条形）
+function renderFunds(rows: any[]) {
+  const { primary } = chartColors();
+  const items = rows.slice(0, 8).slice().reverse();
+  setFunds({
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: '{b}<br/>¥{c}' },
+    grid: { left: 8, right: 40, top: 8, bottom: 8, containLabel: true },
+    xAxis: { type: 'value' },
+    yAxis: { type: 'category', data: items.map((r) => r.fundName), axisLabel: { color: '#94a3b8', width: 70, overflow: 'truncate' }, axisLine: { show: false }, axisTick: { show: false } },
+    series: [
+      {
+        type: 'bar',
+        barMaxWidth: 14,
+        data: items.map((r) => r.expense),
+        itemStyle: {
+          borderRadius: [0, 5, 5, 0],
+          color: new graphic.LinearGradient(0, 0, 1, 0, [
+            { offset: 0, color: rgba(primary, 0.35) },
+            { offset: 1, color: primary },
+          ]),
+        },
+      },
+    ],
+  });
+}
+
+// 商户 Top（按支出，横向条形）
+function renderShops(rows: any[]) {
+  const { accent } = chartColors();
+  const items = rows.slice(0, 8).slice().reverse();
+  setShops({
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: '{b}<br/>¥{c}' },
+    grid: { left: 8, right: 40, top: 8, bottom: 8, containLabel: true },
+    xAxis: { type: 'value' },
+    yAxis: { type: 'category', data: items.map((r) => r.shopName), axisLabel: { color: '#94a3b8', width: 70, overflow: 'truncate' }, axisLine: { show: false }, axisTick: { show: false } },
+    series: [
+      {
+        type: 'bar',
+        barMaxWidth: 14,
+        data: items.map((r) => r.expense),
+        itemStyle: {
+          borderRadius: [0, 5, 5, 0],
+          color: new graphic.LinearGradient(0, 0, 1, 0, [
+            { offset: 0, color: rgba(accent, 0.35) },
+            { offset: 1, color: accent },
+          ]),
+        },
+      },
+    ],
+  });
+}
+
+function loadFunds() {
+  adminApi.statsFunds(bookParams()).then((rows: any[]) => {
+    fundsData.value = rows;
+    renderFunds(rows);
+  });
+}
+function loadShops() {
+  adminApi.statsShops(bookParams()).then((rows: any[]) => {
+    shopsData.value = rows;
+    renderShops(rows);
+  });
+}
+
+// 主题切换时用缓存数据重绘图表
 watch(activeTheme, () => {
   if (catsData.value.length) loadCategories();
   if (trendData.value.length) loadTrend();
+  if (overviewData.value) renderCompose(overviewData.value);
+  if (fundsData.value.length) renderFunds(fundsData.value);
+  if (shopsData.value.length) renderShops(shopsData.value);
 });
 
 async function loadOverview() {
   const o = await adminApi.statsOverview(bookParams());
+  overviewData.value = o;
   cards.value = [
     { label: '记账笔数', value: o.itemCount, icon: Tickets, grad: 'grad-cyan' },
     { label: '支出合计', value: `¥ ${fmtAmount(o.expenseTotal)}`, icon: Bottom, grad: 'grad-red' },
     { label: '收入合计', value: `¥ ${fmtAmount(o.incomeTotal)}`, icon: Top, grad: 'grad-green' },
     { label: '结余', value: `¥ ${fmtAmount(o.balance)}`, icon: Wallet, grad: 'grad-gold' },
   ];
+  renderCompose(o);
 }
 
 function reload() {
   loadOverview();
   loadCategories();
   loadTrend();
+  loadFunds();
+  loadShops();
+}
+
+/* ---------- 通用账目明细弹窗 ---------- */
+const itemDialogVisible = ref(false);
+const itemDialogTitle = ref('');
+const itemDialogFilters = ref<ItemFilters>({});
+
+function openItems(filters: ItemFilters, title: string) {
+  itemDialogFilters.value = { ...filters };
+  itemDialogTitle.value = title;
+  itemDialogVisible.value = true;
 }
 
 onMounted(async () => {
   await loadBooks();
   reload();
-  // 点击「其他」条形 → 打开全部分类明细
-  getChart()?.on('click', (params: any) => {
-    if (params.name === '其他' && restCount.value > 0) {
-      dialogVisible.value = true;
+
+  // 分类玫瑰图：点击分类/其他 → 该分类账目明细
+  getCatChart()?.on('click', (params: any) => {
+    const name = params.name;
+    if (name === '其他') {
+      const codes = catsData.value
+        .slice(TOP)
+        .map((c: any) => c.categoryCode)
+        .filter(Boolean);
+      if (codes.length) {
+        openItems(
+          { categoryCodes: codes.join(',') },
+          `其他分类账目（${codes.length} 个分类）`,
+        );
+      }
+    } else {
+      const cat = catsData.value.find((c: any) => c.categoryName === name);
+      if (cat?.categoryCode) {
+        openItems({ categoryCodes: cat.categoryCode }, name);
+      }
     }
+  });
+
+  // 收支构成：点击支出/收入 → 对应类型账目
+  getComposeChart()?.on('click', (params: any) => {
+    const type =
+      params.name === '支出' ? 'EXPENSE' : params.name === '收入' ? 'INCOME' : '';
+    if (type) openItems({ type }, `${params.name}账目`);
+  });
+
+  // 账户资金分布：点击账户 → 该账户账目
+  getFundChart()?.on('click', (params: any) => {
+    const fund = fundsData.value.find((f) => f.fundName === params.name);
+    if (fund?.fundId) openItems({ fundIds: fund.fundId }, `${fund.fundName} 账目`);
+  });
+
+  // 商户 Top：点击商户 → 该商户账目
+  getShopChart()?.on('click', (params: any) => {
+    const shop = shopsData.value.find((s) => s.shopName === params.name);
+    if (shop?.shopCode) openItems({ shopCodes: shop.shopCode }, `${shop.shopName} 账目`);
+  });
+
+  // 月度趋势：点击某月柱 → 该月账目
+  getTrendChart()?.on('click', (params: any) => {
+    if (params.name) openItems({ month: params.name }, `${params.name} 账目`);
   });
 });
 </script>
