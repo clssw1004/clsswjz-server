@@ -88,8 +88,14 @@
     <!-- 月度收支趋势（全宽 + 数据表） -->
     <section class="glass panel trend-panel fade-in" style="--d: 200ms">
       <header class="panel-head">
-        <div class="panel-title">月度收支趋势</div>
-        <el-tag effect="plain" size="small">按月汇总</el-tag>
+        <div class="panel-title">收支趋势</div>
+        <div class="panel-head-right">
+          <el-radio-group v-model="trendGranularity" size="small" @change="loadTrend">
+            <el-radio-button value="month">月</el-radio-button>
+            <el-radio-button value="day">日</el-radio-button>
+          </el-radio-group>
+          <el-tag effect="plain" size="small">{{ trendGranularity === 'day' ? '按日汇总' : '按月汇总' }}</el-tag>
+        </div>
       </header>
       <div ref="trendRef" class="chart" />
       <!-- 月度数据明细 -->
@@ -184,7 +190,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { graphic } from 'echarts';
+import { graphic, type EChartsOption } from 'echarts';
 import {
   Notebook,
   Tickets,
@@ -224,6 +230,7 @@ const catTotal = ref(0);
 const allCats = ref<any[]>([]);
 const catsData = ref<any[]>([]);
 const trendData = ref<any[]>([]);
+const trendGranularity = ref<'month' | 'day'>('month');
 const restCount = computed(() => Math.max(0, allCats.value.length - TOP));
 const dialogVisible = ref(false);
 
@@ -264,8 +271,28 @@ function axisMoney(v: number): string {
   return String(v);
 }
 
+/** 图表空状态：无数据时居中提示，而非空白坐标轴 */
+function renderEmpty(set: (o: EChartsOption) => void, msg = '暂无数据') {
+  const palette = chartPalette();
+  set({
+    title: {
+      text: msg,
+      left: 'center',
+      top: 'middle',
+      textStyle: { color: palette.subtext, fontSize: 13, fontWeight: 400 },
+    },
+    xAxis: { show: false },
+    yAxis: { show: false },
+    series: [],
+  });
+}
+
 /* ---------- 分类占比（玫瑰图） ---------- */
 function renderCats() {
+  if (!catsData.value.length) {
+    renderEmpty(setCats);
+    return;
+  }
   const def = chartDefaults();
   const palette = chartPalette();
   const isExpense = catType.value === 'EXPENSE';
@@ -350,9 +377,15 @@ function loadCategories() {
 
 /* ---------- 月度收支趋势（支出/收入柱 + 结余折线） ---------- */
 function renderTrend() {
+  if (!trendData.value.length) {
+    renderEmpty(setTrend);
+    return;
+  }
   const def = chartDefaults();
   const { primary, accent, primaryLight, accentLight } = chartColors();
   const data = trendData.value;
+  const isDay = trendGranularity.value === 'day';
+  const many = data.length > 24;
   const balanceColor = isDark ? '#fbbf24' : '#d97706';
   const grad = (from: string, to: string) =>
     new graphic.LinearGradient(0, 0, 0, 1, [
@@ -362,8 +395,22 @@ function renderTrend() {
   setTrend({
     tooltip: { ...def.tooltip, trigger: 'axis' },
     legend: { data: ['支出', '收入', '结余'], textStyle: def.legendText },
-    grid: { left: 8, right: 16, top: 40, bottom: 8, containLabel: true },
-    xAxis: { type: 'category', data: data.map((d) => d.period), ...def.categoryAxis },
+    grid: { left: 8, right: 16, top: 40, bottom: many ? 44 : 8, containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: data.map((d) => d.period),
+      ...def.categoryAxis,
+      axisLabel: {
+        ...(def.categoryAxis.axisLabel as any),
+        formatter: (v: string) => (isDay ? v.slice(5) : v),
+      },
+    },
+    dataZoom: many
+      ? [
+          { type: 'inside' },
+          { type: 'slider', height: 18, bottom: 6 },
+        ]
+      : undefined,
     yAxis: {
       ...def.valueAxis,
       axisLabel: {
@@ -408,7 +455,7 @@ function renderTrend() {
 
 function loadTrend() {
   adminApi
-    .statsTrend({ granularity: 'month', ...bookParams() })
+    .statsTrend({ granularity: trendGranularity.value, ...bookParams() })
     .then((trend: any[]) => {
       trendData.value = trend;
       renderTrend();
@@ -417,6 +464,10 @@ function loadTrend() {
 
 /* ---------- 收支构成（donut：支出 vs 收入） ---------- */
 function renderCompose(o: any) {
+  if (!(o?.expenseTotal || 0) && !(o?.incomeTotal || 0)) {
+    renderEmpty(setCompose, '暂无收支数据');
+    return;
+  }
   const def = chartDefaults();
   const { primary, accent } = chartColors();
   const palette = chartPalette();
@@ -456,6 +507,10 @@ function renderCompose(o: any) {
 
 /* ---------- 账户资金分布（按支出，横向条形 + 末端金额） ---------- */
 function renderFunds(rows: any[]) {
+  if (!rows.length) {
+    renderEmpty(setFunds);
+    return;
+  }
   const def = chartDefaults();
   const { primary, primaryLight } = chartColors();
   const palette = chartPalette();
@@ -520,6 +575,10 @@ function renderFunds(rows: any[]) {
 
 /* ---------- 商户 Top（按支出，横向条形 + 末端金额） ---------- */
 function renderShops(rows: any[]) {
+  if (!rows.length) {
+    renderEmpty(setShops);
+    return;
+  }
   const def = chartDefaults();
   const { accent, accentLight } = chartColors();
   const palette = chartPalette();
