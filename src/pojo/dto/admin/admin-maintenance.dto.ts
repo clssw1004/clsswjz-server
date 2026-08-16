@@ -86,3 +86,26 @@ export class BookListQueryDto {
   @IsString()
   keyword?: string;
 }
+
+export class NoteListQueryDto {
+  @ApiProperty({ description: '账本 ID' })
+  @IsString()
+  bookId: string;
+
+  @ApiPropertyOptional({ enum: ['NOTE', 'TODO', 'REPORT'], description: '类型过滤' })
+  @IsOptional()
+  @IsIn(['NOTE', 'TODO', 'REPORT'])
+  type?: string;
+
+  @ApiPropertyOptional({ default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  page = 1;
+
+  @ApiPropertyOptional({ default: 20 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  pageSize = 20;
+}

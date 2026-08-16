@@ -11,6 +11,7 @@ import { AccountCategory } from '../pojo/entities/account-category.entity';
 import { AccountShop } from '../pojo/entities/account-shop.entity';
 import { AccountFund } from '../pojo/entities/account-fund.entity';
 import { AccountSymbol } from '../pojo/entities/account-symbol.entity';
+import { AccountNote } from '../pojo/entities/account-note.entity';
 import { AdminController } from '../controllers/admin.controller';
 import { AdminUserController } from '../controllers/admin-user.controller';
 import { AdminLogController } from '../controllers/admin-log.controller';
@@ -19,12 +20,14 @@ import { AdminItemController } from '../controllers/admin-item.controller';
 import { AdminBookController } from '../controllers/admin-book.controller';
 import { AdminSystemController } from '../controllers/admin-system.controller';
 import { AdminMaintenanceController } from '../controllers/admin-maintenance.controller';
+import { AdminNoteController } from '../controllers/admin-note.controller';
 import { AdminService } from '../services/admin.service';
 import { AdminStatsService } from '../services/admin-stats.service';
 import { AdminItemService } from '../services/admin-item.service';
 import { AdminBookService } from '../services/admin-book.service';
 import { AdminSystemService } from '../services/admin-system.service';
 import { AdminMaintenanceService } from '../services/admin-maintenance.service';
+import { AdminNoteService } from '../services/admin-note.service';
 import { AdminAuthGuard } from '../guards/admin-auth.guard';
 import { SyncModule } from './sync.module';
 
@@ -44,6 +47,7 @@ import { SyncModule } from './sync.module';
       AccountShop,
       AccountFund,
       AccountSymbol,
+      AccountNote,
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -67,6 +71,7 @@ import { SyncModule } from './sync.module';
     AdminBookController,
     AdminSystemController,
     AdminMaintenanceController,
+    AdminNoteController,
   ],
   providers: [
     AdminService,
@@ -75,6 +80,7 @@ import { SyncModule } from './sync.module';
     AdminBookService,
     AdminSystemService,
     AdminMaintenanceService,
+    AdminNoteService,
     AdminAuthGuard,
   ],
 })
