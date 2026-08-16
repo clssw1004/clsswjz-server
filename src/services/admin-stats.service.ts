@@ -192,6 +192,82 @@ export class AdminStatsService {
     }));
   }
 
+  /** 账户资金分布：按账户聚合支出/收入（bookId 限定单账本） */
+  async funds(bookId?: string) {
+    const qb = this.accountItemRepository
+      .createQueryBuilder('i')
+      .select('i.fundId', 'fundId')
+      .addSelect(
+        "ABS(SUM(CASE WHEN i.type = 'EXPENSE' THEN i.amount ELSE 0 END))",
+        'expense',
+      )
+      .addSelect(
+        "SUM(CASE WHEN i.type = 'INCOME' THEN i.amount ELSE 0 END)",
+        'income',
+      )
+      .addSelect('COUNT(*)', 'count')
+      .where('i.fundId IS NOT NULL');
+    if (bookId) {
+      qb.andWhere('i.accountBookId = :bookId', { bookId });
+    }
+    const rows = await qb
+      .groupBy('i.fundId')
+      .orderBy('expense + income', 'DESC')
+      .getRawMany();
+
+    const fundIds = rows.map((r) => r.fundId);
+    const funds = fundIds.length
+      ? await this.accountFundRepository.findBy({ id: In(fundIds) })
+      : [];
+    const fundMap = new Map(funds.map((f) => [f.id, f.name]));
+
+    return rows.map((r) => ({
+      fundId: r.fundId,
+      fundName: fundMap.get(r.fundId) ?? r.fundId,
+      expense: Math.abs(Number(r.expense ?? 0)),
+      income: Number(r.income ?? 0),
+      count: Number(r.count),
+    }));
+  }
+
+  /** 商户 Top：按商户聚合支出/收入，按支出降序（bookId 限定单账本） */
+  async shops(bookId?: string) {
+    const qb = this.accountItemRepository
+      .createQueryBuilder('i')
+      .select('i.shopCode', 'shopCode')
+      .addSelect(
+        "ABS(SUM(CASE WHEN i.type = 'EXPENSE' THEN i.amount ELSE 0 END))",
+        'expense',
+      )
+      .addSelect(
+        "SUM(CASE WHEN i.type = 'INCOME' THEN i.amount ELSE 0 END)",
+        'income',
+      )
+      .addSelect('COUNT(*)', 'count')
+      .where('i.shopCode IS NOT NULL');
+    if (bookId) {
+      qb.andWhere('i.accountBookId = :bookId', { bookId });
+    }
+    const rows = await qb
+      .groupBy('i.shopCode')
+      .orderBy('expense', 'DESC')
+      .getRawMany();
+
+    const shopCodes = rows.map((r) => r.shopCode);
+    const shops = shopCodes.length
+      ? await this.accountShopRepository.findBy({ code: In(shopCodes) })
+      : [];
+    const shopMap = new Map(shops.map((s) => [s.code, s.name]));
+
+    return rows.map((r) => ({
+      shopCode: r.shopCode,
+      shopName: shopMap.get(r.shopCode) ?? r.shopCode,
+      expense: Math.abs(Number(r.expense ?? 0)),
+      income: Number(r.income ?? 0),
+      count: Number(r.count),
+    }));
+  }
+
   /** 用户账本：创建的 + 作为成员加入的 */
   async userBooks(userId: string): Promise<AccountBook[]> {
     const created = await this.accountBookRepository

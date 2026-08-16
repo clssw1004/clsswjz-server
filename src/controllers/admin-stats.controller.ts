@@ -50,4 +50,20 @@ export class AdminStatsController {
   categories(@Query() query: CategoriesQueryDto) {
     return this.statsService.categories(query.type, query.bookId);
   }
+
+  @ApiOperation({ summary: '账户资金分布（可按账本筛选）' })
+  @Public()
+  @UseGuards(AdminAuthGuard)
+  @Get('funds')
+  funds(@Query() query: OverviewQueryDto) {
+    return this.statsService.funds(query.bookId);
+  }
+
+  @ApiOperation({ summary: '商户 Top（可按账本筛选）' })
+  @Public()
+  @UseGuards(AdminAuthGuard)
+  @Get('shops')
+  shops(@Query() query: OverviewQueryDto) {
+    return this.statsService.shops(query.bookId);
+  }
 }

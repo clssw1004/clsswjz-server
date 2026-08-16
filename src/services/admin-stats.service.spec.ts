@@ -509,4 +509,41 @@ describe('AdminStatsService', () => {
       { categoryCode: 'c2', categoryName: '交通', amount: 50, count: 1 },
     ]);
   });
+
+  it('funds and shops aggregate by account and merchant', async () => {
+    await makeBook('b1', 'u1');
+
+    const fund1 = new AccountFund();
+    Object.assign(fund1, { id: 'f1', name: '现金', fundType: 'CASH', accountBookId: 'b1', createdBy: 'u1', updatedBy: 'u1', createdAt: 1000, updatedAt: 1000 });
+    const fund2 = new AccountFund();
+    Object.assign(fund2, { id: 'f2', name: '微信', fundType: 'WECHAT', accountBookId: 'b1', createdBy: 'u1', updatedBy: 'u1', createdAt: 1000, updatedAt: 1000 });
+    await dataSource.getRepository(AccountFund).save([fund1, fund2]);
+    const shop1 = new AccountShop();
+    Object.assign(shop1, { id: 'sh1', code: 'S1', name: '沃尔玛', accountBookId: 'b1', createdBy: 'u1', updatedBy: 'u1', createdAt: 1000, updatedAt: 1000 });
+    const shop2 = new AccountShop();
+    Object.assign(shop2, { id: 'sh2', code: 'S2', name: '盒马', accountBookId: 'b1', createdBy: 'u1', updatedBy: 'u1', createdAt: 1000, updatedAt: 1000 });
+    await dataSource.getRepository(AccountShop).save([shop1, shop2]);
+
+    // 现金-沃尔玛 支出 50×2；微信-盒马 支出 30
+    await makeItem({ id: 'i1', bookId: 'b1', amount: -50, type: 'EXPENSE', categoryCode: 'c1', accountDate: '2026-08-01 10:00:00', createdBy: 'u1' });
+    await itemRepo.update({ id: 'i1' }, { fundId: 'f1', shopCode: 'S1' });
+    await makeItem({ id: 'i2', bookId: 'b1', amount: -50, type: 'EXPENSE', categoryCode: 'c1', accountDate: '2026-08-02 10:00:00', createdBy: 'u1' });
+    await itemRepo.update({ id: 'i2' }, { fundId: 'f1', shopCode: 'S1' });
+    await makeItem({ id: 'i3', bookId: 'b1', amount: -30, type: 'EXPENSE', categoryCode: 'c1', accountDate: '2026-08-03 10:00:00', createdBy: 'u1' });
+    await itemRepo.update({ id: 'i3' }, { fundId: 'f2', shopCode: 'S2' });
+
+    const funds = await service.funds('b1');
+    expect(funds).toHaveLength(2);
+    const cash = funds.find((f) => f.fundId === 'f1');
+    expect(cash?.fundName).toBe('现金');
+    expect(cash?.expense).toBe(100);
+    const wechat = funds.find((f) => f.fundId === 'f2');
+    expect(wechat?.expense).toBe(30);
+
+    const shops = await service.shops('b1');
+    expect(shops).toHaveLength(2);
+    expect(shops[0].shopCode).toBe('S1'); // 沃尔玛支出最大排前
+    expect(shops[0].shopName).toBe('沃尔玛');
+    expect(shops[0].expense).toBe(100);
+  });
 });
