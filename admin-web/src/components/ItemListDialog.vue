@@ -12,8 +12,14 @@
         max-height="56vh"
         :header-cell-style="{ background: 'transparent' }"
         @row-click="goItem"
+        @sort-change="onSortChange"
       >
-        <el-table-column label="日期" width="120">
+        <el-table-column
+          prop="accountDate"
+          label="日期"
+          width="120"
+          sortable="custom"
+        >
           <template #default="{ row }">
             <span class="num" style="font-size: 12px">{{ fmtDate(row.accountDate) }}</span>
           </template>
@@ -25,7 +31,13 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="金额" width="120" align="right">
+        <el-table-column
+          prop="amount"
+          label="金额"
+          width="120"
+          align="right"
+          sortable="custom"
+        >
           <template #default="{ row }">
             <span class="num" :class="row.type === 'EXPENSE' ? 'is-expense' : 'is-income'">
               {{ row.type === 'EXPENSE' ? '−' : '+' }}{{ fmtAmount(Math.abs(row.amount)) }}
@@ -63,7 +75,7 @@
 import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { adminApi } from '../api/admin';
-import { fmtAmount } from '../styles/chart-theme';
+import { fmtAmount, fmtDate } from '../styles/chart-theme';
 
 /** 账目明细筛选（任意维度组合） */
 export interface ItemFilters {
@@ -90,13 +102,8 @@ const items = ref<any[]>([]);
 const total = ref(0);
 const page = ref(1);
 const pageSize = 20;
-
-function fmtDate(t: number | string | null | undefined) {
-  if (!t) return '—';
-  const d = typeof t === 'number' ? new Date(t) : new Date(Number(t));
-  if (isNaN(d.getTime())) return String(t);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
+const sortBy = ref('');
+const sortOrder = ref<'ASC' | 'DESC' | ''>('');
 
 async function load() {
   if (!props.visible || !props.bookId) return;
@@ -105,6 +112,8 @@ async function load() {
     page: page.value,
     pageSize,
     ...props.filters,
+    sortBy: sortBy.value || undefined,
+    sortOrder: sortOrder.value || undefined,
   });
   items.value = data.items;
   total.value = data.total;
@@ -115,11 +124,26 @@ function goItem(row: any) {
   router.push(`/items/${row.id}`);
 }
 
-// 打开弹窗或筛选变化时重置并加载
+/** 表头排序：日期/金额列可点击，触发后端全量排序 */
+function onSortChange({ prop, order }: { prop: string; order: string }) {
+  if (!prop || !order) {
+    sortBy.value = '';
+    sortOrder.value = '';
+  } else {
+    sortBy.value = prop;
+    sortOrder.value = order === 'ascending' ? 'ASC' : 'DESC';
+  }
+  page.value = 1;
+  load();
+}
+
+// 打开弹窗或筛选变化时重置并加载（同时清空排序）
 watch(
   () => [props.visible, props.bookId, JSON.stringify(props.filters)],
   () => {
     page.value = 1;
+    sortBy.value = '';
+    sortOrder.value = '';
     load();
   },
 );

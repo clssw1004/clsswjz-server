@@ -117,4 +117,14 @@ export class ItemListQueryDto extends PageQueryDto {
   @IsOptional()
   @IsString()
   month?: string;
+
+  @ApiPropertyOptional({ enum: ['accountDate', 'amount'], description: '排序字段' })
+  @IsOptional()
+  @IsIn(['accountDate', 'amount'])
+  sortBy?: string;
+
+  @ApiPropertyOptional({ enum: ['ASC', 'DESC'], description: '排序方向' })
+  @IsOptional()
+  @IsIn(['ASC', 'DESC'])
+  sortOrder?: 'ASC' | 'DESC';
 }

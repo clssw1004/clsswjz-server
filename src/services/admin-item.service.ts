@@ -29,7 +29,7 @@ export class AdminItemService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  /** 某账本的分页账目列表（含名称解析；支持类型/分类/账户/商户/月份多维过滤） */
+  /** 某账本的分页账目列表（含名称解析；支持类型/分类/账户/商户/月份多维过滤与排序） */
   async listItems(
     bookId: string,
     params: {
@@ -40,6 +40,8 @@ export class AdminItemService {
       fundIds?: string;
       shopCodes?: string;
       month?: string;
+      sortBy?: string;
+      sortOrder?: 'ASC' | 'DESC';
     },
   ) {
     const qb = this.itemRepository
@@ -54,8 +56,18 @@ export class AdminItemService {
     if (params.month) {
       qb.andWhere('i.accountDate LIKE :month', { month: `${params.month}%` });
     }
+    // 排序白名单：仅允许 accountDate / amount；amount 用 CAST 确保数值排序（SQLite 中 decimal 以字符串存储）
+    const sortBy =
+      params.sortBy === 'amount' ? 'CAST(i.amount AS REAL)' : 'i.accountDate';
+    const sortOrder: 'ASC' | 'DESC' =
+      params.sortOrder === 'ASC' ? 'ASC' : 'DESC';
+    if (sortBy === 'i.accountDate') {
+      qb.orderBy(sortBy, sortOrder);
+    } else {
+      // 金额排序时附加日期倒序，保证金额相同行的分页稳定
+      qb.orderBy(sortBy, sortOrder).addOrderBy('i.accountDate', 'DESC');
+    }
     const [items, total] = await qb
-      .orderBy('i.accountDate', 'DESC')
       .skip((params.page - 1) * params.pageSize)
       .take(params.pageSize)
       .getManyAndCount();

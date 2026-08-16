@@ -240,4 +240,38 @@ describe('AdminItemService', () => {
     const byMonth = await service.listItems('b1', { page: 1, pageSize: 10, month: '2026-08' });
     expect(byMonth.total).toBe(2);
   });
+
+  it('listItems supports amount and date sorting', async () => {
+    await makeItem('i1', 'b1', '2026-08-01 12:00:00');
+    await makeItem('i2', 'b1', '2026-08-02 12:00:00');
+    await makeItem('i3', 'b1', '2026-08-03 12:00:00');
+    await itemRepo.update({ id: 'i1' }, { amount: -5 });
+    await itemRepo.update({ id: 'i2' }, { amount: -50 });
+    await itemRepo.update({ id: 'i3' }, { amount: -20 });
+
+    const amountAsc = await service.listItems('b1', {
+      page: 1,
+      pageSize: 10,
+      sortBy: 'amount',
+      sortOrder: 'ASC',
+    });
+    // 金额升序：-50 < -20 < -5
+    expect(amountAsc.items.map((i) => i.id)).toEqual(['i2', 'i3', 'i1']);
+
+    const dateAsc = await service.listItems('b1', {
+      page: 1,
+      pageSize: 10,
+      sortBy: 'accountDate',
+      sortOrder: 'ASC',
+    });
+    expect(dateAsc.items[0].id).toBe('i1');
+
+    const dateDesc = await service.listItems('b1', {
+      page: 1,
+      pageSize: 10,
+      sortBy: 'accountDate',
+      sortOrder: 'DESC',
+    });
+    expect(dateDesc.items[0].id).toBe('i3');
+  });
 });

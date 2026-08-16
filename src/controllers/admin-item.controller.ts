@@ -23,6 +23,8 @@ export class AdminItemController {
       fundIds: query.fundIds,
       shopCodes: query.shopCodes,
       month: query.month,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
     });
   }
 
