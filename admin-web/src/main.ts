@@ -9,8 +9,7 @@ import './styles/tokens.css';
 import './styles/global.css';
 import { initTheme } from './styles/themes';
 
-// 玻璃暗色主题 + 用户选择的主题色
-document.documentElement.classList.add('dark');
+// 玻璃主题 + 用户选择的主题色；明暗模式（html.dark 类）由 initTheme 恢复
 initTheme();
 
 createApp(App).use(router).use(ElementPlus, { locale: zhCn }).mount('#app');

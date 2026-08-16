@@ -3,6 +3,8 @@
  * 与 Flutter 端 Colors.primaries（19 个 Material 种子色）一一对应，
  * 便于将来管理台内嵌 App 时主题匹配。采用「种子主色 + 互补辅助色」两色方案。
  *
+ * 明暗模式：mode（'dark'|'light'），通过切换 html.dark 类生效
+ * （与 Element Plus dark css-vars 约定一致）。
  * 默认（amber 琥珀）即原金色主色 + 紫色辅助。
  */
 import { ref, computed } from 'vue';
@@ -14,6 +16,8 @@ export interface AdminTheme {
   accent: string; // 辅助色
   onPrimary: string; // 主色背景上的文字色
 }
+
+export type ThemeMode = 'dark' | 'light';
 
 const DARK_TEXT = '#1c1204';
 
@@ -41,11 +45,16 @@ export const THEMES: AdminTheme[] = [
 
 const DEFAULT_ID = 'amber';
 const STORAGE_KEY = 'admin_theme';
+const MODE_KEY = 'admin_theme_mode';
 
 export const activeThemeId = ref<string>(DEFAULT_ID);
 export const activeTheme = computed(
   () => THEMES.find((t) => t.id === activeThemeId.value) ?? THEMES[0],
 );
+
+/** 明暗模式：默认暗色（与历史一致），可切换并持久化 */
+export const mode = ref<ThemeMode>('dark');
+export const isDark = computed(() => mode.value === 'dark');
 
 /* ---------- 颜色工具 ---------- */
 function hexToRgb(hex: string): [number, number, number] {
@@ -80,16 +89,18 @@ export { rgba };
 /* ---------- 应用主题：覆盖设计令牌 CSS 变量 ---------- */
 function applyCss(theme: AdminTheme): void {
   const s = document.documentElement.style;
+  const dark = isDark.value;
+
   s.setProperty('--brand-gold', theme.primary);
   s.setProperty('--brand-gold-strong', lighten(theme.primary, 12));
   s.setProperty('--brand-gold-dark', darken(theme.primary, 18));
-  s.setProperty('--brand-gold-soft', rgba(theme.primary, 0.14));
+  s.setProperty('--brand-gold-soft', rgba(theme.primary, dark ? 0.14 : 0.18));
   s.setProperty('--on-primary', theme.onPrimary);
-  s.setProperty('--glow-primary', `0 6px 24px ${rgba(theme.primary, 0.35)}`);
+  s.setProperty('--glow-primary', `0 6px 24px ${rgba(theme.primary, dark ? 0.35 : 0.25)}`);
 
   s.setProperty('--brand-purple', theme.accent);
   s.setProperty('--brand-purple-light', lighten(theme.accent, 10));
-  s.setProperty('--brand-purple-soft', rgba(theme.accent, 0.14));
+  s.setProperty('--brand-purple-soft', rgba(theme.accent, dark ? 0.14 : 0.16));
 
   s.setProperty(
     '--grad-gold',
@@ -111,6 +122,11 @@ function applyCss(theme: AdminTheme): void {
 }
 
 export function initTheme(): void {
+  // 明暗模式：先恢复，再应用 html.dark 类
+  const savedMode = localStorage.getItem(MODE_KEY);
+  mode.value = savedMode === 'light' ? 'light' : 'dark';
+  document.documentElement.classList.toggle('dark', isDark.value);
+
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved && THEMES.some((t) => t.id === saved)) {
     activeThemeId.value = saved;
@@ -125,6 +141,18 @@ export function setTheme(id: string): void {
   applyCss(activeTheme.value);
 }
 
+export function setMode(m: ThemeMode): void {
+  if (m === mode.value) return;
+  mode.value = m;
+  localStorage.setItem(MODE_KEY, m);
+  document.documentElement.classList.toggle('dark', m === 'dark');
+  applyCss(activeTheme.value);
+}
+
+export function toggleMode(): void {
+  setMode(isDark.value ? 'light' : 'dark');
+}
+
 /** 图表用主/辅色（图表重渲染时读取） */
 export function chartColors() {
   const t = activeTheme.value;
@@ -134,4 +162,27 @@ export function chartColors() {
     primaryLight: lighten(t.primary, 14),
     accentLight: lighten(t.accent, 10),
   };
+}
+
+/** 当前明暗模式下图表中性色（文字/边框/轴线），供 option 里替换硬编码暗色值 */
+export function chartPalette() {
+  return isDark.value
+    ? {
+        text: '#f1f5f9',
+        subtext: '#64748b',
+        label: '#cbd5e1',
+        axis: '#94a3b8',
+        sliceBorder: '#0b1120',
+        labelLine: 'rgba(255,255,255,0.25)',
+        other: '#475569',
+      }
+    : {
+        text: '#0f172a',
+        subtext: '#64748b',
+        label: '#334155',
+        axis: '#5b6b81',
+        sliceBorder: '#ffffff',
+        labelLine: 'rgba(15,23,42,0.18)',
+        other: '#a5b4c8',
+      };
 }

@@ -239,7 +239,7 @@ const prettyJson = computed(() => {
   transition: background 0.15s ease;
 }
 .lch-field + .lch-field {
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--border-glass);
 }
 .lch-field:hover {
   background: var(--surface-glass);
@@ -317,13 +317,13 @@ const prettyJson = computed(() => {
   padding: 10px 12px;
   max-height: 220px;
   overflow: auto;
-  background: rgba(2, 6, 23, 0.6);
+  background: var(--code-bg);
   border: 1px solid var(--border-glass);
   border-radius: 8px;
   font-family: var(--font-mono);
   font-size: 11px;
   line-height: 1.5;
-  color: #cbd5e1;
+  color: var(--text-2);
   white-space: pre-wrap;
   word-break: break-all;
 }
