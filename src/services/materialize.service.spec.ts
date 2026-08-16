@@ -9,6 +9,7 @@ import { AccountFund } from '../pojo/entities/account-fund.entity';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
 import { User } from '../pojo/entities/user.entity';
 import { AttachmentEntity } from '../pojo/entities/attachment.entity';
+import { AccountNote } from '../pojo/entities/account-note.entity';
 import { LogRunner } from './log-runner';
 import { MaterializeService } from './materialize.service';
 import { BusinessType } from '../pojo/enums/business-type.enum';
@@ -31,6 +32,7 @@ describe('MaterializeService', () => {
     AccountBookUser,
     User,
     AttachmentEntity,
+    AccountNote,
   ];
 
   let dataSource: DataSource;
@@ -182,7 +184,7 @@ describe('MaterializeService', () => {
   it('skips unsupported business types (marks materialized) without blocking others', async () => {
     await insertLog({
       id: 'log-note',
-      businessType: 'note' as unknown as BusinessType, // 服务端枚举不支持的扩展类型
+      businessType: 'debt' as unknown as BusinessType, // 服务端枚举不支持的扩展类型
       operateType: OperateType.CREATE,
       parentId: 'book4',
       businessId: 'note-1',

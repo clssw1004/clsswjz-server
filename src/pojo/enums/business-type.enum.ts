@@ -29,5 +29,8 @@ export enum BusinessType {
   /** 附件 */
   ATTACHMENT = 'attachment',
 
+  /** 记事（笔记/待办/报告） */
+  NOTE = 'note',
+
   ROOT = 'root',
 }

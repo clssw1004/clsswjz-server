@@ -9,6 +9,7 @@ import { AccountFund } from '../pojo/entities/account-fund.entity';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
 import { User } from '../pojo/entities/user.entity';
 import { AttachmentEntity } from '../pojo/entities/attachment.entity';
+import { AccountNote } from '../pojo/entities/account-note.entity';
 import { LogRunner } from './log-runner';
 import { BusinessType } from '../pojo/enums/business-type.enum';
 import { OperateType } from '../pojo/enums/operate-type.enum';
@@ -26,6 +27,7 @@ describe('LogRunner', () => {
     AccountBookUser,
     User,
     AttachmentEntity,
+    AccountNote,
   ];
 
   let dataSource: DataSource;
@@ -117,6 +119,53 @@ describe('LogRunner', () => {
     expect(row!.originName).toBe('receipt.jpg');
   });
 
+  it('replays note create/update/delete into the note table', async () => {
+    const createLog = makeLog({
+      businessType: BusinessType.NOTE,
+      businessId: 'note-1',
+      operateData: JSON.stringify({
+        id: 'note-1',
+        title: '买菜清单',
+        content: '土豆西红柿',
+        noteType: 'NOTE',
+        scope: 'book',
+        accountBookId: 'book-1',
+        createdBy: 'u1',
+        updatedBy: 'u1',
+        createdAt: 1000,
+        updatedAt: 1000,
+      }),
+    });
+    const createResult = await logRunner.runLogSync(createLog, dataSource.manager);
+    expect(createResult.syncState).toBe(SyncState.SYNCED);
+
+    const noteRepo = dataSource.getRepository(AccountNote);
+    const note = await noteRepo.findOneBy({ id: 'note-1' });
+    expect(note).not.toBeNull();
+    expect(note!.title).toBe('买菜清单');
+    expect(note!.noteType).toBe('NOTE');
+
+    // 更新
+    const updateLog = makeLog({
+      businessType: BusinessType.NOTE,
+      operateType: OperateType.UPDATE,
+      businessId: 'note-1',
+      operateData: JSON.stringify({ title: '更新后的清单', updatedAt: 2000, updatedBy: 'u1' }),
+    });
+    const updateResult = await logRunner.runLogSync(updateLog, dataSource.manager);
+    expect(updateResult.syncState).toBe(SyncState.SYNCED);
+    expect((await noteRepo.findOneBy({ id: 'note-1' }))?.title).toBe('更新后的清单');
+
+    // 删除
+    const deleteLog = makeLog({
+      businessType: BusinessType.NOTE,
+      operateType: OperateType.DELETE,
+      businessId: 'note-1',
+    });
+    await logRunner.runLogSync(deleteLog, dataSource.manager);
+    expect(await noteRepo.findOneBy({ id: 'note-1' })).toBeNull();
+  });
+
   it('no-ops for the ROOT pseudo type and reports success', async () => {
     const log = makeLog({
       businessType: BusinessType.ROOT,
@@ -143,14 +192,15 @@ describe('LogRunner', () => {
     expect(logRunner.supports(BusinessType.ITEM)).toBe(true);
     expect(logRunner.supports(BusinessType.ATTACHMENT)).toBe(true);
     expect(logRunner.supports(BusinessType.ROOT)).toBe(true);
-    expect(logRunner.supports('note' as unknown as BusinessType)).toBe(false);
+    expect(logRunner.supports(BusinessType.NOTE)).toBe(true);
+    expect(logRunner.supports('giftCard' as unknown as BusinessType)).toBe(false);
     expect(logRunner.supports('debt' as unknown as BusinessType)).toBe(false);
   });
 
   it('returns an error result (not a throw) for unsupported business types', async () => {
     const log = makeLog({
-      businessType: 'note' as unknown as BusinessType,
-      businessId: 'note-1',
+      businessType: 'debt' as unknown as BusinessType,
+      businessId: 'debt-1',
     });
 
     const result = await logRunner.runLogSync(log, dataSource.manager);
