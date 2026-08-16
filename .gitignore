@@ -59,3 +59,10 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 data/
 
 .codegraph/
+
+# admin-web frontend
+admin-web/node_modules
+admin-web/dist
+
+# server deploy/runtime dir (root-owned, not repo code)
+owjdxb/

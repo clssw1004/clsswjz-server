@@ -1,0 +1,549 @@
+import { DataSource, Repository } from 'typeorm';
+import { AdminStatsService } from './admin-stats.service';
+import { AccountBook } from '../pojo/entities/account-book.entity';
+import { AccountItem } from '../pojo/entities/account-item.entity';
+import { AccountCategory } from '../pojo/entities/account-category.entity';
+import { AccountShop } from '../pojo/entities/account-shop.entity';
+import { AccountFund } from '../pojo/entities/account-fund.entity';
+import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
+import { User } from '../pojo/entities/user.entity';
+
+describe('AdminStatsService', () => {
+  let dataSource: DataSource;
+  let service: AdminStatsService;
+  let itemRepo: Repository<AccountItem>;
+
+  beforeAll(async () => {
+    dataSource = new DataSource({
+      type: 'sqlite',
+      database: ':memory:',
+      entities: [
+        AccountBook,
+        AccountItem,
+        AccountCategory,
+        AccountShop,
+        AccountFund,
+        AccountBookUser,
+        User,
+      ],
+      synchronize: true,
+    });
+    await dataSource.initialize();
+    itemRepo = dataSource.getRepository(AccountItem);
+    service = new AdminStatsService(
+      dataSource.getRepository(AccountBook),
+      itemRepo,
+      dataSource.getRepository(AccountCategory),
+      dataSource.getRepository(AccountShop),
+      dataSource.getRepository(AccountFund),
+      dataSource.getRepository(AccountBookUser),
+    );
+  });
+
+  afterAll(async () => {
+    await dataSource.destroy();
+  });
+
+  beforeEach(async () => {
+    await dataSource.getRepository(AccountBook).clear();
+    await itemRepo.clear();
+    await dataSource.getRepository(AccountCategory).clear();
+    await dataSource.getRepository(AccountShop).clear();
+    await dataSource.getRepository(AccountFund).clear();
+    await dataSource.getRepository(AccountBookUser).clear();
+  });
+
+  async function makeBook(id: string, createdBy: string) {
+    const book = new AccountBook();
+    Object.assign(book, {
+      id,
+      name: `账本${id}`,
+      createdBy,
+      updatedBy: createdBy,
+      createdAt: 1000,
+      updatedAt: 1000,
+    });
+    await dataSource.getRepository(AccountBook).save(book);
+  }
+
+  async function makeItem(opts: {
+    id: string;
+    bookId: string;
+    amount: number;
+    type: 'EXPENSE' | 'INCOME';
+    categoryCode: string;
+    accountDate: string;
+    createdBy: string;
+    source?: string;
+    sourceId?: string;
+  }) {
+    const item = new AccountItem();
+    Object.assign(item, {
+      id: opts.id,
+      amount: opts.amount,
+      type: opts.type,
+      accountBookId: opts.bookId,
+      categoryCode: opts.categoryCode,
+      fundId: 'f1',
+      accountDate: opts.accountDate,
+      createdBy: opts.createdBy,
+      updatedBy: opts.createdBy,
+      source: opts.source,
+      sourceId: opts.sourceId,
+      createdAt: 1000,
+      updatedAt: 1000,
+    });
+    await itemRepo.save(item);
+  }
+
+  async function makeCategory(
+    code: string,
+    name: string,
+    categoryType: string,
+  ) {
+    const cat = new AccountCategory();
+    Object.assign(cat, {
+      id: `cat-${code}`,
+      code,
+      name,
+      categoryType,
+      accountBookId: 'b1',
+      createdBy: 'u1',
+      updatedBy: 'u1',
+      createdAt: 1000,
+      updatedAt: 1000,
+    });
+    await dataSource.getRepository(AccountCategory).save(cat);
+  }
+
+  it('overview aggregates books, items, expense/income sums and categories', async () => {
+    await makeBook('b1', 'u1');
+    await makeBook('b2', 'u2');
+    await makeItem({
+      id: 'i1',
+      bookId: 'b1',
+      amount: 50,
+      type: 'EXPENSE',
+      categoryCode: 'c1',
+      accountDate: '2026-08-01 10:00:00',
+      createdBy: 'u1',
+    });
+    await makeItem({
+      id: 'i2',
+      bookId: 'b1',
+      amount: 30,
+      type: 'EXPENSE',
+      categoryCode: 'c2',
+      accountDate: '2026-08-02 10:00:00',
+      createdBy: 'u1',
+    });
+    await makeItem({
+      id: 'i3',
+      bookId: 'b2',
+      amount: 100,
+      type: 'INCOME',
+      categoryCode: 'c1',
+      accountDate: '2026-08-03 10:00:00',
+      createdBy: 'u2',
+    });
+    await makeCategory('c1', '餐饮', 'EXPENSE');
+    await makeCategory('c2', '交通', 'EXPENSE');
+
+    const overview = await service.overview();
+
+    expect(overview.bookCount).toBe(2);
+    expect(overview.itemCount).toBe(3);
+    expect(overview.expenseTotal).toBe(80);
+    expect(overview.incomeTotal).toBe(100);
+    expect(overview.balance).toBe(20);
+    expect(overview.categoryCount).toBe(2);
+    expect(overview.activeUserCount).toBe(2);
+  });
+
+  it('trend groups items by day with expense/income series', async () => {
+    await makeBook('b1', 'u1');
+    await makeItem({
+      id: 'i1',
+      bookId: 'b1',
+      amount: 50,
+      type: 'EXPENSE',
+      categoryCode: 'c1',
+      accountDate: '2026-08-01 10:00:00',
+      createdBy: 'u1',
+    });
+    await makeItem({
+      id: 'i2',
+      bookId: 'b1',
+      amount: 20,
+      type: 'EXPENSE',
+      categoryCode: 'c1',
+      accountDate: '2026-08-01 20:00:00',
+      createdBy: 'u1',
+    });
+    await makeItem({
+      id: 'i3',
+      bookId: 'b1',
+      amount: 100,
+      type: 'INCOME',
+      categoryCode: 'c1',
+      accountDate: '2026-08-02 10:00:00',
+      createdBy: 'u1',
+    });
+
+    const series = await service.trend({
+      granularity: 'day',
+      from: '2026-08-01',
+      to: '2026-08-02',
+    });
+
+    expect(series).toHaveLength(2);
+    expect(series[0]).toMatchObject({
+      period: '2026-08-01',
+      expense: 70,
+      income: 0,
+    });
+    expect(series[1]).toMatchObject({
+      period: '2026-08-02',
+      expense: 0,
+      income: 100,
+    });
+  });
+
+  it('categories breakdown groups expense by category name', async () => {
+    await makeBook('b1', 'u1');
+    await makeItem({
+      id: 'i1',
+      bookId: 'b1',
+      amount: 50,
+      type: 'EXPENSE',
+      categoryCode: 'c1',
+      accountDate: '2026-08-01 10:00:00',
+      createdBy: 'u1',
+    });
+    await makeItem({
+      id: 'i2',
+      bookId: 'b1',
+      amount: 30,
+      type: 'EXPENSE',
+      categoryCode: 'c2',
+      accountDate: '2026-08-02 10:00:00',
+      createdBy: 'u1',
+    });
+    await makeItem({
+      id: 'i3',
+      bookId: 'b1',
+      amount: 20,
+      type: 'INCOME',
+      categoryCode: 'c1',
+      accountDate: '2026-08-03 10:00:00',
+      createdBy: 'u1',
+    });
+    await makeCategory('c1', '餐饮', 'EXPENSE');
+    await makeCategory('c2', '交通', 'EXPENSE');
+
+    const breakdown = await service.categories('EXPENSE');
+
+    expect(breakdown).toEqual([
+      { categoryCode: 'c1', categoryName: '餐饮', amount: 50, count: 1 },
+      { categoryCode: 'c2', categoryName: '交通', amount: 30, count: 1 },
+    ]);
+  });
+
+  it('userBooks returns created and member books; userItems scopes to those books', async () => {
+    await makeBook('b1', 'u1');
+    await makeBook('b2', 'u2');
+    const rel = new AccountBookUser();
+    Object.assign(rel, {
+      id: 'rel-b2-u1',
+      userId: 'u1',
+      accountBookId: 'b2',
+      canViewBook: true,
+      canViewItem: true,
+      createdAt: 1000,
+      updatedAt: 1000,
+    });
+    await dataSource.getRepository(AccountBookUser).save(rel);
+    await makeItem({
+      id: 'i1',
+      bookId: 'b1',
+      amount: 50,
+      type: 'EXPENSE',
+      categoryCode: 'c1',
+      accountDate: '2026-08-01 10:00:00',
+      createdBy: 'u1',
+    });
+    await makeItem({
+      id: 'i2',
+      bookId: 'b2',
+      amount: 99,
+      type: 'EXPENSE',
+      categoryCode: 'c1',
+      accountDate: '2026-08-02 10:00:00',
+      createdBy: 'u2',
+    });
+
+    const books = await service.userBooks('u1');
+    expect(books.map((b) => b.id).sort()).toEqual(['b1', 'b2']);
+
+    const { items } = await service.userItems('u1', { page: 1, pageSize: 10 });
+    expect(items.map((i) => i.id)).toContain('i1');
+    expect(items.map((i) => i.id)).toContain('i2');
+  });
+
+  it('userItems enriches category/shop/fund names for display', async () => {
+    await makeBook('b1', 'u1');
+    await makeCategory('c1', '餐饮', 'EXPENSE');
+    const shop = new AccountShop();
+    Object.assign(shop, {
+      id: 'shop-1',
+      name: '沃尔玛',
+      code: 'S1',
+      accountBookId: 'b1',
+      createdBy: 'u1',
+      updatedBy: 'u1',
+      createdAt: 1000,
+      updatedAt: 1000,
+    });
+    await dataSource.getRepository(AccountShop).save(shop);
+    const fund = new AccountFund();
+    Object.assign(fund, {
+      id: 'f1',
+      name: '现金',
+      fundType: 'CASH',
+      accountBookId: 'b1',
+      createdBy: 'u1',
+      updatedBy: 'u1',
+      createdAt: 1000,
+      updatedAt: 1000,
+    });
+    await dataSource.getRepository(AccountFund).save(fund);
+    await makeItem({
+      id: 'i1',
+      bookId: 'b1',
+      amount: 50,
+      type: 'EXPENSE',
+      categoryCode: 'c1',
+      accountDate: '2026-08-01 10:00:00',
+      createdBy: 'u1',
+    });
+    await dataSource
+      .getRepository(AccountItem)
+      .update({ id: 'i1' }, { shopCode: 'S1', fundId: 'f1' });
+
+    const { items } = await service.userItems('u1', { page: 1, pageSize: 10 });
+
+    expect(items[0].categoryName).toBe('餐饮');
+    expect(items[0].shopName).toBe('沃尔玛');
+    expect(items[0].fundName).toBe('现金');
+  });
+
+  it('overview normalizes negative expense amounts to positive (client convention)', async () => {
+    await makeBook('b1', 'u1');
+    await makeItem({
+      id: 'i1',
+      bookId: 'b1',
+      amount: -50,
+      type: 'EXPENSE',
+      categoryCode: 'c1',
+      accountDate: '2026-08-01 10:00:00',
+      createdBy: 'u1',
+    });
+    await makeItem({
+      id: 'i2',
+      bookId: 'b1',
+      amount: -30,
+      type: 'EXPENSE',
+      categoryCode: 'c2',
+      accountDate: '2026-08-02 10:00:00',
+      createdBy: 'u1',
+    });
+    await makeItem({
+      id: 'i3',
+      bookId: 'b1',
+      amount: 100,
+      type: 'INCOME',
+      categoryCode: 'c1',
+      accountDate: '2026-08-03 10:00:00',
+      createdBy: 'u1',
+    });
+
+    const overview = await service.overview();
+
+    expect(overview.expenseTotal).toBe(80);
+    expect(overview.incomeTotal).toBe(100);
+    expect(overview.balance).toBe(20);
+  });
+
+  it('overview scopes to a single book when bookId given', async () => {
+    await makeBook('b1', 'u1');
+    await makeBook('b2', 'u2');
+    await makeItem({
+      id: 'i1',
+      bookId: 'b1',
+      amount: 50,
+      type: 'EXPENSE',
+      categoryCode: 'c1',
+      accountDate: '2026-08-01 10:00:00',
+      createdBy: 'u1',
+    });
+    await makeItem({
+      id: 'i2',
+      bookId: 'b1',
+      amount: 30,
+      type: 'EXPENSE',
+      categoryCode: 'c2',
+      accountDate: '2026-08-02 10:00:00',
+      createdBy: 'u1',
+    });
+    await makeItem({
+      id: 'i3',
+      bookId: 'b2',
+      amount: 999,
+      type: 'INCOME',
+      categoryCode: 'c1',
+      accountDate: '2026-08-03 10:00:00',
+      createdBy: 'u2',
+    });
+    await makeCategory('c1', '餐饮', 'EXPENSE');
+    await makeCategory('c2', '交通', 'EXPENSE');
+
+    const scoped = await service.overview('b1');
+
+    expect(scoped.bookCount).toBe(1);
+    expect(scoped.itemCount).toBe(2);
+    expect(scoped.expenseTotal).toBe(80);
+    expect(scoped.incomeTotal).toBe(0);
+    expect(scoped.categoryCount).toBe(2);
+  });
+
+  it('listBooks returns all books; categories respects bookId filter', async () => {
+    await makeBook('b1', 'u1');
+    await makeBook('b2', 'u2');
+    await makeCategory('c1', '餐饮', 'EXPENSE');
+    await makeCategory('c2', '交通', 'EXPENSE');
+    await makeItem({
+      id: 'i1',
+      bookId: 'b1',
+      amount: 50,
+      type: 'EXPENSE',
+      categoryCode: 'c1',
+      accountDate: '2026-08-01 10:00:00',
+      createdBy: 'u1',
+    });
+    await makeItem({
+      id: 'i2',
+      bookId: 'b2',
+      amount: 30,
+      type: 'EXPENSE',
+      categoryCode: 'c2',
+      accountDate: '2026-08-02 10:00:00',
+      createdBy: 'u2',
+    });
+
+    const books = await service.listBooks();
+    expect(books.map((b) => b.name).sort()).toEqual(
+      ['账本b1', '账本b2'].sort(),
+    );
+
+    const scoped = await service.categories('EXPENSE', 'b1');
+    expect(scoped).toEqual([
+      { categoryCode: 'c1', categoryName: '餐饮', amount: 50, count: 1 },
+    ]);
+  });
+
+  it('refund handling: balance adds refund; income categories exclude refunds', async () => {
+    await makeBook('b1', 'u1');
+    await makeCategory('c1', '餐饮', 'EXPENSE');
+    await makeCategory('c2', '交通', 'EXPENSE');
+    await makeItem({
+      id: 'e1',
+      bookId: 'b1',
+      amount: -100,
+      type: 'EXPENSE',
+      categoryCode: 'c1',
+      accountDate: '2026-08-01 10:00:00',
+      createdBy: 'u1',
+    });
+    await makeItem({
+      id: 'i1',
+      bookId: 'b1',
+      amount: 200,
+      type: 'INCOME',
+      categoryCode: 'c1',
+      accountDate: '2026-08-02 10:00:00',
+      createdBy: 'u1',
+    });
+    // 退款：收入型，source='item' 指向原支出 e1
+    await makeItem({
+      id: 'r1',
+      bookId: 'b1',
+      amount: 30,
+      type: 'INCOME',
+      categoryCode: 'c2',
+      accountDate: '2026-08-03 10:00:00',
+      createdBy: 'u1',
+      source: 'item',
+      sourceId: 'e1',
+    });
+    // 普通收入（同 c2，非退款）
+    await makeItem({
+      id: 'i2',
+      bookId: 'b1',
+      amount: 50,
+      type: 'INCOME',
+      categoryCode: 'c2',
+      accountDate: '2026-08-04 10:00:00',
+      createdBy: 'u1',
+    });
+
+    const ov = await service.overview('b1');
+    expect(ov.expenseTotal).toBe(100);
+    expect(ov.incomeTotal).toBe(280); // 200 + 30 退款 + 50
+    expect(ov.refundTotal).toBe(30);
+    expect(ov.balance).toBe(210); // 280 - 100 + 30
+
+    // 收入分类排除退款：c1=200，c2 只有普通收入 50（不含退款 30）
+    const inc = await service.categories('INCOME', 'b1');
+    expect(inc).toEqual([
+      { categoryCode: 'c1', categoryName: '餐饮', amount: 200, count: 1 },
+      { categoryCode: 'c2', categoryName: '交通', amount: 50, count: 1 },
+    ]);
+  });
+
+  it('funds and shops aggregate by account and merchant', async () => {
+    await makeBook('b1', 'u1');
+
+    const fund1 = new AccountFund();
+    Object.assign(fund1, { id: 'f1', name: '现金', fundType: 'CASH', accountBookId: 'b1', createdBy: 'u1', updatedBy: 'u1', createdAt: 1000, updatedAt: 1000 });
+    const fund2 = new AccountFund();
+    Object.assign(fund2, { id: 'f2', name: '微信', fundType: 'WECHAT', accountBookId: 'b1', createdBy: 'u1', updatedBy: 'u1', createdAt: 1000, updatedAt: 1000 });
+    await dataSource.getRepository(AccountFund).save([fund1, fund2]);
+    const shop1 = new AccountShop();
+    Object.assign(shop1, { id: 'sh1', code: 'S1', name: '沃尔玛', accountBookId: 'b1', createdBy: 'u1', updatedBy: 'u1', createdAt: 1000, updatedAt: 1000 });
+    const shop2 = new AccountShop();
+    Object.assign(shop2, { id: 'sh2', code: 'S2', name: '盒马', accountBookId: 'b1', createdBy: 'u1', updatedBy: 'u1', createdAt: 1000, updatedAt: 1000 });
+    await dataSource.getRepository(AccountShop).save([shop1, shop2]);
+
+    // 现金-沃尔玛 支出 50×2；微信-盒马 支出 30
+    await makeItem({ id: 'i1', bookId: 'b1', amount: -50, type: 'EXPENSE', categoryCode: 'c1', accountDate: '2026-08-01 10:00:00', createdBy: 'u1' });
+    await itemRepo.update({ id: 'i1' }, { fundId: 'f1', shopCode: 'S1' });
+    await makeItem({ id: 'i2', bookId: 'b1', amount: -50, type: 'EXPENSE', categoryCode: 'c1', accountDate: '2026-08-02 10:00:00', createdBy: 'u1' });
+    await itemRepo.update({ id: 'i2' }, { fundId: 'f1', shopCode: 'S1' });
+    await makeItem({ id: 'i3', bookId: 'b1', amount: -30, type: 'EXPENSE', categoryCode: 'c1', accountDate: '2026-08-03 10:00:00', createdBy: 'u1' });
+    await itemRepo.update({ id: 'i3' }, { fundId: 'f2', shopCode: 'S2' });
+
+    const funds = await service.funds('b1');
+    expect(funds).toHaveLength(2);
+    const cash = funds.find((f) => f.fundId === 'f1');
+    expect(cash?.fundName).toBe('现金');
+    expect(cash?.expense).toBe(100);
+    const wechat = funds.find((f) => f.fundId === 'f2');
+    expect(wechat?.expense).toBe(30);
+
+    const shops = await service.shops('b1');
+    expect(shops).toHaveLength(2);
+    expect(shops[0].shopCode).toBe('S1'); // 沃尔玛支出最大排前
+    expect(shops[0].shopName).toBe('沃尔玛');
+    expect(shops[0].expense).toBe(100);
+  });
+});

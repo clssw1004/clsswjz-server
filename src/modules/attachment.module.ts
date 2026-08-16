@@ -9,6 +9,6 @@ import { AttachmentController } from '../controllers/attachment.controller';
   imports: [TypeOrmModule.forFeature([AttachmentEntity]), ConfigModule],
   controllers: [AttachmentController],
   providers: [AttachmentService],
-  exports: [AttachmentService],
+  exports: [AttachmentService, TypeOrmModule],
 })
 export class AttachmentModule {}

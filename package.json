@@ -22,7 +22,9 @@
     "docker:run": "docker run -p 3000:3000 clsswjz-server",
     "docker:compose": "docker-compose up -d",
     "docker:compose:build": "docker-compose up -d --build",
-    "mock:data": "ts-node src/scripts/mock-data.ts"
+    "mock:data": "ts-node src/scripts/mock-data.ts",
+    "materialize": "ts-node src/scripts/materialize.ts",
+    "materialize:reset": "ts-node src/scripts/materialize.ts --reset"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.9",
@@ -32,6 +34,7 @@
     "@nestjs/mapped-types": "^2.0.6",
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/serve-static": "^4.0.2",
     "@nestjs/swagger": "^8.1.0",
     "@nestjs/typeorm": "^10.0.2",
     "@types/multer": "^1.4.12",
@@ -89,6 +92,9 @@
       "json",
       "ts"
     ],
+    "moduleNameMapper": {
+      "^src/(.*)$": "<rootDir>/$1"
+    },
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {

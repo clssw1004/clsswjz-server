@@ -1,11 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, EntityManager } from 'typeorm';
+import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
+import { DataSource, Repository, In, EntityManager } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import {
   AttachmentEntity,
   BusinessCode,
 } from '../pojo/entities/attachment.entity';
+import { AccountItem } from '../pojo/entities/account-item.entity';
+import { AccountBook } from '../pojo/entities/account-book.entity';
+import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
 import * as fs from 'fs';
 import * as path from 'path';
 import { createReadStream } from 'fs';
@@ -19,11 +22,48 @@ export class AttachmentService {
     @InjectRepository(AttachmentEntity)
     private attachmentRepository: Repository<AttachmentEntity>,
     private configService: ConfigService,
+    @InjectDataSource()
+    private dataSource: DataSource,
   ) {
     // 初始化附件存储路径
     const dataPath = this.configService.get('DATA_PATH', '/data');
     this.attachmentPath = path.join(dataPath, 'attachments');
     this.ensureAttachmentDir();
+  }
+
+  /**
+   * 下载鉴权：附件归属某账本（item → account_book_id）时，请求者须是该账本创建者/成员；
+   * 非账本类附件（如用户头像）仅创建者本人可下载。
+   * 依赖日志回放落库的数据（attachment / account_item / account_book / rel_accountbook_user）。
+   */
+  async authorizeDownload(id: string, userId: string): Promise<boolean> {
+    const attachment = await this.findOne(id);
+
+    if (attachment.businessCode === BusinessCode.ITEM) {
+      const item = await this.dataSource
+        .getRepository(AccountItem)
+        .findOneBy({ id: attachment.businessId });
+      if (!item) {
+        return false;
+      }
+      return this.isBookMember(item.accountBookId, userId);
+    }
+
+    // 非账本类附件：仅本人
+    return attachment.createdBy === userId;
+  }
+
+  private async isBookMember(bookId: string, userId: string): Promise<boolean> {
+    const book = await this.dataSource
+      .getRepository(AccountBook)
+      .findOneBy({ id: bookId });
+    if (book && book.createdBy === userId) {
+      return true;
+    }
+    const rel = await this.dataSource
+      .getRepository(AccountBookUser)
+      .findOneBy({ userId, accountBookId: bookId });
+    return !!rel;
   }
 
   // 确保附件目录存在

@@ -108,4 +108,20 @@ export class LogSync extends StringIdEntity {
     comment: '同步错误信息',
   })
   syncError: string;
+
+  @Column({
+    name: 'materialized_at',
+    type: 'bigint',
+    nullable: true,
+    comment: '日志回放到业务表的时间戳（null 表示尚未回放）',
+  })
+  materializedAt: number;
+
+  @Column({
+    name: 'materialize_error',
+    type: 'text',
+    nullable: true,
+    comment: '日志回放失败信息（失败时保留 null 的 materialized_at 以重试）',
+  })
+  materializeError: string;
 }

@@ -7,14 +7,18 @@ WORKDIR /app
 # 复制 package.json 和 package-lock.json
 COPY package*.json ./
 
-# 安装依赖
+# 安装后端依赖
 RUN npm i
+
+# 复制 admin-web 的 package 并安装前端依赖
+COPY admin-web/package*.json ./admin-web/
+RUN cd admin-web && npm i
 
 # 复制源代码
 COPY . .
 
-# 构建应用
-RUN npm run build
+# 构建后端 + 前端
+RUN npm run build && cd admin-web && npm run build
 
 # 运行阶段
 FROM node:20-alpine3.21
@@ -28,8 +32,9 @@ COPY package*.json ./
 # 仅安装生产依赖
 RUN npm i --only=production
 
-# 从构建阶段复制构建产物
+# 从构建阶段复制构建产物（后端 dist + 前端 admin-web/dist）
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/admin-web/dist ./admin-web/dist
 
 # 设置环境变量
 ENV NODE_ENV=production

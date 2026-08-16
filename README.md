@@ -35,7 +35,7 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - SERVER_PORT=3000
       - API_PREFIX=api
       - DB_TYPE=sqlite        # or mysql
       - DATA_PATH=/data      # SQLite data path
@@ -107,7 +107,7 @@ Create a `.env` file in the root directory:
 
 ```bash
 # Server Configuration
-PORT=3000                # Server port
+SERVER_PORT=3000           # Server port
 API_PREFIX=api          # API prefix
 NODE_ENV=development    # Environment: development/production
 
@@ -133,7 +133,7 @@ services:
   api:
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - SERVER_PORT=3000
       - DB_TYPE=sqlite
       - DATA_PATH=/data
 ```

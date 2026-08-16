@@ -16,7 +16,7 @@ export enum FundType {
 }
 
 @Entity('account_funds')
-@Unique('unique_fund_createby_name', ['createdBy', 'name'])
+@Unique('unique_fund_book_name', ['accountBookId', 'name'])
 export class AccountFund extends BaseBusinessEntityWithAccountBook {
   @Column({
     length: 50,

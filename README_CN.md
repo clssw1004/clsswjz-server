@@ -37,7 +37,7 @@ services:
       - '3000:3000'
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - SERVER_PORT=3000
       - API_PREFIX=api
       - DB_TYPE=sqlite # 或 mysql
       - DATA_PATH=/data # SQLite 数据存储路径
@@ -85,6 +85,20 @@ docker build -t clsswjz-server .
 3. 创建 docker-compose.yml（与上面相同，但修改镜像名称为自己构建的）
 4. 启动服务：`docker-compose up -d`
 
+## 管理台（Admin Console）
+
+内置 Web 管理台，支持管理员登录、平台概览、用户管理、日志审计与业务报表。
+
+- 访问地址：服务根路径（如 `http://localhost:3000/`），构建后由后端静态托管。
+- 开发调试：`cd admin-web && npm install && npm run dev`（Vite，代理 `/api` 到后端 3000）。
+- 必需环境变量：
+  - `JWT_SECRET`：管理员 token 签名密钥（**必须设置**）。
+  - `ADMIN_USERNAME` / `ADMIN_PASSWORD`：管理员账号密码。
+  - `ADMIN_JWT_EXPIRES_IN`：token 有效期，默认 `12h`。
+- 主要接口：`POST /api/admin/login`、`GET /api/admin/overview|users|logs|stats/*`、`POST /api/admin/materialize`。
+
+> 说明：业务数据通过日志回放落库（`npm run materialize`）后，管理台报表才有数据。
+
 ## 开发指南
 
 ### 开发命令
@@ -104,6 +118,9 @@ npm run doc:generate
 
 # 运行模拟数据脚本
 npm run mock:data
+
+# 存量日志回放落库（管理台报表数据来源）
+npm run materialize
 ```
 
 ### 环境配置
@@ -114,7 +131,7 @@ npm run mock:data
 
 ```bash
 # 服务器配置
-PORT=3000                # 服务器端口
+SERVER_PORT=3000           # 服务器端口
 API_PREFIX=api          # API前缀
 NODE_ENV=development    # 环境：development/production
 
@@ -142,7 +159,7 @@ services:
   api:
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - SERVER_PORT=3000
       - DB_TYPE=sqlite
       - DATA_PATH=/data
 ```

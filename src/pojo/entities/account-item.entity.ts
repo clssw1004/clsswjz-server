@@ -32,7 +32,9 @@ export class AccountItem extends BaseBusinessEntityWithAccountBook {
   type: ItemType;
 
   @Column({
+    type: 'varchar',
     length: 50,
+    nullable: true,
     name: 'category_code',
     comment: '分类编码',
   })
@@ -47,6 +49,9 @@ export class AccountItem extends BaseBusinessEntityWithAccountBook {
   accountDate: string;
 
   @Column({
+    type: 'varchar',
+    length: 32,
+    nullable: true,
     name: 'fund_id',
     comment: '账户ID',
   })
@@ -75,6 +80,23 @@ export class AccountItem extends BaseBusinessEntityWithAccountBook {
     comment: '项目编码',
   })
   projectCode: string;
+
+  @Column({
+    length: 20,
+    nullable: true,
+    name: 'source',
+    comment: '账目来源类型（item-退款/引用原账目）',
+  })
+  source: string;
+
+  @Column({
+    type: 'varchar',
+    length: 32,
+    nullable: true,
+    name: 'source_id',
+    comment: '账目来源ID（退款指向原支出账目）',
+  })
+  sourceId: string;
 
   @BeforeInsert()
   setDefaultDate() {
