@@ -25,7 +25,7 @@
   --brand-green: #10b981;
   --brand-green-light: #34d399;
   --brand-red: #ef4444;
-  --brand-red-light: #f87171;
+  --brand-red-light: #dc2626; /* 亮色下加深保证对比（暗色由 html.dark 覆盖为浅红） */
   --brand-cyan: #06b6d4;
   --brand-cyan-light: #22d3ee;
 
@@ -38,7 +38,7 @@
   --grad-slate: linear-gradient(135deg, #334155, #475569);
 
   /* 语义（状态） */
-  --color-success: #10b981;
+  --color-success: #059669; /* 亮色下加深保证对比（暗色由 html.dark 覆盖） */
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
   --color-info: #64748b;
@@ -49,26 +49,26 @@
  *    :root = 亮色默认；html.dark = 暗色覆盖
  * ========================================================= */
 :root {
-  --bg-page: #eef1f6;
-  --bg-deep: #e5e9f1;
+  --bg-page: #e8edf4;
+  --bg-deep: #e3e8f0;
   --bg-glow-gold: rgba(245, 158, 11, 0.13);
   --bg-glow-purple: rgba(139, 92, 246, 0.13);
   --bg-glow-cyan: rgba(6, 182, 212, 0.06);
-  --bg-glow-top: #dde4ef; /* .app-bg 顶部渐变色 */
+  --bg-glow-top: #dce3ef; /* .app-bg 顶部渐变色 */
 
   /* 玻璃表面（亮色 = 白色玻璃卡片） */
-  --surface-glass: rgba(255, 255, 255, 0.72);
-  --surface-glass-strong: rgba(255, 255, 255, 0.9);
-  --surface-hover: rgba(255, 255, 255, 0.97);
+  --surface-glass: rgba(255, 255, 255, 0.74);
+  --surface-glass-strong: rgba(255, 255, 255, 0.92);
+  --surface-hover: rgba(255, 255, 255, 0.98);
   --surface-active: #ffffff;
 
-  --border-glass: rgba(15, 23, 42, 0.08);
-  --border-glass-strong: rgba(15, 23, 42, 0.15);
+  --border-glass: rgba(15, 23, 42, 0.12);
+  --border-glass-strong: rgba(15, 23, 42, 0.2);
 
   /* 文字层级 */
   --text-1: #0f172a;
   --text-2: #475569;
-  --text-3: #94a3b8;
+  --text-3: #64748b;
 
   /* 侧栏 / 顶栏背景（Layout 用） */
   --side-bg: linear-gradient(
@@ -93,6 +93,9 @@ html.dark {
   --bg-glow-purple: rgba(139, 92, 246, 0.16);
   --bg-glow-cyan: rgba(6, 182, 212, 0.08);
   --bg-glow-top: #0d1526;
+
+  --brand-red-light: #f87171;
+  --color-success: #10b981;
 
   /* 玻璃表面 */
   --surface-glass: rgba(255, 255, 255, 0.045);
@@ -166,8 +169,8 @@ html.dark {
   --el-card-border-color: var(--border-glass);
   --el-table-bg-color: transparent;
   --el-table-tr-bg-color: transparent;
-  --el-table-header-bg-color: rgba(255, 255, 255, 0.65);
-  --el-table-row-hover-bg-color: rgba(15, 23, 42, 0.045);
+  --el-table-header-bg-color: rgba(15, 23, 42, 0.035);
+  --el-table-row-hover-bg-color: rgba(15, 23, 42, 0.06);
   --el-table-border-color: rgba(15, 23, 42, 0.06);
   --el-table-header-text-color: var(--text-2);
   --el-table-text-color: var(--text-1);
