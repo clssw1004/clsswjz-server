@@ -52,6 +52,11 @@ const router = createRouter({
           meta: { title: '账目管理' },
         },
         {
+          path: 'notes',
+          component: () => import('../views/Notes.vue'),
+          meta: { title: '记事管理' },
+        },
+        {
           path: 'items/:id',
           component: () => import('../views/ItemDetail.vue'),
           meta: { title: '账目详情' },

@@ -22,7 +22,14 @@ export const adminApi = {
     http.get('/admin/stats/trend', { params }),
   statsCategories: (type: string, params?: Record<string, unknown>) =>
     http.get('/admin/stats/categories', { params: { type, ...params } }),
+  statsFunds: (params?: Record<string, unknown>) =>
+    http.get('/admin/stats/funds', { params }),
+  statsShops: (params?: Record<string, unknown>) =>
+    http.get('/admin/stats/shops', { params }),
   statsBooks: () => http.get('/admin/stats/books'),
+  notes: (params: Record<string, unknown>) =>
+    http.get('/admin/notes', { params }),
+  noteDetail: (id: string) => http.get(`/admin/notes/${id}`),
   items: (params: Record<string, unknown>) =>
     http.get('/admin/items', { params }),
   itemDetail: (id: string) => http.get(`/admin/items/${id}`),

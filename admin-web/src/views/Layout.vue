@@ -112,6 +112,7 @@ import {
   List,
   Notebook,
   Setting,
+  Memo,
   Brush,
   Check,
 } from '@element-plus/icons-vue';
@@ -134,6 +135,7 @@ const navs = [
   { path: '/users', label: '用户管理', icon: User },
   { path: '/books', label: '账本管理', icon: Notebook },
   { path: '/items', label: '账目管理', icon: List },
+  { path: '/notes', label: '记事管理', icon: Memo },
   { path: '/logs', label: '日志审计', icon: Document },
   { path: '/stats', label: '业务报表', icon: TrendCharts },
   { path: '/system', label: '系统信息', icon: Setting },
