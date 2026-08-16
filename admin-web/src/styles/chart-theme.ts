@@ -129,3 +129,22 @@ export function fmtAmount(n: number | string | undefined | null): string {
   const v = Number(n ?? 0);
   return v.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
 }
+
+/**
+ * 统一日期格式化（YYYY-MM-DD）。
+ * accountDate 为 'YYYY-MM-DD HH:mm:ss' 字符串或毫秒时间戳，均兼容；
+ * 无法解析时原样返回，避免 NaN 日期。
+ */
+export function fmtDate(t: number | string | null | undefined): string {
+  if (!t) return '—';
+  const raw = typeof t === 'number' ? t : String(t).trim();
+  const d = new Date(
+    typeof raw === 'number'
+      ? raw
+      : raw.includes('T')
+        ? raw
+        : raw.replace(' ', 'T'),
+  );
+  if (isNaN(d.getTime())) return String(t);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}

@@ -125,7 +125,7 @@ import { Notebook, ArrowRight } from '@element-plus/icons-vue';
 import { adminApi } from '../api/admin';
 import { useIsMobile } from '../composables/useIsMobile';
 import { useBookFilter } from '../composables/useBookFilter';
-import { fmtAmount } from '../styles/chart-theme';
+import { fmtAmount, fmtDate } from '../styles/chart-theme';
 
 const { books, bookId, loadBooks } = useBookFilter();
 const isMobile = useIsMobile();
@@ -134,13 +134,6 @@ const items = ref<any[]>([]);
 const total = ref(0);
 const page = ref(1);
 const pageSize = 20;
-
-function fmtDate(t: number | string | null | undefined) {
-  if (!t) return '—';
-  const d = typeof t === 'number' ? new Date(t) : new Date(Number(t));
-  if (isNaN(d.getTime())) return String(t);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
 
 async function search() {
   page.value = 1;

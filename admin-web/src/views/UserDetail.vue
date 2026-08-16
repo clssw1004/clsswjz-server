@@ -139,7 +139,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { ArrowLeft } from '@element-plus/icons-vue';
 import { adminApi } from '../api/admin';
-import { fmtAmount } from '../styles/chart-theme';
+import { fmtAmount, fmtDate } from '../styles/chart-theme';
 import { useIsMobile } from '../composables/useIsMobile';
 
 const route = useRoute();
@@ -159,11 +159,6 @@ const avatarText = computed(() =>
 
 function fmt(t: number | null | undefined) {
   return t ? new Date(Number(t)).toLocaleString() : '—';
-}
-function fmtDate(t: number | string | null | undefined) {
-  if (!t) return '—';
-  const d = typeof t === 'number' ? new Date(t) : new Date(Number(t));
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 async function loadItems() {
