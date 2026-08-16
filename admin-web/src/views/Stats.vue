@@ -196,8 +196,15 @@ import {
 import { adminApi } from '../api/admin';
 import { useChart } from '../composables/useChart';
 import { useBookFilter } from '../composables/useBookFilter';
-import { fmtAmount } from '../styles/chart-theme';
-import { activeTheme, chartColors, rgba } from '../styles/themes';
+import { fmtAmount, chartDefaults } from '../styles/chart-theme';
+import {
+  activeTheme,
+  chartColors,
+  chartPalette,
+  isDark,
+  mode,
+  rgba,
+} from '../styles/themes';
 import ItemListDialog, {
   type ItemFilters,
 } from '../components/ItemListDialog.vue';
@@ -249,82 +256,153 @@ function percent(amount: number): string {
     : '0';
 }
 
+/** 金额轴紧凑格式：≥1万 → x.x万 */
+function axisMoney(v: number): string {
+  const abs = Math.abs(v);
+  if (abs >= 1e8) return `${(v / 1e8).toFixed(1)}亿`;
+  if (abs >= 1e4) return `${(v / 1e4).toFixed(1)}万`;
+  return String(v);
+}
+
+/* ---------- 分类占比（玫瑰图） ---------- */
+function renderCats() {
+  const def = chartDefaults();
+  const palette = chartPalette();
+  const isExpense = catType.value === 'EXPENSE';
+  const top = catsData.value.slice(0, TOP).map((c: any) => ({
+    name: c.categoryName,
+    value: Number(c.amount || 0),
+  }));
+  const restSum = catsData.value
+    .slice(TOP)
+    .reduce((s: number, c: any) => s + Number(c.amount || 0), 0);
+  if (restSum > 0) top.push({ name: '其他', value: restSum });
+
+  setCats({
+    title: {
+      text: `¥ ${fmtAmount(catTotal.value)}`,
+      subtext: isExpense ? '支出总计' : '收入总计',
+      left: 'center',
+      top: '36%',
+      textStyle: {
+        fontSize: 22,
+        fontWeight: 700,
+        color: palette.text,
+        fontFamily: 'Fira Code, monospace',
+      },
+      subtextStyle: { fontSize: 12, color: palette.subtext },
+    },
+    tooltip: {
+      ...def.tooltip,
+      trigger: 'item',
+      formatter: '{b}<br/><span style="font-family:Fira Code">¥{c}</span> · {d}%',
+    },
+    legend: {
+      show: true,
+      orient: 'vertical',
+      right: 8,
+      top: 'middle',
+      itemWidth: 10,
+      itemHeight: 10,
+      itemGap: 8,
+      textStyle: { ...def.legendText, fontSize: 12 },
+      data: top.map((i) => i.name),
+    },
+    series: [
+      {
+        name: '分类',
+        type: 'pie',
+        roseType: 'area',
+        radius: ['18%', '72%'],
+        center: ['42%', '50%'],
+        itemStyle: { borderRadius: 6, borderColor: palette.sliceBorder, borderWidth: 2 },
+        label: {
+          show: true,
+          formatter: '{b}\n{d}%',
+          color: palette.label,
+          fontSize: 11,
+          lineHeight: 14,
+        },
+        labelLine: { lineStyle: { color: palette.labelLine } },
+        emphasis: {
+          scaleSize: 6,
+          itemStyle: { shadowBlur: 20, shadowColor: 'rgba(0,0,0,0.35)' },
+        },
+        data: top.map((i) => ({
+          name: i.name,
+          value: i.value,
+          itemStyle: i.name === '其他' ? { color: palette.other } : undefined,
+        })),
+      },
+    ],
+  });
+}
+
 function loadCategories() {
   adminApi.statsCategories(catType.value, bookParams()).then((cats: any[]) => {
     catsData.value = cats;
     allCats.value = cats;
     const total = cats.reduce((s, c) => s + Number(c.amount || 0), 0);
     catTotal.value = total;
-    const isExpense = catType.value === 'EXPENSE';
-    // 分类多：饼图只展示 Top-N，其余归入「其他」（点击查看明细）
-    const top = cats.slice(0, TOP).map((c: any) => ({
-      name: c.categoryName,
-      value: Number(c.amount || 0),
-    }));
-    const restSum = cats
-      .slice(TOP)
-      .reduce((s: number, c: any) => s + Number(c.amount || 0), 0);
-    if (restSum > 0) top.push({ name: '其他', value: restSum });
+    renderCats();
+  });
+}
 
-    setCats({
-      title: {
-        text: `¥ ${fmtAmount(total)}`,
-        subtext: isExpense ? '支出总计' : '收入总计',
-        left: 'center',
-        top: '36%',
-        textStyle: {
-          fontSize: 22,
-          fontWeight: 700,
-          color: '#f1f5f9',
-          fontFamily: 'Fira Code, monospace',
+/* ---------- 月度收支趋势（支出/收入柱 + 结余折线） ---------- */
+function renderTrend() {
+  const def = chartDefaults();
+  const { primary, accent, primaryLight, accentLight } = chartColors();
+  const data = trendData.value;
+  const balanceColor = isDark ? '#fbbf24' : '#d97706';
+  const grad = (from: string, to: string) =>
+    new graphic.LinearGradient(0, 0, 0, 1, [
+      { offset: 0, color: from },
+      { offset: 1, color: to },
+    ]);
+  setTrend({
+    tooltip: { ...def.tooltip, trigger: 'axis' },
+    legend: { data: ['支出', '收入', '结余'], textStyle: def.legendText },
+    grid: { left: 8, right: 16, top: 40, bottom: 8, containLabel: true },
+    xAxis: { type: 'category', data: data.map((d) => d.period), ...def.categoryAxis },
+    yAxis: {
+      ...def.valueAxis,
+      axisLabel: {
+        ...(def.valueAxis.axisLabel as any),
+        formatter: (v: number) => axisMoney(v),
+      },
+    },
+    series: [
+      {
+        name: '支出',
+        type: 'bar',
+        barMaxWidth: 16,
+        data: data.map((d) => d.expense),
+        itemStyle: {
+          borderRadius: [5, 5, 0, 0],
+          color: grad(primaryLight, rgba(primary, 0.35)),
         },
-        subtextStyle: { fontSize: 12, color: '#64748b' },
       },
-      tooltip: {
-        trigger: 'item',
-        formatter:
-          '{b}<br/><span style="font-family:Fira Code">¥{c}</span> · {d}%',
-      },
-      legend: {
-        show: true,
-        orient: 'vertical',
-        right: 8,
-        top: 'middle',
-        itemWidth: 10,
-        itemHeight: 10,
-        itemGap: 8,
-        textStyle: { fontSize: 12 },
-        data: top.map((i) => i.name),
-      },
-      series: [
-        {
-          name: '分类',
-          type: 'pie',
-          roseType: 'area',
-          radius: ['18%', '72%'],
-          center: ['42%', '50%'],
-          itemStyle: { borderRadius: 6, borderColor: '#0b1120', borderWidth: 2 },
-          label: {
-            show: true,
-            formatter: '{b}\n{d}%',
-            color: '#cbd5e1',
-            fontSize: 11,
-            lineHeight: 14,
-          },
-          labelLine: { lineStyle: { color: 'rgba(255,255,255,0.25)' } },
-          emphasis: {
-            scaleSize: 6,
-            itemStyle: { shadowBlur: 20, shadowColor: 'rgba(0,0,0,0.4)' },
-          },
-          data: top.map((i) => ({
-            name: i.name,
-            value: i.value,
-            itemStyle:
-              i.name === '其他' ? { color: '#475569' } : undefined,
-          })),
+      {
+        name: '收入',
+        type: 'bar',
+        barMaxWidth: 16,
+        data: data.map((d) => d.income),
+        itemStyle: {
+          borderRadius: [5, 5, 0, 0],
+          color: grad(accentLight, rgba(accent, 0.35)),
         },
-      ],
-    });
+      },
+      {
+        name: '结余',
+        type: 'line',
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 5,
+        data: data.map((d) => d.income - d.expense),
+        lineStyle: { width: 2.5, color: balanceColor },
+        itemStyle: { color: balanceColor },
+      },
+    ],
   });
 }
 
@@ -333,47 +411,15 @@ function loadTrend() {
     .statsTrend({ granularity: 'month', ...bookParams() })
     .then((trend: any[]) => {
       trendData.value = trend;
-      const { primary, accent, primaryLight, accentLight } = chartColors();
-      setTrend({
-        tooltip: { trigger: 'axis' },
-        legend: { data: ['支出', '收入'] },
-        xAxis: { type: 'category', data: trend.map((d) => d.period) },
-        yAxis: { type: 'value' },
-        series: [
-          {
-            name: '支出',
-            type: 'bar',
-            barMaxWidth: 18,
-            data: trend.map((d) => d.expense),
-            itemStyle: {
-              borderRadius: [5, 5, 0, 0],
-              color: new graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: primaryLight },
-                { offset: 1, color: rgba(primary, 0.35) },
-              ]),
-            },
-          },
-          {
-            name: '收入',
-            type: 'bar',
-            barMaxWidth: 18,
-            data: trend.map((d) => d.income),
-            itemStyle: {
-              borderRadius: [5, 5, 0, 0],
-              color: new graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: accentLight },
-                { offset: 1, color: rgba(accent, 0.35) },
-              ]),
-            },
-          },
-        ],
-      });
+      renderTrend();
     });
 }
 
-// 收支构成 donut（支出 vs 收入）
+/* ---------- 收支构成（donut：支出 vs 收入） ---------- */
 function renderCompose(o: any) {
+  const def = chartDefaults();
   const { primary, accent } = chartColors();
+  const palette = chartPalette();
   const total = (o.expenseTotal || 0) + (o.incomeTotal || 0);
   setCompose({
     title: {
@@ -381,18 +427,24 @@ function renderCompose(o: any) {
       subtext: '总收支',
       left: 'center',
       top: '36%',
-      textStyle: { fontSize: 20, fontWeight: 700, color: '#f1f5f9', fontFamily: 'Fira Code, monospace' },
-      subtextStyle: { fontSize: 12, color: '#64748b' },
+      textStyle: {
+        fontSize: 20,
+        fontWeight: 700,
+        color: palette.text,
+        fontFamily: 'Fira Code, monospace',
+      },
+      subtextStyle: { fontSize: 12, color: palette.subtext },
     },
-    tooltip: { trigger: 'item', formatter: '{b}<br/>¥{c} · {d}%' },
-    legend: { bottom: 0 },
+    tooltip: { ...def.tooltip, trigger: 'item', formatter: '{b}<br/>¥{c} · {d}%' },
+    legend: { bottom: 0, textStyle: def.legendText },
     series: [
       {
         type: 'pie',
         radius: ['44%', '68%'],
         center: ['50%', '43%'],
-        itemStyle: { borderRadius: 6, borderColor: '#0b1120', borderWidth: 2 },
+        itemStyle: { borderRadius: 6, borderColor: palette.sliceBorder, borderWidth: 2 },
         label: { show: false },
+        emphasis: { scaleSize: 6 },
         data: [
           { name: '支出', value: o.expenseTotal || 0, itemStyle: { color: primary } },
           { name: '收入', value: o.incomeTotal || 0, itemStyle: { color: accent } },
@@ -402,25 +454,63 @@ function renderCompose(o: any) {
   });
 }
 
-// 账户资金分布（按支出，横向条形）
+/* ---------- 账户资金分布（按支出，横向条形 + 末端金额） ---------- */
 function renderFunds(rows: any[]) {
-  const { primary } = chartColors();
+  const def = chartDefaults();
+  const { primary, primaryLight } = chartColors();
+  const palette = chartPalette();
   const items = rows.slice(0, 8).slice().reverse();
   setFunds({
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: '{b}<br/>¥{c}' },
-    grid: { left: 8, right: 40, top: 8, bottom: 8, containLabel: true },
-    xAxis: { type: 'value' },
-    yAxis: { type: 'category', data: items.map((r) => r.fundName), axisLabel: { color: '#94a3b8', width: 70, overflow: 'truncate' }, axisLine: { show: false }, axisTick: { show: false } },
+    tooltip: {
+      ...def.tooltip,
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params: any) => {
+        const p = params?.[0];
+        const r = rows.find((x) => x.fundName === p?.name);
+        if (!r) return '';
+        const hit = items.find((x) => x.fundName === p.name);
+        return `${hit?.fundName ?? p.name}<br/>支出 ¥${fmtAmount(r.expense)}<br/>收入 ¥${fmtAmount(r.income)}<br/>笔数 ${r.count}`;
+      },
+    },
+    grid: { left: 8, right: 48, top: 8, bottom: 8, containLabel: true },
+    xAxis: {
+      ...def.valueAxis,
+      axisLabel: {
+        ...(def.valueAxis.axisLabel as any),
+        formatter: (v: number) => axisMoney(v),
+      },
+    },
+    yAxis: {
+      ...def.categoryAxis,
+      data: items.map((r) => r.fundName),
+      axisLabel: {
+        ...(def.categoryAxis.axisLabel as any),
+        color: palette.axis,
+        width: 70,
+        overflow: 'truncate',
+      },
+    },
     series: [
       {
         type: 'bar',
         barMaxWidth: 14,
-        data: items.map((r) => r.expense),
+        data: items.map((r) => ({
+          value: r.expense,
+          label: {
+            show: true,
+            position: 'right',
+            color: palette.axis,
+            fontSize: 11,
+            fontFamily: 'Fira Code, monospace',
+            formatter: () => axisMoney(r.expense),
+          },
+        })),
         itemStyle: {
           borderRadius: [0, 5, 5, 0],
           color: new graphic.LinearGradient(0, 0, 1, 0, [
             { offset: 0, color: rgba(primary, 0.35) },
-            { offset: 1, color: primary },
+            { offset: 1, color: primaryLight },
           ]),
         },
       },
@@ -428,25 +518,63 @@ function renderFunds(rows: any[]) {
   });
 }
 
-// 商户 Top（按支出，横向条形）
+/* ---------- 商户 Top（按支出，横向条形 + 末端金额） ---------- */
 function renderShops(rows: any[]) {
-  const { accent } = chartColors();
+  const def = chartDefaults();
+  const { accent, accentLight } = chartColors();
+  const palette = chartPalette();
   const items = rows.slice(0, 8).slice().reverse();
   setShops({
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: '{b}<br/>¥{c}' },
-    grid: { left: 8, right: 40, top: 8, bottom: 8, containLabel: true },
-    xAxis: { type: 'value' },
-    yAxis: { type: 'category', data: items.map((r) => r.shopName), axisLabel: { color: '#94a3b8', width: 70, overflow: 'truncate' }, axisLine: { show: false }, axisTick: { show: false } },
+    tooltip: {
+      ...def.tooltip,
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params: any) => {
+        const p = params?.[0];
+        const r = rows.find((x) => x.shopName === p?.name);
+        if (!r) return '';
+        const hit = items.find((x) => x.shopName === p.name);
+        return `${hit?.shopName ?? p.name}<br/>支出 ¥${fmtAmount(r.expense)}<br/>收入 ¥${fmtAmount(r.income)}<br/>笔数 ${r.count}`;
+      },
+    },
+    grid: { left: 8, right: 48, top: 8, bottom: 8, containLabel: true },
+    xAxis: {
+      ...def.valueAxis,
+      axisLabel: {
+        ...(def.valueAxis.axisLabel as any),
+        formatter: (v: number) => axisMoney(v),
+      },
+    },
+    yAxis: {
+      ...def.categoryAxis,
+      data: items.map((r) => r.shopName),
+      axisLabel: {
+        ...(def.categoryAxis.axisLabel as any),
+        color: palette.axis,
+        width: 70,
+        overflow: 'truncate',
+      },
+    },
     series: [
       {
         type: 'bar',
         barMaxWidth: 14,
-        data: items.map((r) => r.expense),
+        data: items.map((r) => ({
+          value: r.expense,
+          label: {
+            show: true,
+            position: 'right',
+            color: palette.axis,
+            fontSize: 11,
+            fontFamily: 'Fira Code, monospace',
+            formatter: () => axisMoney(r.expense),
+          },
+        })),
         itemStyle: {
           borderRadius: [0, 5, 5, 0],
           color: new graphic.LinearGradient(0, 0, 1, 0, [
             { offset: 0, color: rgba(accent, 0.35) },
-            { offset: 1, color: accent },
+            { offset: 1, color: accentLight },
           ]),
         },
       },
@@ -467,14 +595,16 @@ function loadShops() {
   });
 }
 
-// 主题切换时用缓存数据重绘图表
-watch(activeTheme, () => {
-  if (catsData.value.length) loadCategories();
-  if (trendData.value.length) loadTrend();
+/* ---------- 重绘：主题色 / 明暗切换后用缓存数据 ---------- */
+function rerenderAll() {
+  if (catsData.value.length) renderCats();
+  if (trendData.value.length) renderTrend();
   if (overviewData.value) renderCompose(overviewData.value);
   if (fundsData.value.length) renderFunds(fundsData.value);
   if (shopsData.value.length) renderShops(shopsData.value);
-});
+}
+// 明暗切换：图表实例不重建，用缓存数据 + 当前模式默认色重绘（click 保留）
+watch(mode, rerenderAll);
 
 async function loadOverview() {
   const o = await adminApi.statsOverview(bookParams());
@@ -507,10 +637,8 @@ function openItems(filters: ItemFilters, title: string) {
   itemDialogVisible.value = true;
 }
 
-onMounted(async () => {
-  await loadBooks();
-  reload();
-
+/** 图表点击 → 对应维度账目明细 */
+function rewireClicks() {
   // 分类玫瑰图：点击分类/其他 → 该分类账目明细
   getCatChart()?.on('click', (params: any) => {
     const name = params.name;
@@ -556,6 +684,12 @@ onMounted(async () => {
   getTrendChart()?.on('click', (params: any) => {
     if (params.name) openItems({ month: params.name }, `${params.name} 账目`);
   });
+}
+
+onMounted(async () => {
+  await loadBooks();
+  reload();
+  rewireClicks();
 });
 </script>
 

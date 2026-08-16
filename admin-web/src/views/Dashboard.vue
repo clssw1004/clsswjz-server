@@ -128,7 +128,8 @@ import {
 } from '@element-plus/icons-vue';
 import { adminApi } from '../api/admin';
 import { useChart } from '../composables/useChart';
-import { activeTheme, chartColors, rgba } from '../styles/themes';
+import { chartDefaults } from '../styles/chart-theme';
+import { activeTheme, chartColors, mode, rgba } from '../styles/themes';
 
 const cards = ref([
   { label: '总用户', value: 0, icon: User, grad: 'grad-purple' },
@@ -164,12 +165,18 @@ const { setOption: setTrend } = useChart(trendRef);
 const trendData = ref<{ period: string; expense: number; income: number }[]>([]);
 
 function renderTrend(data: { period: string; expense: number; income: number }[]) {
+  const def = chartDefaults();
   const { primary, accent } = chartColors();
   setTrend({
-    tooltip: { trigger: 'axis' },
-    legend: { data: ['支出', '收入'] },
-    xAxis: { type: 'category', boundaryGap: false, data: data.map((d) => d.period) },
-    yAxis: { type: 'value' },
+    tooltip: { ...def.tooltip, trigger: 'axis' },
+    legend: { data: ['支出', '收入'], textStyle: def.legendText },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: data.map((d) => d.period),
+      ...def.categoryAxis,
+    },
+    yAxis: { ...def.valueAxis },
     series: [
       {
         name: '支出',
@@ -207,10 +214,12 @@ function renderTrend(data: { period: string; expense: number; income: number }[]
   });
 }
 
-// 主题切换时用缓存数据重绘图表
-watch(activeTheme, () => {
+// 主题色 / 明暗切换时用缓存数据重绘图表（实例不重建，click 保留）
+function rerenderTrend() {
   if (trendData.value.length) renderTrend(trendData.value);
-});
+}
+watch(activeTheme, rerenderTrend);
+watch(mode, rerenderTrend);
 
 async function load() {
   const o = await adminApi.overview();
