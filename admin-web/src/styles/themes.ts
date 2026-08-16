@@ -66,10 +66,10 @@ function mix(hex: string, target: string, pct: number): string {
     .join('')}`;
 }
 export function lighten(hex: string, pct: number): string {
-  return mix(hex, '#ffffff', pct);
+  return mix(hex, '#ffffff', pct / 100);
 }
 export function darken(hex: string, pct: number): string {
-  return mix(hex, '#000000', pct);
+  return mix(hex, '#000000', pct / 100);
 }
 function rgba(hex: string, alpha: number): string {
   const [r, g, b] = hexToRgb(hex);

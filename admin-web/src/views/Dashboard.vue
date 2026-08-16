@@ -116,7 +116,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { graphic } from 'echarts/core';
+import { graphic } from 'echarts';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   User,
