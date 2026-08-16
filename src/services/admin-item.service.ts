@@ -29,14 +29,32 @@ export class AdminItemService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  /** 某账本的分页账目列表（含分类/商户/账户名称解析） */
+  /** 某账本的分页账目列表（含名称解析；支持类型/分类/账户/商户/月份多维过滤） */
   async listItems(
     bookId: string,
-    params: { page: number; pageSize: number },
+    params: {
+      page: number;
+      pageSize: number;
+      type?: string;
+      categoryCodes?: string;
+      fundIds?: string;
+      shopCodes?: string;
+      month?: string;
+    },
   ) {
-    const [items, total] = await this.itemRepository
+    const qb = this.itemRepository
       .createQueryBuilder('i')
-      .where('i.accountBookId = :bookId', { bookId })
+      .where('i.accountBookId = :bookId', { bookId });
+    if (params.type) {
+      qb.andWhere('i.type = :type', { type: params.type });
+    }
+    this.applyInFilter(qb, 'i.categoryCode', params.categoryCodes);
+    this.applyInFilter(qb, 'i.fundId', params.fundIds);
+    this.applyInFilter(qb, 'i.shopCode', params.shopCodes);
+    if (params.month) {
+      qb.andWhere('i.accountDate LIKE :month', { month: `${params.month}%` });
+    }
+    const [items, total] = await qb
       .orderBy('i.accountDate', 'DESC')
       .skip((params.page - 1) * params.pageSize)
       .take(params.pageSize)
@@ -49,6 +67,22 @@ export class AdminItemService {
       page: params.page,
       pageSize: params.pageSize,
     };
+  }
+
+  /** 逗号分隔值 → IN 过滤 */
+  private applyInFilter(
+    qb: import('typeorm').SelectQueryBuilder<AccountItem>,
+    column: string,
+    raw: string | undefined,
+  ): void {
+    if (!raw) return;
+    const values = raw
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (values.length) {
+      qb.andWhere(`${column} IN (:...values)`, { values });
+    }
   }
 
   /** 账目详情 + 该账目的全部日志（按操作时间正序，构成变迁时间线）

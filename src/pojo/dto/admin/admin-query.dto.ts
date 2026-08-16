@@ -92,4 +92,29 @@ export class ItemListQueryDto extends PageQueryDto {
   @ApiProperty({ description: '账本 ID（必填，按账本展示账目）' })
   @IsString()
   bookId: string;
+
+  @ApiPropertyOptional({ enum: ['EXPENSE', 'INCOME'], description: '类型过滤' })
+  @IsOptional()
+  @IsIn(['EXPENSE', 'INCOME'])
+  type?: string;
+
+  @ApiPropertyOptional({ description: '分类编码（逗号分隔）' })
+  @IsOptional()
+  @IsString()
+  categoryCodes?: string;
+
+  @ApiPropertyOptional({ description: '账户 ID（逗号分隔）' })
+  @IsOptional()
+  @IsString()
+  fundIds?: string;
+
+  @ApiPropertyOptional({ description: '商户编码（逗号分隔）' })
+  @IsOptional()
+  @IsString()
+  shopCodes?: string;
+
+  @ApiPropertyOptional({ description: '月份 yyyy-MM' })
+  @IsOptional()
+  @IsString()
+  month?: string;
 }

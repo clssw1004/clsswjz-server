@@ -18,6 +18,11 @@ export class AdminItemController {
     return this.itemService.listItems(query.bookId, {
       page: query.page,
       pageSize: query.pageSize,
+      type: query.type,
+      categoryCodes: query.categoryCodes,
+      fundIds: query.fundIds,
+      shopCodes: query.shopCodes,
+      month: query.month,
     });
   }
 

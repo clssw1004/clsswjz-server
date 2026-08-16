@@ -209,4 +209,35 @@ describe('AdminItemService', () => {
       NotFoundException,
     );
   });
+
+  it('listItems supports type/category/fund/shop/month filters', async () => {
+    await makeCategory('c1', '餐饮');
+    await makeShop('S1', '沃尔玛');
+    await makeFund('f1', '现金');
+    // 支出-餐饮-现金-8月
+    const i1 = new AccountItem();
+    Object.assign(i1, { id: 'i1', accountBookId: 'b1', amount: -10, type: 'EXPENSE', categoryCode: 'c1', shopCode: 'S1', fundId: 'f1', accountDate: '2026-08-01 10:00:00', createdBy: 'u1', updatedBy: 'u1', createdAt: 1000, updatedAt: 1000 });
+    await itemRepo.save(i1);
+    // 收入-餐饮-现金-9月
+    const i2 = new AccountItem();
+    Object.assign(i2, { id: 'i2', accountBookId: 'b1', amount: 20, type: 'INCOME', categoryCode: 'c1', shopCode: 'S1', fundId: 'f1', accountDate: '2026-09-01 10:00:00', createdBy: 'u1', updatedBy: 'u1', createdAt: 1000, updatedAt: 1000 });
+    await itemRepo.save(i2);
+    // 支出-无商户-现金-8月
+    const i3 = new AccountItem();
+    Object.assign(i3, { id: 'i3', accountBookId: 'b1', amount: -5, type: 'EXPENSE', categoryCode: 'c1', fundId: 'f1', accountDate: '2026-08-05 10:00:00', createdBy: 'u1', updatedBy: 'u1', createdAt: 1000, updatedAt: 1000 });
+    await itemRepo.save(i3);
+
+    const byType = await service.listItems('b1', { page: 1, pageSize: 10, type: 'INCOME' });
+    expect(byType.total).toBe(1);
+    expect(byType.items[0].id).toBe('i2');
+
+    const byCat = await service.listItems('b1', { page: 1, pageSize: 10, categoryCodes: 'c1' });
+    expect(byCat.total).toBe(3);
+
+    const byShop = await service.listItems('b1', { page: 1, pageSize: 10, shopCodes: 'S1' });
+    expect(byShop.total).toBe(2);
+
+    const byMonth = await service.listItems('b1', { page: 1, pageSize: 10, month: '2026-08' });
+    expect(byMonth.total).toBe(2);
+  });
 });
