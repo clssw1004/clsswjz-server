@@ -54,6 +54,17 @@
             ADMIN
           </el-tag>
 
+          <!-- 明暗切换 -->
+          <button
+            class="theme-btn"
+            type="button"
+            :aria-label="isDark ? '切换亮色主题' : '切换暗色主题'"
+            :title="isDark ? '切换亮色主题' : '切换暗色主题'"
+            @click="toggleMode"
+          >
+            <el-icon :size="16"><component :is="isDark ? Sunny : Moon" /></el-icon>
+          </button>
+
           <!-- 主题颜色切换（与 App 端 Colors.primaries 一致） -->
           <el-popover placement="bottom-end" :width="276" trigger="click" popper-class="theme-pop">
             <template #reference>
@@ -105,6 +116,8 @@ import { useRouter, useRoute } from 'vue-router';
 import {
   Menu,
   SwitchButton,
+  Sunny,
+  Moon,
   Odometer,
   User,
   Document,
@@ -116,7 +129,14 @@ import {
   Brush,
   Check,
 } from '@element-plus/icons-vue';
-import { THEMES, activeTheme, activeThemeId, setTheme } from '../styles/themes';
+import {
+  THEMES,
+  activeTheme,
+  activeThemeId,
+  setTheme,
+  isDark,
+  toggleMode,
+} from '../styles/themes';
 
 const router = useRouter();
 const route = useRoute();
@@ -203,7 +223,7 @@ function logout() {
   top: 0;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, rgba(20, 28, 50, 0.72), rgba(10, 16, 30, 0.72));
+  background: var(--side-bg);
   border-right: 1px solid var(--border-glass);
   backdrop-filter: var(--blur-glass);
   -webkit-backdrop-filter: var(--blur-glass);
@@ -298,7 +318,7 @@ function logout() {
   align-items: center;
   gap: 14px;
   padding: 0 24px;
-  background: rgba(9, 14, 26, 0.6);
+  background: var(--topbar-bg);
   border-bottom: 1px solid var(--border-glass);
   backdrop-filter: var(--blur-glass);
   -webkit-backdrop-filter: var(--blur-glass);
