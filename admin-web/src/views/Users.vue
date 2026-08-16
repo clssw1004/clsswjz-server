@@ -27,7 +27,7 @@
         <el-table-column label="用户" min-width="180">
           <template #default="{ row }">
             <div class="cell-user">
-              <span class="cell-avatar">{{ avatarText(row.nickname || row.username) }}</span>
+              <span class="cell-avatar" :class="avatarGrad(row.nickname || row.username)">{{ avatarText(row.nickname || row.username) }}</span>
               <div class="cell-user-main">
                 <div class="cell-name">{{ row.nickname || row.username }}</div>
                 <div class="cell-id num">{{ row.username }}</div>
@@ -62,7 +62,7 @@
         @click="$router.push(`/users/${u.id}`)"
       >
         <div class="m-card-head">
-          <span class="mc-avatar">{{ avatarText(u.nickname || u.username) }}</span>
+          <span class="mc-avatar" :class="avatarGrad(u.nickname || u.username)">{{ avatarText(u.nickname || u.username) }}</span>
           <div class="m-card-main">
             <div class="m-card-title">{{ u.nickname || u.username }}</div>
             <div class="m-card-sub num">@{{ u.username }}</div>
@@ -96,6 +96,7 @@ import { ref, onMounted } from 'vue';
 import { Search, ArrowRight } from '@element-plus/icons-vue';
 import { adminApi } from '../api/admin';
 import { useIsMobile } from '../composables/useIsMobile';
+import { avatarGrad } from '../styles/themes';
 
 const users = ref<any[]>([]);
 const total = ref(0);
@@ -162,19 +163,37 @@ onMounted(load);
   align-items: center;
   gap: 12px;
 }
+.cell-avatar,
+.mc-avatar {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(2, 6, 23, 0.28);
+}
 .cell-avatar {
   width: 36px;
   height: 36px;
-  flex-shrink: 0;
   border-radius: 10px;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.35), rgba(139, 92, 246, 0.12));
-  color: var(--brand-purple-light);
-  font-weight: 600;
   font-size: 14px;
-  border: 1px solid rgba(139, 92, 246, 0.3);
 }
+.mc-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  font-size: 16px;
+}
+.cell-avatar.grad-gold,
+.mc-avatar.grad-gold { background: var(--grad-gold); color: var(--on-primary); }
+.cell-avatar.grad-purple,
+.mc-avatar.grad-purple { background: var(--grad-purple); }
+.cell-avatar.grad-green,
+.mc-avatar.grad-green { background: var(--grad-green); }
+.cell-avatar.grad-cyan,
+.mc-avatar.grad-cyan { background: var(--grad-cyan); }
+.cell-avatar.grad-red,
+.mc-avatar.grad-red { background: var(--grad-red); }
 .cell-user-main {
   min-width: 0;
 }
@@ -192,22 +211,7 @@ onMounted(load);
   transition: transform 0.2s ease, color 0.2s ease;
 }
 .cell-avatar + .cell-user-main .cell-name {
-  color: var(--brand-gold-strong);
-}
-
-/* 移动端卡片头像 */
-.mc-avatar {
-  width: 42px;
-  height: 42px;
-  flex-shrink: 0;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.35), rgba(139, 92, 246, 0.12));
-  color: var(--brand-purple-light);
-  font-weight: 600;
-  font-size: 16px;
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: var(--text-1);
 }
 
 /* 行点击反馈 */

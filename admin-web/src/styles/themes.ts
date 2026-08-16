@@ -186,3 +186,23 @@ export function chartPalette() {
         other: '#a5b4c8',
       };
 }
+
+/* ---------- 头像配色 ---------- */
+/** 协调的实心渐变组（与 stat-icon 的 grad-* 体系一致） */
+const AVATAR_GRADS = [
+  'grad-gold',
+  'grad-purple',
+  'grad-green',
+  'grad-cyan',
+  'grad-red',
+];
+
+/** 按名称 hash 从协调渐变中取一，保证同列头像有区分度且风格统一 */
+export function avatarGrad(name: string | undefined | null): string {
+  const s = name ?? '?';
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  }
+  return AVATAR_GRADS[h % AVATAR_GRADS.length];
+}

@@ -26,7 +26,7 @@
         <el-table-column label="账本" min-width="180">
           <template #default="{ row }">
             <div class="cell-book">
-              <span class="cell-avatar">{{ avatarText(row.name) }}</span>
+              <span class="cell-avatar" :class="avatarGrad(row.name)">{{ avatarText(row.name) }}</span>
               <div class="cell-main">
                 <div class="cell-name">{{ row.name }}</div>
                 <div class="cell-id num">{{ row.id.slice(0, 8) }}</div>
@@ -69,7 +69,7 @@
         @click="$router.push(`/books/${b.id}`)"
       >
         <div class="m-card-head">
-          <span class="mc-avatar">{{ avatarText(b.name) }}</span>
+          <span class="mc-avatar" :class="avatarGrad(b.name)">{{ avatarText(b.name) }}</span>
           <div class="m-card-main">
             <div class="m-card-title">{{ b.name }}</div>
             <div class="m-card-sub num">{{ b.id.slice(0, 8) }}</div>
@@ -102,6 +102,7 @@ import { ref, onMounted } from 'vue';
 import { Search, ArrowRight } from '@element-plus/icons-vue';
 import { adminApi } from '../api/admin';
 import { useIsMobile } from '../composables/useIsMobile';
+import { avatarGrad } from '../styles/themes';
 
 const books = ref<any[]>([]);
 const total = ref(0);
@@ -168,11 +169,20 @@ onMounted(load);
   border-radius: 11px;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.35), rgba(139, 92, 246, 0.12));
-  color: var(--brand-purple-light);
+  color: #fff;
   font-weight: 600;
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(2, 6, 23, 0.28);
 }
+.cell-avatar.grad-gold,
+.mc-avatar.grad-gold { background: var(--grad-gold); color: var(--on-primary); }
+.cell-avatar.grad-purple,
+.mc-avatar.grad-purple { background: var(--grad-purple); }
+.cell-avatar.grad-green,
+.mc-avatar.grad-green { background: var(--grad-green); }
+.cell-avatar.grad-cyan,
+.mc-avatar.grad-cyan { background: var(--grad-cyan); }
+.cell-avatar.grad-red,
+.mc-avatar.grad-red { background: var(--grad-red); }
 .mc-avatar {
   width: 42px;
   height: 42px;
