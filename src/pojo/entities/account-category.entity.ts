@@ -23,4 +23,13 @@ export class AccountCategory extends BaseAccountNameSymbol {
     comment: '最近账目创建时间',
   })
   lastAccountItemAt: Date;
+
+  @Column({
+    type: 'varchar',
+    length: 32,
+    name: 'parent_id',
+    nullable: true,
+    comment: '父级分类ID（客户端同步用）',
+  })
+  parentId: string;
 }
