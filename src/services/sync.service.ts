@@ -236,7 +236,12 @@ export class SyncService {
       .andWhere('sync_time > :syncTime', { syncTime: dto.syncTimeStamp });
 
     // 数据隔离：可见范围 = 自己的日志 + 自己参与账本（创建/成员）下的日志 + 关于自己的成员事件
+    // + 同账本成员的 USER 资料日志（保证客户端 userId → 用户名翻译所需的用户数据可同步）
     const myBookIds = await this.getMyBookIds(userId);
+    let memberUserIds: string[] = [];
+    if (myBookIds.length > 0) {
+      memberUserIds = await this.getBookMemberIds(myBookIds);
+    }
     qb.andWhere(
       new Brackets((sub) => {
         sub.where('log.operator_id = :userId', { userId });
@@ -244,6 +249,15 @@ export class SyncService {
           sub.orWhere(
             "log.parent_type = 'book' AND log.parent_id IN (:...myBookIds)",
             { myBookIds },
+          );
+        }
+        // 同账本成员（创建者/成员）的 USER 资料日志常驻可见，
+        // 客户端据此把 userId 翻译成昵称；敏感字段（username/password/phone/email）
+        // 由 desensitize 统一脱敏，此处只放行昵称/头像等展示所需字段
+        if (memberUserIds.length > 0) {
+          sub.orWhere(
+            "log.business_type = 'user' AND log.operator_id IN (:...memberUserIds)",
+            { memberUserIds },
           );
         }
         // 关于我的 bookMember 事件（加入/移除）常驻可见，即使我已不是成员，
@@ -311,6 +325,30 @@ export class SyncService {
         ...memberships.map((r) => r.accountBookId),
       ]),
     ];
+  }
+
+  /**
+   * 账本集合的成员用户 ID 集合 = 创建者（account_books.created_by）∪ 成员
+   * （rel_accountbook_user.user_id）。用于 pull 时让同账本成员的 user 资料
+   * 日志互相可见，支持客户端 userId → 用户名的翻译。
+   */
+  private async getBookMemberIds(bookIds: string[]): Promise<string[]> {
+    const creators = await this.accountBookRepository
+      .createQueryBuilder('book')
+      .select('book.createdBy')
+      .where('book.id IN (:...bookIds)', { bookIds })
+      .getMany();
+    const members = await this.accountBookUserRepository
+      .createQueryBuilder('rel')
+      .select('rel.userId')
+      .where('rel.account_book_id IN (:...bookIds)', { bookIds })
+      .getMany();
+    return [
+      ...new Set([
+        ...creators.map((b) => b.createdBy),
+        ...members.map((r) => r.userId),
+      ]),
+    ].filter((id): id is string => Boolean(id));
   }
 
   /**
