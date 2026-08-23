@@ -223,6 +223,35 @@ describe('SyncService', () => {
     };
   }
 
+  function userCreate(
+    userId: string,
+    at = 500,
+    overrides: Record<string, any> = {},
+  ): Partial<LogSync> {
+    return {
+      id: `log-${userId}-user`,
+      businessType: BusinessType.USER,
+      operateType: OperateType.CREATE,
+      parentType: 'root',
+      parentId: 'None',
+      operatorId: userId,
+      operatedAt: at,
+      businessId: userId,
+      operateData: JSON.stringify({
+        id: userId,
+        username: `user_${userId}`,
+        password: 'hashed-pwd',
+        nickname: `昵称${userId}`,
+        phone: '13800000000',
+        email: `${userId}@example.com`,
+        avatar: 'avatar-1',
+        createdAt: at,
+        updatedAt: at,
+        ...overrides,
+      }),
+    };
+  }
+
   function pullDto(overrides: Partial<SyncPullDto> = {}): SyncPullDto {
     return {
       syncTimeStamp: 0,
@@ -385,6 +414,62 @@ describe('SyncService', () => {
 
       expect(changes.length).toBe(1);
       expect(changes[0].businessType).toBe(BusinessType.ITEM);
+    });
+
+    it("lets book members pull each other's USER profile logs (userId → nickname translation)", async () => {
+      // u1 创建账本 b1 并邀请 u2；u2 有自己的 user 资料日志
+      await insertSynced(bookCreate('b1', 'u1'));
+      await insertSynced(bookMemberCreate('rel-u2-b1', 'b1', 'u1', 'u2'));
+      await insertSynced(userCreate('u2'));
+
+      // u1 拉取：能看到成员 u2 的 user 日志
+      const { changes: changesU1 } = await service.pull(pullDto(), 'u1');
+      const userLogsU1 = changesU1.filter(
+        (c) => c.businessType === BusinessType.USER,
+      );
+      expect(userLogsU1.map((c) => c.businessId)).toContain('u2');
+
+      // u2 拉取：也能看到创建者 u1 的 user 日志
+      await insertSynced(userCreate('u1'));
+      const { changes: changesU2 } = await service.pull(pullDto(), 'u2');
+      const userLogsU2 = changesU2.filter(
+        (c) => c.businessType === BusinessType.USER,
+      );
+      expect(userLogsU2.map((c) => c.businessId)).toContain('u1');
+    });
+
+    it('does not leak USER logs of users outside any shared book', async () => {
+      // u1 创建 b1；u3 与 u1 无任何账本关系
+      await insertSynced(bookCreate('b1', 'u1'));
+      await insertSynced(userCreate('u3'));
+
+      const { changes } = await service.pull(pullDto(), 'u1');
+
+      expect(
+        changes.some(
+          (c) => c.businessType === BusinessType.USER && c.businessId === 'u3',
+        ),
+      ).toBe(false);
+    });
+
+    it('desensitizes other members USER logs (username/password/phone/email)', async () => {
+      await insertSynced(bookCreate('b1', 'u1'));
+      await insertSynced(bookMemberCreate('rel-u2-b1', 'b1', 'u1', 'u2'));
+      await insertSynced(userCreate('u2'));
+
+      const { changes } = await service.pull(pullDto(), 'u1');
+      const u2Log = changes.find(
+        (c) => c.businessType === BusinessType.USER && c.businessId === 'u2',
+      );
+      expect(u2Log).toBeDefined();
+      const data = JSON.parse(u2Log.operateData);
+      expect(data.username).toBe('<secret>');
+      expect(data.password).toBe('<secret>');
+      expect(data.phone).toBe('<secret>');
+      expect(data.email).toBe('<secret>');
+      // 昵称/头像等展示字段保留，供 userId → 用户名翻译
+      expect(data.nickname).toBe('昵称u2');
+      expect(data.avatar).toBe('avatar-1');
     });
   });
 });
