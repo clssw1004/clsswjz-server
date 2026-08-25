@@ -4,6 +4,7 @@ import { Brackets, Repository } from 'typeorm';
 import { LogSync } from '../pojo/entities/log-sync.entity';
 import { AccountBook } from '../pojo/entities/account-book.entity';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
+import { UserShareEntity } from '../pojo/entities/user-share.entity';
 import { SyncState } from '../pojo/enums/sync-state.enum';
 import { now } from '../utils/date.util';
 import { LogRunner } from './log-runner';
@@ -36,6 +37,8 @@ export class SyncService {
     private readonly accountBookRepository: Repository<AccountBook>,
     @InjectRepository(AccountBookUser)
     private readonly accountBookUserRepository: Repository<AccountBookUser>,
+    @InjectRepository(UserShareEntity)
+    private readonly userShareRepository: Repository<UserShareEntity>,
   ) {}
 
   async syncRegister(createUserLog: RegisterSyncDto) {
@@ -215,6 +218,12 @@ export class SyncService {
     // （新成员加入的 bookMember 日志在邀请者 push 时落库，这里确保已被回放到成员关系表）
     await this.materializeService.flush();
 
+    // ── 回溯拉取模式 ──
+    if (dto.backfillOwnerId) {
+      return this.pullBackfill(dto, userId, currentTime);
+    }
+
+    // ── 正常增量拉取模式 ──
     // 构建查询
     const qb = this.logSyncRepository
       .createQueryBuilder('log')
@@ -237,33 +246,59 @@ export class SyncService {
 
     // 数据隔离：可见范围 = 自己的日志 + 自己参与账本（创建/成员）下的日志 + 关于自己的成员事件
     // + 同账本成员的 USER 资料日志（保证客户端 userId → 用户名翻译所需的用户数据可同步）
+    // + userShare 共享的 noParent 模块业务数据 + userShare 日志本身 + 共享关联方 USER 资料
     const myBookIds = await this.getMyBookIds(userId);
     let memberUserIds: string[] = [];
     if (myBookIds.length > 0) {
       memberUserIds = await this.getBookMemberIds(myBookIds);
     }
+    const sharedToMeOwnerIds = await this.getSharedToMeOwnerIds(userId);
+    const shareRelatedUserIds = await this.getShareRelatedUserIds(userId);
+    // 合并同账本成员和共享关联方的 USER 资料查询条件
+    const allUserIdsForProfile = [
+      ...new Set([...memberUserIds, ...shareRelatedUserIds]),
+    ].filter((id): id is string => Boolean(id));
     qb.andWhere(
       new Brackets((sub) => {
+        // 条件 A: 自己的日志始终可见
         sub.where('log.operator_id = :userId', { userId });
+        // 条件 B: 自己参与的账本下的日志
         if (myBookIds.length > 0) {
           sub.orWhere(
             "log.parent_type = 'book' AND log.parent_id IN (:...myBookIds)",
             { myBookIds },
           );
         }
-        // 同账本成员（创建者/成员）的 USER 资料日志常驻可见，
+        // 条件 C: 同账本成员/共享关联方的 USER 资料日志常驻可见，
         // 客户端据此把 userId 翻译成昵称；敏感字段（username/password/phone/email）
         // 由 desensitize 统一脱敏，此处只放行昵称/头像等展示所需字段
-        if (memberUserIds.length > 0) {
+        if (allUserIdsForProfile.length > 0) {
           sub.orWhere(
-            "log.business_type = 'user' AND log.operator_id IN (:...memberUserIds)",
-            { memberUserIds },
+            "log.business_type = 'user' AND log.operator_id IN (:...allUserIdsForProfile)",
+            { allUserIdsForProfile },
           );
         }
-        // 关于我的 bookMember 事件（加入/移除）常驻可见，即使我已不是成员，
+        // 条件 D: 关于我的 bookMember 事件（加入/移除）常驻可见，即使我已不是成员，
         // 使被移除者能收到"自己被移除"的通知（依赖客户端在 delete 日志携带 userId）
         sub.orWhere(
           "log.business_type = 'bookMember' AND json_extract(log.operate_data, '$.userId') = :userId",
+          { userId },
+        );
+        // 条件 E: 别人通过 userShare 分享给我的 noParent 模块业务数据
+        if (sharedToMeOwnerIds.length > 0) {
+          sub.orWhere(
+            "log.operator_id IN (:...sharedToMeOwnerIds) AND log.parent_type = 'root'",
+            { sharedToMeOwnerIds },
+          );
+        }
+        // 条件 F: userShare 日志本身（我作为 target 的分享配置变更）
+        sub.orWhere(
+          "log.business_type = 'userShare' AND json_extract(log.operate_data, '$.targetUserId') = :userId",
+          { userId },
+        );
+        // 条件 G: 我作为 owner 推送的 userShare 日志（确保自己能看到自己发出的共享配置）
+        sub.orWhere(
+          "log.business_type = 'userShare' AND log.operator_id = :userId",
           { userId },
         );
       }),
@@ -365,6 +400,132 @@ export class SyncService {
     }
     const myBookIds = await this.getMyBookIds(operatorId);
     return myBookIds.includes(bookId);
+  }
+
+  /**
+   * 回溯拉取：分享关系建立后，拉取分享者的全部指定业务类型历史日志。
+   *
+   * 与正常增量拉取的区别：
+   * - 无 syncTimeStamp 时间过滤，返回分享者的全部历史日志
+   * - 业务类型限制为 backfillBusinessTypes（+ user 类型自动包含，用于昵称翻译）
+   * - 后端校验：backfillOwnerId 必须与当前用户存在 userShare 关系
+   */
+  private async pullBackfill(
+    dto: SyncPullDto,
+    userId: string,
+    currentTime: number,
+  ): Promise<SyncPullResult> {
+    const backfillOwnerId = dto.backfillOwnerId!;
+
+    // 后端校验：检查 backfillOwnerId 是否与当前用户存在 userShare 关系
+    const hasShare = await this.userShareRepository
+      .createQueryBuilder('s')
+      .where(
+        's.owner_user_id = :ownerId AND s.target_user_id = :targetId AND s.is_enabled = true',
+        { ownerId: backfillOwnerId, targetId: userId },
+      )
+      .getExists();
+    if (!hasShare) {
+      this.logger.warn(
+        `回溯拉取被拒绝：用户 ${userId} 无权回溯 ${backfillOwnerId} 的数据（无 userShare 关系）`,
+      );
+      return {
+        changes: [],
+        total: 0,
+        page: dto.page,
+        pageSize: dto.pageSize,
+        syncTimeStamp: currentTime,
+      };
+    }
+
+    // 构建回溯查询：无时间过滤，限制指定业务类型
+    const businessTypes = dto.backfillBusinessTypes ?? [];
+    // 始终包含 user 类型（昵称翻译所需）
+    const typesWithUser = [...new Set([...businessTypes, 'user'])];
+
+    const qb = this.logSyncRepository
+      .createQueryBuilder('log')
+      .select([
+        'log.id',
+        'log.businessType',
+        'log.operateType',
+        'log.parentType',
+        'log.parentId',
+        'log.operatorId',
+        'log.operatedAt',
+        'log.businessId',
+        'log.operateData',
+        'log.syncState',
+        'log.syncTime',
+        'log.syncError',
+      ])
+      .where('log.sync_state = :syncState', { syncState: SyncState.SYNCED })
+      .andWhere('log.operator_id = :backfillOwnerId', { backfillOwnerId })
+      .andWhere('log.businessType IN (:...types)', { types: typesWithUser });
+
+    // CommitId 排除已 push 的日志
+    if (dto.commitId) {
+      const cached = await this.cacheService.get(`commit:${dto.commitId}`);
+      if (cached) {
+        const excludeIds = JSON.parse(cached) as string[];
+        qb.andWhere('log.id NOT IN (:...excludeIds)', { excludeIds });
+      }
+    }
+
+    // 分页
+    const [changes, total] = await qb
+      .orderBy('log.operatedAt', 'ASC')
+      .skip((dto.page - 1) * dto.pageSize)
+      .take(dto.pageSize)
+      .getManyAndCount();
+
+    // 脱敏
+    await this.desensitize(changes, userId);
+
+    return {
+      changes,
+      total,
+      page: dto.page,
+      pageSize: dto.pageSize,
+      syncTimeStamp: currentTime,
+    };
+  }
+
+  /**
+   * 获取分享给我的用户 ID 集合（基于物化的 rel_user_share 表）
+   */
+  private async getSharedToMeOwnerIds(userId: string): Promise<string[]> {
+    const shares = await this.userShareRepository
+      .createQueryBuilder('s')
+      .select('s.ownerUserId')
+      .where('s.target_user_id = :userId AND s.is_enabled = true', {
+        userId,
+      })
+      .getMany();
+    return shares.map((s) => s.ownerUserId);
+  }
+
+  /**
+   * 获取我分享出去的目标用户 + 分享给我的用户（合并去重），
+   * 用于拉取双方的 USER 资料日志（昵称/头像），支持跨模块 userId 翻译。
+   */
+  private async getShareRelatedUserIds(userId: string): Promise<string[]> {
+    const outgoing = await this.userShareRepository
+      .createQueryBuilder('s')
+      .select('s.targetUserId')
+      .where('s.owner_user_id = :userId AND s.is_enabled = true', { userId })
+      .getMany();
+    const incoming = await this.userShareRepository
+      .createQueryBuilder('s')
+      .select('s.ownerUserId')
+      .where('s.target_user_id = :userId AND s.is_enabled = true', { userId })
+      .getMany();
+    return [
+      ...new Set([
+        ...outgoing.map((s) => s.targetUserId),
+        ...incoming.map((s) => s.ownerUserId),
+      ]),
+    ].filter((id): id is string => Boolean(id));
   }
 
   private async desensitize(logs: LogSync[], userId: string) {

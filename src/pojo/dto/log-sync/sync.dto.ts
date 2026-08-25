@@ -135,6 +135,18 @@ export class SyncPullDto {
   @IsString()
   @IsOptional()
   commitId?: string;
+
+  // ── 回溯拉取参数 ──
+
+  @ApiProperty({ type: String, description: '回溯目标用户 ID（分享者）', required: false })
+  @IsString()
+  @IsOptional()
+  backfillOwnerId?: string;
+
+  @ApiProperty({ type: [String], description: '回溯的业务类型列表', required: false })
+  @IsArray()
+  @IsOptional()
+  backfillBusinessTypes?: string[];
 }
 
 // Pull 响应
