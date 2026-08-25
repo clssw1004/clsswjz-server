@@ -144,6 +144,24 @@ describe('Sync 数据隔离 (e2e)', () => {
     return res.body.data;
   }
 
+  async function pullBackfill(
+    token: string,
+    backfillOwnerId: string,
+    backfillBusinessTypes: string[],
+  ) {
+    const res = await request(server)
+      .post('/api/sync/pull')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        syncTimeStamp: 999999, // 故意设大，验证回溯不受时间过滤
+        page: 1,
+        pageSize: 100,
+        backfillOwnerId,
+        backfillBusinessTypes,
+      });
+    return res.body.data;
+  }
+
   it('注册两个用户并隔离：B 拉取不到 A 的账本数据', async () => {
     const a = await register('e2e_a');
     const b = await register('e2e_b');
@@ -381,6 +399,84 @@ describe('Sync 数据隔离 (e2e)', () => {
       bPull.changes.some(
         (c: any) =>
           c.businessType === 'periodCycle' && c.businessId === 'biz-pc-2',
+      ),
+    ).toBe(false);
+  });
+
+  // ── 回溯拉取测试 ──
+
+  it('回溯拉取：有 userShare 关系时，B 能回溯拉取 A 的全部历史日志', async () => {
+    const a = await register('e2e_backfill_a');
+    const b = await register('e2e_backfill_b');
+
+    // A 推送多条历史日志（时间戳都在过去）
+    await push(a.token, [
+      userShareCreateLog('share-bf-1', a.userId, b.userId, 'periodCycle', 1000),
+      noParentBusinessLog('biz-pc-bf-1', a.userId, 'periodCycle', 2000),
+      noParentBusinessLog('biz-pc-bf-2', a.userId, 'periodCycle', 3000),
+      userProfileLog(a.userId, '回溯用户A', 4000),
+    ]);
+
+    // B 正常增量拉取（syncTimeStamp 设为极大值，所有日志的 sync_time 都小于它）→ 增量模式拉不到
+    const normalPull = await pull(b.token, 9999999999999999);
+    expect(
+      normalPull.changes.some(
+        (c: any) => c.businessType === 'periodCycle',
+      ),
+    ).toBe(false);
+
+    // B 回溯拉取（无时间过滤）→ 能拉到 A 的全部 periodCycle 历史 + USER 资料
+    const backfillPull = await pullBackfill(b.token, a.userId, ['periodCycle']);
+    expect(
+      backfillPull.changes.filter(
+        (c: any) => c.businessType === 'periodCycle',
+      ).length,
+    ).toBe(2); // 2 条 periodCycle 业务日志（不含 userShare）
+    expect(
+      backfillPull.changes.some(
+        (c: any) =>
+          c.businessType === 'user' && c.operatorId === a.userId,
+      ),
+    ).toBe(true); // USER 资料自动包含
+  });
+
+  it('回溯拉取：无 userShare 关系时，B 无法回溯 A 的数据', async () => {
+    const a = await register('e2e_backfill_a2');
+    const b = await register('e2e_backfill_b2');
+
+    // A 推送日志但不建立分享关系
+    await push(a.token, [
+      noParentBusinessLog('biz-pc-bf-3', a.userId, 'periodCycle', 1000),
+    ]);
+
+    // B 尝试回溯 → 被拒绝
+    const backfillPull = await pullBackfill(b.token, a.userId, ['periodCycle']);
+    expect(backfillPull.changes.length).toBe(0);
+    expect(backfillPull.total).toBe(0);
+  });
+
+  it('回溯拉取：只返回指定业务类型的历史日志', async () => {
+    const a = await register('e2e_backfill_a3');
+    const b = await register('e2e_backfill_b3');
+
+    await push(a.token, [
+      userShareCreateLog('share-bf-3', a.userId, b.userId, 'vehicle', 1000),
+      noParentBusinessLog('biz-v-1', a.userId, 'vehicle', 2000),
+      noParentBusinessLog('biz-pc-bf-4', a.userId, 'periodCycle', 3000),
+    ]);
+
+    // 只回溯 vehicle 类型
+    const backfillPull = await pullBackfill(b.token, a.userId, ['vehicle']);
+    expect(
+      backfillPull.changes.some(
+        (c: any) => c.businessType === 'vehicle' && c.businessId === 'biz-v-1',
+      ),
+    ).toBe(true);
+    // periodCycle 不应出现
+    expect(
+      backfillPull.changes.some(
+        (c: any) =>
+          c.businessType === 'periodCycle' && c.businessId === 'biz-pc-bf-4',
       ),
     ).toBe(false);
   });

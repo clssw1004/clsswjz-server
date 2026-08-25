@@ -218,6 +218,12 @@ export class SyncService {
     // （新成员加入的 bookMember 日志在邀请者 push 时落库，这里确保已被回放到成员关系表）
     await this.materializeService.flush();
 
+    // ── 回溯拉取模式 ──
+    if (dto.backfillOwnerId) {
+      return this.pullBackfill(dto, userId, currentTime);
+    }
+
+    // ── 正常增量拉取模式 ──
     // 构建查询
     const qb = this.logSyncRepository
       .createQueryBuilder('log')
@@ -394,6 +400,95 @@ export class SyncService {
     }
     const myBookIds = await this.getMyBookIds(operatorId);
     return myBookIds.includes(bookId);
+  }
+
+  /**
+   * 回溯拉取：分享关系建立后，拉取分享者的全部指定业务类型历史日志。
+   *
+   * 与正常增量拉取的区别：
+   * - 无 syncTimeStamp 时间过滤，返回分享者的全部历史日志
+   * - 业务类型限制为 backfillBusinessTypes（+ user 类型自动包含，用于昵称翻译）
+   * - 后端校验：backfillOwnerId 必须与当前用户存在 userShare 关系
+   */
+  private async pullBackfill(
+    dto: SyncPullDto,
+    userId: string,
+    currentTime: number,
+  ): Promise<SyncPullResult> {
+    const backfillOwnerId = dto.backfillOwnerId!;
+
+    // 后端校验：检查 backfillOwnerId 是否与当前用户存在 userShare 关系
+    const hasShare = await this.userShareRepository
+      .createQueryBuilder('s')
+      .where(
+        's.owner_user_id = :ownerId AND s.target_user_id = :targetId AND s.is_enabled = true',
+        { ownerId: backfillOwnerId, targetId: userId },
+      )
+      .getExists();
+    if (!hasShare) {
+      this.logger.warn(
+        `回溯拉取被拒绝：用户 ${userId} 无权回溯 ${backfillOwnerId} 的数据（无 userShare 关系）`,
+      );
+      return {
+        changes: [],
+        total: 0,
+        page: dto.page,
+        pageSize: dto.pageSize,
+        syncTimeStamp: currentTime,
+      };
+    }
+
+    // 构建回溯查询：无时间过滤，限制指定业务类型
+    const businessTypes = dto.backfillBusinessTypes ?? [];
+    // 始终包含 user 类型（昵称翻译所需）
+    const typesWithUser = [...new Set([...businessTypes, 'user'])];
+
+    const qb = this.logSyncRepository
+      .createQueryBuilder('log')
+      .select([
+        'log.id',
+        'log.businessType',
+        'log.operateType',
+        'log.parentType',
+        'log.parentId',
+        'log.operatorId',
+        'log.operatedAt',
+        'log.businessId',
+        'log.operateData',
+        'log.syncState',
+        'log.syncTime',
+        'log.syncError',
+      ])
+      .where('log.sync_state = :syncState', { syncState: SyncState.SYNCED })
+      .andWhere('log.operator_id = :backfillOwnerId', { backfillOwnerId })
+      .andWhere('log.businessType IN (:...types)', { types: typesWithUser });
+
+    // CommitId 排除已 push 的日志
+    if (dto.commitId) {
+      const cached = await this.cacheService.get(`commit:${dto.commitId}`);
+      if (cached) {
+        const excludeIds = JSON.parse(cached) as string[];
+        qb.andWhere('log.id NOT IN (:...excludeIds)', { excludeIds });
+      }
+    }
+
+    // 分页
+    const [changes, total] = await qb
+      .orderBy('log.operatedAt', 'ASC')
+      .skip((dto.page - 1) * dto.pageSize)
+      .take(dto.pageSize)
+      .getManyAndCount();
+
+    // 脱敏
+    await this.desensitize(changes, userId);
+
+    return {
+      changes,
+      total,
+      page: dto.page,
+      pageSize: dto.pageSize,
+      syncTimeStamp: currentTime,
+    };
   }
 
   /**
