@@ -12,6 +12,7 @@ import { AccountNote } from '../pojo/entities/account-note.entity';
 import { User } from '../pojo/entities/user.entity';
 import { AttachmentEntity } from '../pojo/entities/attachment.entity';
 import { LogSync } from '../pojo/entities/log-sync.entity';
+import { UserShareEntity } from '../pojo/entities/user-share.entity';
 import { BusinessType } from 'src/pojo/enums/business-type.enum';
 import { OperateType } from 'src/pojo/enums/operate-type.enum';
 import { LogResult } from 'src/pojo/dto/log-sync/sync.dto';
@@ -57,6 +58,7 @@ export class LogRunner {
       case BusinessType.NOTE:
       case BusinessType.ROOT:
       case BusinessType.FUND_BOOK:
+      case BusinessType.USER_SHARE:
         return true;
       default:
         return false;
@@ -194,6 +196,7 @@ export class LogRunner {
       AccountBookUser,
       AttachmentEntity,
       AccountNote,
+      UserShareEntity,
     ];
     for (const cls of entityClasses) {
       await transaction.getRepository(cls).clear();
@@ -250,6 +253,8 @@ export class LogRunner {
         return transaction.getRepository(AttachmentEntity);
       case BusinessType.NOTE:
         return transaction.getRepository(AccountNote);
+      case BusinessType.USER_SHARE:
+        return transaction.getRepository(UserShareEntity);
       default:
         throw new Error(`不支持的业务类型: ${businessType}`);
     }

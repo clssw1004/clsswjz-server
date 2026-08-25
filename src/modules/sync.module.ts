@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LogSync } from '../pojo/entities/log-sync.entity';
+import { UserShareEntity } from '../pojo/entities/user-share.entity';
 import { SyncController } from '../controllers/sync.controller';
 import { SyncService } from '../services/sync.service';
 import { LogRunner } from '../services/log-runner';
@@ -13,7 +14,7 @@ import { AttachmentModule } from './attachment.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([LogSync]),
+    TypeOrmModule.forFeature([LogSync, UserShareEntity]),
     AccountModule,
     AuthModule,
     AttachmentModule,

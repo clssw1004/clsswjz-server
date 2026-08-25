@@ -33,4 +33,7 @@ export enum BusinessType {
   NOTE = 'note',
 
   ROOT = 'root',
+
+  /** 用户模块共享 */
+  USER_SHARE = 'userShare',
 }

@@ -7,6 +7,7 @@ import { AccountShop } from '../pojo/entities/account-shop.entity';
 import { AccountSymbol } from '../pojo/entities/account-symbol.entity';
 import { AccountFund } from '../pojo/entities/account-fund.entity';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
+import { UserShareEntity } from '../pojo/entities/user-share.entity';
 import { User } from '../pojo/entities/user.entity';
 import { AttachmentEntity } from '../pojo/entities/attachment.entity';
 import { SyncService } from './sync.service';
@@ -27,6 +28,7 @@ describe('SyncService', () => {
     AccountSymbol,
     AccountFund,
     AccountBookUser,
+    UserShareEntity,
     User,
     AttachmentEntity,
   ];
@@ -37,6 +39,7 @@ describe('SyncService', () => {
   let logSyncRepo: Repository<LogSync>;
   let accountBookRepo: Repository<AccountBook>;
   let relRepo: Repository<AccountBookUser>;
+  let userShareRepo: Repository<UserShareEntity>;
 
   const cacheMock = {
     get: jest.fn(),
@@ -58,6 +61,7 @@ describe('SyncService', () => {
     logSyncRepo = dataSource.getRepository(LogSync);
     accountBookRepo = dataSource.getRepository(AccountBook);
     relRepo = dataSource.getRepository(AccountBookUser);
+    userShareRepo = dataSource.getRepository(UserShareEntity);
     const logRunner = new LogRunner(
       accountBookRepo,
       dataSource.getRepository(AccountCategory),
@@ -79,6 +83,7 @@ describe('SyncService', () => {
       cacheMock as any,
       accountBookRepo,
       relRepo,
+      userShareRepo,
     );
   });
 
@@ -90,6 +95,7 @@ describe('SyncService', () => {
     await logSyncRepo.clear();
     await accountBookRepo.clear();
     await relRepo.clear();
+    await userShareRepo.clear();
     cacheMock.set.mockClear();
     cacheMock.get.mockReset();
   });

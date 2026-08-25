@@ -7,6 +7,7 @@ import { AccountShop } from '../pojo/entities/account-shop.entity';
 import { AccountSymbol } from '../pojo/entities/account-symbol.entity';
 import { AccountFund } from '../pojo/entities/account-fund.entity';
 import { AccountBookUser } from '../pojo/entities/account-book-user.entity';
+import { UserShareEntity } from '../pojo/entities/user-share.entity';
 import { User } from '../pojo/entities/user.entity';
 import { AttachmentEntity } from '../pojo/entities/attachment.entity';
 import { AccountNote } from '../pojo/entities/account-note.entity';
@@ -30,6 +31,7 @@ describe('MaterializeService', () => {
     AccountSymbol,
     AccountFund,
     AccountBookUser,
+    UserShareEntity,
     User,
     AttachmentEntity,
     AccountNote,
