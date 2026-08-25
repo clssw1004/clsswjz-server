@@ -218,4 +218,170 @@ describe('Sync 数据隔离 (e2e)', () => {
     expect(rejectRes.results[0].syncState).toBe(SyncState.FAILED);
     expect(rejectRes.results[0].syncError).toContain('无权');
   });
+
+  // ── userShare 共享数据可见性测试 ──
+
+  function userShareCreateLog(
+    shareId: string,
+    ownerUserId: string,
+    targetUserId: string,
+    businessType: string,
+    at: number,
+  ) {
+    return {
+      id: nextLogId(),
+      businessType: 'userShare',
+      operateType: 'create',
+      parentType: 'root',
+      parentId: '',
+      operatorId: ownerUserId,
+      operatedAt: at,
+      businessId: shareId,
+      operateData: JSON.stringify({
+        id: shareId,
+        ownerUserId,
+        targetUserId,
+        businessType,
+        isEnabled: true,
+        createdAt: at,
+        updatedAt: at,
+      }),
+      syncState: SyncState.UNSYNCED,
+      syncTime: -1,
+    };
+  }
+
+  /** noParent() 业务日志（模拟 periodCycle 等扩展模块） */
+  function noParentBusinessLog(
+    bizId: string,
+    operatorId: string,
+    businessType: string,
+    at: number,
+  ) {
+    return {
+      id: nextLogId(),
+      businessType,
+      operateType: 'create',
+      parentType: 'root',
+      parentId: '',
+      operatorId,
+      operatedAt: at,
+      businessId: bizId,
+      operateData: JSON.stringify({
+        id: bizId,
+        startDate: '2026-08-01',
+        createdBy: operatorId,
+        updatedBy: operatorId,
+        createdAt: at,
+        updatedAt: at,
+      }),
+      syncState: SyncState.UNSYNCED,
+      syncTime: -1,
+    };
+  }
+
+  function userProfileLog(
+    userId: string,
+    nickname: string,
+    at: number,
+  ) {
+    return {
+      id: nextLogId(),
+      businessType: 'user',
+      operateType: 'create',
+      parentType: 'root',
+      parentId: '',
+      operatorId: userId,
+      operatedAt: at,
+      businessId: userId,
+      operateData: JSON.stringify({
+        id: userId,
+        username: 'secret',
+        nickname,
+        createdAt: at,
+        updatedAt: at,
+      }),
+      syncState: SyncState.UNSYNCED,
+      syncTime: -1,
+    };
+  }
+
+  it('userShare：A 分享给 B 后，B 能拉到 userShare 日志', async () => {
+    const a = await register('e2e_share_a');
+    const b = await register('e2e_share_b');
+
+    // A 推送 userShare（分享 periodCycle 给 B）
+    const pushRes = await push(a.token, [
+      userShareCreateLog('share-1', a.userId, b.userId, 'periodCycle', 1000),
+    ]);
+    expect(pushRes.results[0].syncState).toBe(SyncState.SYNCED);
+
+    // B 拉取：应能看到该 userShare 日志
+    const bPull = await pull(b.token);
+    expect(
+      bPull.changes.some(
+        (c: any) =>
+          c.businessType === 'userShare' && c.businessId === 'share-1',
+      ),
+    ).toBe(true);
+  });
+
+  it('userShare：A 分享后，B 能拉到 A 的 noParent() 业务日志', async () => {
+    const a = await register('e2e_share_a2');
+    const b = await register('e2e_share_b2');
+
+    // A 推送 userShare + noParent 业务日志
+    await push(a.token, [
+      userShareCreateLog('share-2', a.userId, b.userId, 'periodCycle', 1000),
+      noParentBusinessLog('biz-pc-1', a.userId, 'periodCycle', 2000),
+    ]);
+
+    // B 拉取：应能看到 A 的 periodCycle 业务日志
+    const bPull = await pull(b.token);
+    expect(
+      bPull.changes.some(
+        (c: any) =>
+          c.businessType === 'periodCycle' && c.businessId === 'biz-pc-1',
+      ),
+    ).toBe(true);
+  });
+
+  it('userShare：无共同账本时，B 能拉到 A 的 USER 资料日志', async () => {
+    const a = await register('e2e_share_a3');
+    const b = await register('e2e_share_b3');
+
+    // A 推送 userShare + USER 资料日志（A 和 B 无共同账本）
+    await push(a.token, [
+      userShareCreateLog('share-3', a.userId, b.userId, 'periodCycle', 1000),
+      userProfileLog(a.userId, '用户A', 2000),
+    ]);
+
+    // B 拉取：应能看到 A 的 USER 资料（用于昵称翻译）
+    const bPull = await pull(b.token);
+    expect(
+      bPull.changes.some(
+        (c: any) =>
+          c.businessType === 'user' && c.operatorId === a.userId,
+      ),
+    ).toBe(true);
+  });
+
+  it('userShare：A 未分享给 B 时，B 拉不到 A 的 noParent() 日志', async () => {
+    const a = await register('e2e_share_a4');
+    const b = await register('e2e_share_b4');
+
+    // A 推送 noParent 业务日志（但不推送 userShare）
+    await push(a.token, [
+      noParentBusinessLog('biz-pc-2', a.userId, 'periodCycle', 1000),
+    ]);
+
+    // B 拉取：不应看到 A 的 periodCycle 日志
+    const bPull = await pull(b.token);
+    expect(
+      bPull.changes.some(
+        (c: any) =>
+          c.businessType === 'periodCycle' && c.businessId === 'biz-pc-2',
+      ),
+    ).toBe(false);
+  });
 });
